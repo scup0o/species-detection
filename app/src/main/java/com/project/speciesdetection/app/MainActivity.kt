@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.project.speciesdetection.core.navigation.AppNavigation
 import com.project.speciesdetection.core.navigation.BottomNavigationBar
 import com.project.speciesdetection.core.theme.SpeciesDetectionTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,14 +25,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SpeciesDetectionTheme {
-                Scaffold(
-                    bottomBar = {BottomNavigationBar()}
-                ) { innerPadding ->
-                    Text(
-                        text = "a",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                AppNavigation(
+                    activity = this
+                )
             }
         }
     }
