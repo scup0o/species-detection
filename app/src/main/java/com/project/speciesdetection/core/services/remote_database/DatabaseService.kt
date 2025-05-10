@@ -9,7 +9,7 @@ sealed class DataResult<out T> {
 }
 
 interface DatabaseService<T, ID> {
-    //fun getAll(options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
+    fun getAll(options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
     //fun getById(id: ID): Flow<DataResult<T?>>
     fun getByFieldValue(fieldPath: String, value: Any, options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
     //suspend fun add(item: T, documentId: String? = null): DataResult<String>

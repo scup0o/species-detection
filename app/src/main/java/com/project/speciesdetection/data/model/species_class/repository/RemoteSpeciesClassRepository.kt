@@ -1,0 +1,29 @@
+package com.project.speciesdetection.data.model.species_class.repository
+
+import com.project.speciesdetection.core.services.remote_database.DataResult
+import com.project.speciesdetection.core.services.remote_database.DatabaseService
+import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
+import com.project.speciesdetection.data.model.species_class.SpeciesClass
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Named
+
+class RemoteSpeciesClassRepository @Inject constructor(
+    @Named("firestore_species_class_db") private val databaseService: DatabaseService<SpeciesClass, String>
+) : SpeciesClassRepository {
+
+    override fun getAllSpeciesClass(languageCode : String): Flow<DataResult<List<DisplayableSpeciesClass>>> {
+        return databaseService.getAll().map { result ->
+            when (result) {
+                is DataResult.Success -> {
+                    var displayableList = result.data.map { it.toDisplayable(languageCode) }
+                    DataResult.Success(displayableList)
+                }
+                is DataResult.Error -> DataResult.Error(result.exception)
+                is DataResult.Loading -> DataResult.Loading
+            }
+        }
+    }
+
+}

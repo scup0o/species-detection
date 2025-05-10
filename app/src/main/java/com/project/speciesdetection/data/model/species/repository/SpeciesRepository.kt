@@ -8,8 +8,7 @@ import kotlinx.coroutines.flow.Flow
 interface SpeciesRepository {
     fun getSpeciesByClass(
         targetClassName: String,
-        languageCodeOfTargetClass: String,
-        displayLanguageCode: String,
+        languageCode: String,
         sortByName: Boolean)
     : Flow<DataResult<List<DisplayableSpecies>>>
 }

@@ -3,10 +3,10 @@ package com.project.speciesdetection.data.model.species
 import com.google.firebase.database.PropertyName
 
 data class Species(
-    @get:PropertyName("id") @set:PropertyName("id")
+    @get:PropertyName("documentId") @set:PropertyName("documentId")
     var id: String = "",
-    @get:PropertyName("class") @set:PropertyName("class")
-    var speciesClass: Map<String, String> = emptyMap(),
+    @get:PropertyName("classId") @set:PropertyName("classId")
+    var classId: String = "",
     @get:PropertyName("name") @set:PropertyName("name")
     var name: Map<String, String> = emptyMap(),
     /*@get:PropertyName("description") @set:PropertyName("description")
@@ -14,13 +14,13 @@ data class Species(
     @get:PropertyName("imageUrl") @set:PropertyName("imageUrl")
     var imageUrl: String? = null*/
 ) {
-    constructor() : this("", emptyMap(), emptyMap()/*, emptyMap(), emptyMap(), null*/)
+    //constructor() : this("", emptyMap(), emptyMap()/*, emptyMap(), emptyMap(), null*/)
 
     fun toDisplayable(languageCode: String): DisplayableSpecies {
         return DisplayableSpecies(
             id = this.id,
             localizedName = this.name[languageCode]!!,
-            localizedClass = this.speciesClass[languageCode]!!,
+            localizedClass = this.classId,
             /*localizedDescription = this.getLocalizedDescription(languageCode),
             imageUrl = this.imageUrl*/
         )

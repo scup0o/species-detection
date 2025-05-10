@@ -8,21 +8,21 @@ import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Named
+import javax.inject.Singleton
 
+@Singleton
 class GetLocalizedSpeciesUseCase @Inject constructor(
-    private val speciesRepository: SpeciesRepository,
+    private val remoteSpeciesRepository: SpeciesRepository,
     @Named("language_provider") private val languageProvider: LanguageProvider
 ) {
     fun getByClass(
         targetClassName: String,
-        languageCodeOfTargetClass: String,
         sortByName: Boolean
     ): Flow<DataResult<List<DisplayableSpecies>>> {
-        val displayLangCode = languageProvider.getCurrentLanguageCode()
-        return speciesRepository.getSpeciesByClass(
+        val languageCode = languageProvider.getCurrentLanguageCode()
+        return remoteSpeciesRepository.getSpeciesByClass(
             targetClassName,
-            languageCodeOfTargetClass,
-            displayLangCode,
+            languageCode,
             sortByName
         )
     }

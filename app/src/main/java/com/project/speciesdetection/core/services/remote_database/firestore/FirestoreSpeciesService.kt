@@ -25,15 +25,21 @@ import javax.inject.Singleton
 @Singleton
 class FirestoreSpeciesService @Inject constructor(
 ) : DatabaseService<Species, String> {
-    private val firestore = Firebase.firestore
 
+    private val firestore = Firebase.firestore
     private val speciesCollection = firestore.collection("species")
     private val TAG = "FirestoreSpeciesService"
+
+    override fun getAll(options: Map<String, Any>?): Flow<DataResult<List<Species>>> {
+        TODO("Not yet implemented")
+    }
+
     override fun getByFieldValue(
         fieldPath: String,
         value: Any,
         options: Map<String, Any>?
     ): Flow<DataResult<List<Species>>> = callbackFlow {
+
         trySend(DataResult.Loading)
         var query: Query = speciesCollection.whereEqualTo(fieldPath, value)
         val orderByField = options?.get("orderBy") as? String
