@@ -6,9 +6,10 @@ import com.project.speciesdetection.data.model.species.Species
 import kotlinx.coroutines.flow.Flow
 
 interface SpeciesRepository {
-    fun getSpeciesByClass(
-        targetClassName: String,
+    fun getSpeciesByField(
+        targetField: String,
         languageCode: String,
+        value: String,
         sortByName: Boolean)
     : Flow<DataResult<List<DisplayableSpecies>>>
 }

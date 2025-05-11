@@ -70,8 +70,16 @@ dependencies {
 
     implementation(libs.androidx.hilt.navigation.compose)
 
+    //Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+
+    //Glide
+    implementation(libs.glide)
+
+    // Glide Compose Integration
+    implementation (libs.compose)
+
 
 }
 

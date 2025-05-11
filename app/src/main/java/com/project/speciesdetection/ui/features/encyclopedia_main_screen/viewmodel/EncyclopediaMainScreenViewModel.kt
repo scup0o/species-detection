@@ -30,7 +30,6 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
     sealed interface SpeciesScreenUiState {
         data object Loading : SpeciesScreenUiState
         data class Success(val speciesList: List<DisplayableSpecies>) : SpeciesScreenUiState
-        data class DetailSuccess(val species: DisplayableSpecies) : SpeciesScreenUiState
         data class Error(val message: String) : SpeciesScreenUiState
         data object Empty : SpeciesScreenUiState
     }
@@ -60,12 +59,12 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
                 }
             if (_speciesClassList.value.isNotEmpty()){
                 getLocalizedSpeciesUseCase.getByClass(
-                    targetClassName = _speciesClassList.value.first().localizedName,
+                    value = _speciesClassList.value.first().id,
                     sortByName = true
                 )
                     .catch { e -> _uiState.value = SpeciesScreenUiState.Error(e.localizedMessage ?: "Error") }
                     .collect {
-                        //Log.d("a",it.toString())
+
                         handleListResult(it) }
             }
         }
@@ -78,7 +77,9 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
                 _uiState.value = if (result.data.isEmpty()) {
                     SpeciesScreenUiState.Empty
                 } else {
+                    Log.d("a",result.data[0].toString())
                     SpeciesScreenUiState.Success(result.data)
+
                 }
             }
             is DataResult.Error -> {

@@ -13,14 +13,16 @@ class RemoteSpeciesRepository @Inject constructor(
     @Named("firestore_species_db") private val databaseService: DatabaseService<Species, String>
 ):SpeciesRepository{
 
-    override fun getSpeciesByClass(
-        targetClassName: String,
+    override fun getSpeciesByField(
+        targetField: String,
         languageCode: String,
+        value: String,
         sortByName: Boolean
     ): Flow<DataResult<List<DisplayableSpecies>>> {
-        val fieldPathForQuery = "class.$languageCode"
+        val fieldPathForQuery = if (targetField=="classId") targetField
+                                else "$targetField.$languageCode"
         val options = mutableMapOf<String, Any>()
-        return databaseService.getByFieldValue(fieldPathForQuery, targetClassName, options).map { result ->
+        return databaseService.getByFieldValue(fieldPathForQuery, value, options).map { result ->
             when (result) {
                 is DataResult.Success -> {
                     var displayableList = result.data.map { it.toDisplayable(languageCode) }
