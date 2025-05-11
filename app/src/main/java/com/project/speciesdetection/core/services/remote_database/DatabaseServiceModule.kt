@@ -1,7 +1,7 @@
 package com.project.speciesdetection.core.services.remote_database
 
-import com.project.speciesdetection.core.services.remote_database.firestore.FirestoreSpeciesClassService
-import com.project.speciesdetection.core.services.remote_database.firestore.FirestoreSpeciesService
+import com.project.speciesdetection.core.services.remote_database.firestore.species.FirestoreSpeciesClassService
+import com.project.speciesdetection.core.services.remote_database.firestore.species.FirestoreSpeciesService
 import com.project.speciesdetection.data.model.species.Species
 import com.project.speciesdetection.data.model.species_class.SpeciesClass
 import dagger.Binds

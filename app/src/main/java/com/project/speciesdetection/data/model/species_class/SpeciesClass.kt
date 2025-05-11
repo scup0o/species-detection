@@ -3,11 +3,11 @@ package com.project.speciesdetection.data.model.species_class
 import com.google.firebase.database.PropertyName
 
 data class SpeciesClass(
-    @get:PropertyName("documentId") @set:PropertyName("documentId")
+    @get:PropertyName("documentId")
     var id : String = "",
-    @get:PropertyName("name") @set:PropertyName("name")
+    @get:PropertyName("name")
     var name : Map<String, String> = emptyMap(),
-    @get:PropertyName("icon") @set:PropertyName("icon")
+    @get:PropertyName("icon")
     var icon : String = ""
 ) {
 

@@ -4,6 +4,7 @@ data class DisplayableSpecies(
     val id: String,
     val localizedName: String,
     val localizedClass: String,
+    val scientificName: String,
     /*val localizedDescription: String,*/
-    val imageURL: String? = null
+    var imageURL: String? = null
 )

@@ -80,6 +80,13 @@ dependencies {
     // Glide Compose Integration
     implementation (libs.compose)
 
+    //Paging 3
+    implementation(libs.androidx.paging.runtime.ktx)
+    implementation(libs.androidx.paging.compose)
+
+    //Valentinilk
+    implementation(libs.compose.shimmer)
+
 
 }
 

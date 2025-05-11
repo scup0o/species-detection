@@ -9,6 +9,8 @@ data class Species(
     var classId: String = "",
     @get:PropertyName("name")
     var name: Map<String, String> = emptyMap(),
+    @get:PropertyName("scientificName")
+    var scientificName: String = "",
     /*@get:PropertyName("description") @set:PropertyName("description")
     var descriptionTranslations: Map<String, String> = emptyMap(),*/
     @get:PropertyName("imageURL")
@@ -22,7 +24,8 @@ data class Species(
             localizedName = this.name[languageCode]!!,
             localizedClass = this.classId,
             /*localizedDescription = this.getLocalizedDescription(languageCode),*/
-            imageURL = this.imageURL
+            imageURL = this.imageURL,
+            scientificName = this.scientificName
         )
     }
 }

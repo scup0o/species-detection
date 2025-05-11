@@ -1,26 +1,26 @@
-package com.project.speciesdetection.core.services.remote_database.firestore
+package com.project.speciesdetection.core.services.remote_database.firestore.species
 
 import android.util.Log
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.Pager
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FieldPath
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
-import com.google.firebase.firestore.ktx.toObject
 import com.project.speciesdetection.core.services.remote_database.DataResult
 import com.project.speciesdetection.core.services.remote_database.DatabaseService
 import com.project.speciesdetection.data.model.species.Species
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val TAG = "FirestoreSpeciesService"
+private const val FIRESTORE_SPECIES_SERVICE_TAG = "FirestoreSpeciesService"
+const val DEFAULT_SPECIES_PAGE_SIZE = 5
 
 @Singleton
 class FirestoreSpeciesService @Inject constructor(
@@ -28,10 +28,38 @@ class FirestoreSpeciesService @Inject constructor(
 
     private val firestore = Firebase.firestore
     private val speciesCollection = firestore.collection("species")
-    private val TAG = "FirestoreSpeciesService"
+
 
     override fun getAll(options: Map<String, Any>?): Flow<DataResult<List<Species>>> {
         TODO("Not yet implemented")
+    }
+
+    override fun getByFieldValuePaged(
+        fieldPath: String,
+        value: Any,
+        pageSize: Int,
+        orderByField: String?,
+        sortDirection: Query.Direction
+    ): Flow<PagingData<Species>> {
+        Log.d(FIRESTORE_SPECIES_SERVICE_TAG, "Creating PagingStream for field '$fieldPath' = '$value', orderBy: $orderByField, direction: $sortDirection")
+
+        var baseQuery: Query = speciesCollection.whereEqualTo(fieldPath, value)
+
+        if (orderByField != null) {
+            baseQuery = baseQuery.orderBy(orderByField, sortDirection)
+        } else {
+            // Mặc định sắp xếp theo ID document nếu không có orderBy nào được chỉ định
+            // Điều này quan trọng để pagination ổn định với startAfter
+            baseQuery = baseQuery.orderBy(FieldPath.documentId(), Query.Direction.ASCENDING)
+        }
+
+        return Pager(
+            config = PagingConfig(
+                pageSize = pageSize,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = { SpeciesPagingSource(baseQuery, pageSize) } // Sử dụng SpeciesPagingSource đã tạo
+        ).flow
     }
 
     override fun getByFieldValue(
