@@ -5,20 +5,22 @@ import androidx.paging.map
 import com.google.firebase.firestore.Query
 import com.project.speciesdetection.core.helpers.CloudinaryImageURLHelper
 import com.project.speciesdetection.core.services.remote_database.DataResult
-import com.project.speciesdetection.core.services.remote_database.DatabaseService
-import com.project.speciesdetection.core.services.remote_database.firestore.species.DEFAULT_SPECIES_PAGE_SIZE
+import com.project.speciesdetection.core.services.remote_database.SpeciesDatabaseService
+import com.project.speciesdetection.core.services.remote_database.species.DEFAULT_SPECIES_PAGE_SIZE
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species.Species
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Named
 
 class RemoteSpeciesRepository @Inject constructor(
-    @Named("firestore_species_db") private val databaseService: DatabaseService<Species, String>,
+    @Named("species_db") private val databaseService: SpeciesDatabaseService<Species, String>,
 ):SpeciesRepository{
 
     override fun getSpeciesByFieldPaged(
+        searchQuery : List<String>?,
         targetField: String,
         languageCode: String,
         value: String
@@ -28,7 +30,6 @@ class RemoteSpeciesRepository @Inject constructor(
         // Nếu `targetField` là một map (ví dụ: `commonName: {en: "Lion", vi: "Sư tử"}`),
         // bạn không thể dễ dàng `orderBy` trên `commonName.en` nếu `whereEqualTo` là trên `classId`.
         // Bạn cần một trường riêng cho việc sắp xếp hoặc chấp nhận sắp xếp theo trường mặc định (ví dụ: id document).
-
         val fieldPathForQuery: String
         val orderByFieldForQuery: String? = "name.$languageCode"
         // Ví dụ đơn giản:
@@ -50,6 +51,8 @@ class RemoteSpeciesRepository @Inject constructor(
 
 
         return databaseService.getByFieldValuePaged(
+            languageCode = languageCode,
+            searchQuery = searchQuery,
             fieldPath = fieldPathForQuery,
             value = value,
             pageSize = DEFAULT_SPECIES_PAGE_SIZE, // Sử dụng hằng số từ service
@@ -66,7 +69,7 @@ class RemoteSpeciesRepository @Inject constructor(
         }
     }
 
-    override fun getSpeciesByField(
+    /*override fun getSpeciesByField(
         targetField: String,
         languageCode: String,
         value: String,
@@ -91,5 +94,5 @@ class RemoteSpeciesRepository @Inject constructor(
                 is DataResult.Loading -> DataResult.Loading
             }
         }
-    }
+    }*/
 }

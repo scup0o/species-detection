@@ -1,4 +1,4 @@
-package com.project.speciesdetection.core.services.remote_database.firestore.species
+package com.project.speciesdetection.core.services.remote_database.species_class
 
 import android.util.Log
 import androidx.paging.PagingData
@@ -6,7 +6,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import com.project.speciesdetection.core.services.remote_database.DataResult
-import com.project.speciesdetection.core.services.remote_database.DatabaseService
+import com.project.speciesdetection.core.services.remote_database.SpeciesClassDatabaseService
 import com.project.speciesdetection.data.model.species_class.SpeciesClass
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -16,7 +16,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FirestoreSpeciesClassService @Inject constructor() : DatabaseService<SpeciesClass, String>
+class FirestoreSpeciesClassService @Inject constructor() :
+    SpeciesClassDatabaseService<SpeciesClass, String>
 {
     private val firestore = Firebase.firestore
     private val speciesClassCollection = firestore.collection("speciesClass")
@@ -64,21 +65,4 @@ class FirestoreSpeciesClassService @Inject constructor() : DatabaseService<Speci
         }*/
     }
 
-    override fun getByFieldValue(
-        fieldPath: String,
-        value: Any,
-        options: Map<String, Any>?
-    ): Flow<DataResult<List<SpeciesClass>>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun getByFieldValuePaged(
-        fieldPath: String,
-        value: Any,
-        pageSize: Int,
-        orderByField: String?,
-        sortDirection: Query.Direction
-    ): Flow<PagingData<SpeciesClass>> {
-        TODO("Not yet implemented")
-    }
 }

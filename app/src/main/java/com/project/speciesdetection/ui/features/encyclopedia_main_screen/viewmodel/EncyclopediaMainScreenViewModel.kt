@@ -1,10 +1,12 @@
 package com.project.speciesdetection.ui.features.encyclopedia_main_screen.viewmodel
 
 import android.util.Log
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.project.speciesdetection.R
 import com.project.speciesdetection.core.services.remote_database.DataResult
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
@@ -53,7 +55,7 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
                 kotlinx.coroutines.flow.flowOf(PagingData.empty()) // Trả về PagingData rỗng nếu không có classId
             } else {
                 Log.d("ViewModel", "Fetching paged species for classId: $classId")
-                getLocalizedSpeciesUseCase.getByClassPaged(classIdValue = classId)
+                getLocalizedSpeciesUseCase.getByClassPaged(classIdValue = classId, searchQuery = "khỉ")
             }
         }.cachedIn(viewModelScope) // Quan trọng: cache PagingData
 

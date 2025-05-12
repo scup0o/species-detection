@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">SpeciesDetection</string>
+    <string name="encyclopedia_title">"TỪ ĐIỂN SINH VẬT"</string>
+    <string name="all">Tất cả</string>
 </resources>

@@ -7,6 +7,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -258,15 +259,15 @@ fun SpeciesDetectionTheme(
     dynamicColor: Boolean = true,
     content: @Composable() () -> Unit
 ) {
-  val colorScheme = when {
-      darkTheme -> darkScheme
-      else -> lightScheme
-  }
 
-  MaterialTheme(
-    colorScheme = colorScheme,
-    typography = AppTypography,
-    content = content
-  )
+    val colorScheme = if (darkTheme) darkScheme else lightScheme
+    val appSpacer = AppSpacers()
+
+    CompositionLocalProvider(LocalAppSpacing provides appSpacer) {
+      MaterialTheme(
+        colorScheme = colorScheme,
+        typography = AppTypography,
+        content = content
+      )}
 }
 

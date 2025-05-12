@@ -7,14 +7,15 @@ import com.project.speciesdetection.data.model.species.Species
 import kotlinx.coroutines.flow.Flow
 
 interface SpeciesRepository {
-    fun getSpeciesByField(
+    /*fun getSpeciesByField(
         targetField: String,
         languageCode: String,
         value: String,
         sortByName: Boolean)
-    : Flow<DataResult<List<DisplayableSpecies>>>
+    : Flow<DataResult<List<DisplayableSpecies>>>*/
 
     fun getSpeciesByFieldPaged(
+        searchQuery : List<String>?,
         targetField: String,
         languageCode: String,
         value: String,

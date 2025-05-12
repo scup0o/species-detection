@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SpeciesDetection</string>
+    <string name="encyclopedia_title">"ENCYCLOPEDIA"</string>
+    <string name="all">All</string>
 </resources>

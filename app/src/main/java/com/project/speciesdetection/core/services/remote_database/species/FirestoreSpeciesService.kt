@@ -1,4 +1,4 @@
-package com.project.speciesdetection.core.services.remote_database.firestore.species
+package com.project.speciesdetection.core.services.remote_database.species
 
 import android.util.Log
 import androidx.paging.PagingConfig
@@ -6,10 +6,10 @@ import androidx.paging.PagingData
 import androidx.paging.Pager
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
-import com.project.speciesdetection.core.services.remote_database.DataResult
-import com.project.speciesdetection.core.services.remote_database.DatabaseService
+import com.project.speciesdetection.core.services.remote_database.SpeciesDatabaseService
 import com.project.speciesdetection.data.model.species.Species
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -24,17 +24,14 @@ const val DEFAULT_SPECIES_PAGE_SIZE = 5
 
 @Singleton
 class FirestoreSpeciesService @Inject constructor(
-) : DatabaseService<Species, String> {
+) : SpeciesDatabaseService<Species, String> {
 
     private val firestore = Firebase.firestore
     private val speciesCollection = firestore.collection("species")
 
-
-    override fun getAll(options: Map<String, Any>?): Flow<DataResult<List<Species>>> {
-        TODO("Not yet implemented")
-    }
-
     override fun getByFieldValuePaged(
+        languageCode : String,
+        searchQuery : List<String>?,
         fieldPath: String,
         value: Any,
         pageSize: Int,
@@ -43,7 +40,14 @@ class FirestoreSpeciesService @Inject constructor(
     ): Flow<PagingData<Species>> {
         Log.d(FIRESTORE_SPECIES_SERVICE_TAG, "Creating PagingStream for field '$fieldPath' = '$value', orderBy: $orderByField, direction: $sortDirection")
 
-        var baseQuery: Query = speciesCollection.whereEqualTo(fieldPath, value)
+        var baseQuery: Query = if (searchQuery!=null)
+                                speciesCollection.whereEqualTo(fieldPath, value)
+                                    .where(Filter.or(
+                                        Filter.arrayContainsAny("name_tokens.$languageCode",searchQuery),
+                                        Filter.arrayContainsAny("scientificNameToken",searchQuery)
+                                    ))
+                                else speciesCollection.whereEqualTo(fieldPath, value)
+
 
         if (orderByField != null) {
             baseQuery = baseQuery.orderBy(orderByField, sortDirection)
@@ -58,11 +62,18 @@ class FirestoreSpeciesService @Inject constructor(
                 pageSize = pageSize,
                 enablePlaceholders = false,
             ),
-            pagingSourceFactory = { SpeciesPagingSource(baseQuery, pageSize) } // Sử dụng SpeciesPagingSource đã tạo
+            pagingSourceFactory = {
+                SpeciesPagingSource(
+                    baseQuery = baseQuery,
+                    pageSize = pageSize,
+                    searchQuery = searchQuery,
+                    languageCode = languageCode
+                )
+            }
         ).flow
     }
 
-    override fun getByFieldValue(
+    /*override fun getByFieldValue(
         fieldPath: String,
         value: Any,
         options: Map<String, Any>?
@@ -95,6 +106,6 @@ class FirestoreSpeciesService @Inject constructor(
             close(e)
         }
         awaitClose { }
-    }
+    }*/
 
 }

@@ -1,7 +1,7 @@
 package com.project.speciesdetection.core.services.remote_database
 
-import com.project.speciesdetection.core.services.remote_database.firestore.species.FirestoreSpeciesClassService
-import com.project.speciesdetection.core.services.remote_database.firestore.species.FirestoreSpeciesService
+import com.project.speciesdetection.core.services.remote_database.species_class.FirestoreSpeciesClassService
+import com.project.speciesdetection.core.services.remote_database.species.FirestoreSpeciesService
 import com.project.speciesdetection.data.model.species.Species
 import com.project.speciesdetection.data.model.species_class.SpeciesClass
 import dagger.Binds
@@ -16,16 +16,16 @@ import javax.inject.Singleton
 abstract class DatabaseServiceModule {
     @Binds
     @Singleton
-    @Named("firestore_species_db")
-    abstract fun bindFireStoreSpeciesDatabaseService(
-        fireStoreSpeciesService: FirestoreSpeciesService
-    ): DatabaseService<Species, String>
+    @Named("species_db")
+    abstract fun bindSpeciesDatabaseService(
+        speciesService: FirestoreSpeciesService
+    ): SpeciesDatabaseService<Species, String>
 
     @Binds
     @Singleton
-    @Named("firestore_species_class_db")
-    abstract fun bindFireStoreSpeciesClassDatabaseService(
-        fireStoreSpeciesClassService: FirestoreSpeciesClassService
-    ): DatabaseService<SpeciesClass, String>
+    @Named("species_class_db")
+    abstract fun bindSpeciesClassDatabaseService(
+        speciesClassService: FirestoreSpeciesClassService
+    ): SpeciesClassDatabaseService<SpeciesClass, String>
 
 }
