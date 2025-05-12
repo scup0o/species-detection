@@ -1,7 +1,9 @@
 package com.project.speciesdetection.core.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -37,7 +40,7 @@ fun BottomNavigationBar(
         selectedIndicatorColor = Color.Transparent,
         selectedIconColor = MaterialTheme.colorScheme.primary,
         selectedTextColor = MaterialTheme.colorScheme.primary,
-        unselectedIconColor = MaterialTheme.colorScheme.outlineVariant,
+        unselectedIconColor = MaterialTheme.colorScheme.inversePrimary,
         unselectedTextColor = MaterialTheme.colorScheme.outlineVariant,
         disabledIconColor = MaterialTheme.colorScheme.outlineVariant,
         disabledTextColor = MaterialTheme.colorScheme.outlineVariant)
@@ -46,9 +49,13 @@ fun BottomNavigationBar(
         FloatingActionButton(
             onClick = {},
             shape = CircleShape,
-            modifier = Modifier.padding(10.dp)
+            modifier = Modifier.padding(10.dp),
+            containerColor = MaterialTheme.colorScheme.primary
         ) {
-            Icon(Icons.Filled.Add, null)
+            Icon(
+                painterResource(AppScreen.CameraScreen.icon!!),
+                null,
+                Modifier.size(24.dp))
         }
         NavigationBar(
             modifier = Modifier
@@ -59,7 +66,8 @@ fun BottomNavigationBar(
                         bottomStart = 0.dp,
                         bottomEnd = 0.dp
                     )
-                )
+                ),
+            containerColor = MaterialTheme.colorScheme.surface
         )
         {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -68,7 +76,11 @@ fun BottomNavigationBar(
             screens.forEach { screen ->
                 val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                 NavigationBarItem(
-                    icon = { Icon(screen.icon!!, contentDescription = null) },
+                    icon = {
+                        Icon(
+                            painter = painterResource(screen.icon!!),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)) },
                     colors = navBarItemColors,
                     alwaysShowLabel = false,
                     selected = selected,

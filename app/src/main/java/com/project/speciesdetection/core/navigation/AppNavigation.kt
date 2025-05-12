@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
@@ -40,6 +41,8 @@ fun AppNavigation(
         }
     }
 
+    val containerColor = MaterialTheme.colorScheme.surfaceContainer
+
     NavHost(
         navController = navController,
         startDestination = AppScreen.CommunityScreen.route
@@ -50,7 +53,8 @@ fun AppNavigation(
             exitTransition = {ExitTransition.None}
         ){
             CommunityFeed(
-                navController = navController)
+                navController = navController,
+                containerColor = containerColor)
         }
         composable(
             route = AppScreen.EncyclopediaMainScreen.route,
@@ -58,7 +62,8 @@ fun AppNavigation(
             exitTransition = {ExitTransition.None}
         ) {
             EncyclopediaMainScreen(
-                navController = navController
+                navController = navController,
+                containerColor = containerColor
             )
         }
 
@@ -68,7 +73,8 @@ fun AppNavigation(
             exitTransition = {ExitTransition.None}
         ){
             ProfileMainScreen(
-                navController = navController)
+                navController = navController,
+                containerColor = containerColor)
         }
 
         composable(
