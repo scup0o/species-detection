@@ -262,8 +262,11 @@ fun SpeciesDetectionTheme(
 
     val colorScheme = if (darkTheme) darkScheme else lightScheme
     val appSpacer = AppSpacers()
+    val appStrokes = AppStrokes()
 
-    CompositionLocalProvider(LocalAppSpacing provides appSpacer) {
+    CompositionLocalProvider(
+        LocalAppSpacing provides appSpacer,
+        LocalAppStrokes provides appStrokes) {
       MaterialTheme(
         colorScheme = colorScheme,
         typography = AppTypography,

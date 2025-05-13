@@ -14,6 +14,11 @@ interface SpeciesRepository {
         sortByName: Boolean)
     : Flow<DataResult<List<DisplayableSpecies>>>*/
 
+    fun getAll(
+        searchQuery : List<String>?,
+        languageCode: String,
+        ) : Flow<PagingData<DisplayableSpecies>>
+
     fun getSpeciesByFieldPaged(
         searchQuery : List<String>?,
         targetField: String,

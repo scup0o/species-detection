@@ -7,15 +7,12 @@ data class SpeciesClass(
     var id : String = "",
     @get:PropertyName("name")
     var name : Map<String, String> = emptyMap(),
-    @get:PropertyName("icon")
-    var icon : String = ""
 ) {
 
     fun toDisplayable(languageCode: String) : DisplayableSpeciesClass{
         return DisplayableSpeciesClass(
             id = this.id,
             localizedName = this.name[languageCode]!!,
-            icon = this.icon
         )
     }
 }

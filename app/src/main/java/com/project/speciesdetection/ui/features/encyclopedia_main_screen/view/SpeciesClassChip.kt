@@ -1,4 +1,4 @@
-package com.project.speciesdetection.ui.widgets.common.encyclopedia
+package com.project.speciesdetection.ui.features.encyclopedia_main_screen.view
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.theme.spacing
+import com.project.speciesdetection.core.theme.strokes
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
 
 @Composable
@@ -39,8 +40,12 @@ fun SpeciesClassChip(
                             else MaterialTheme.colorScheme.tertiary
 
         ),
-        border = if (!isSelected) BorderStroke(1.dp,MaterialTheme.colorScheme.tertiary) else null,
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp)
+        border = if (!isSelected) BorderStroke(
+            MaterialTheme.strokes.xs,
+            MaterialTheme.colorScheme.tertiary) else null,
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) MaterialTheme.strokes.l
+                                else MaterialTheme.strokes.xs)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
@@ -48,9 +53,9 @@ fun SpeciesClassChip(
                 .padding(horizontal = MaterialTheme.spacing.m, vertical = MaterialTheme.spacing.xs).fillMaxWidth()
         ) {
 
-            if(speciesClass.icon!="")
+            if(speciesClass.getIcon()!=null)
                 Icon(
-                    painter = painterResource(R.drawable.mammal),
+                    painter = painterResource(speciesClass.getIcon()!!),
                     contentDescription = null
                 )
 

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.map
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.services.remote_database.DataResult
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
@@ -17,10 +18,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
@@ -44,20 +49,50 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
 
     private val _speciesClassList = MutableStateFlow(emptyList<DisplayableSpeciesClass>())
     val speciesClassList : StateFlow<List<DisplayableSpeciesClass>> = _speciesClassList.asStateFlow()
+    private val speciesClassMapFlow: StateFlow<Map<String, String>> =
+        _speciesClassList
+            .map { list ->
+                list.associateBy({ it.id }, { it.localizedName }) // Giả sử DisplayableSpeciesClass có id và localizedName
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000L), // Giữ map tồn tại một chút
+                initialValue = emptyMap() // Giá trị ban đầu
+            )
 
-    private val _selectedClassId = MutableStateFlow<String?>(null)
+    private val _selectedClassId = MutableStateFlow<String?>("0")
     val selectedClassId: StateFlow<String?> = _selectedClassId.asStateFlow()
 
     val speciesPagingDataFlow: Flow<PagingData<DisplayableSpecies>> =
-        _selectedClassId.flatMapLatest { classId ->
+        combine(_selectedClassId, speciesClassMapFlow) { classId, classMap ->
+            classId to classMap
+        }.flatMapLatest { (classId, classMap) ->
             if (classId == null) {
                 Log.d("ViewModel", "No classId selected, returning empty PagingData flow")
                 kotlinx.coroutines.flow.flowOf(PagingData.empty()) // Trả về PagingData rỗng nếu không có classId
-            } else {
-                Log.d("ViewModel", "Fetching paged species for classId: $classId")
-                getLocalizedSpeciesUseCase.getByClassPaged(classIdValue = classId, searchQuery = "khỉ")
             }
-        }.cachedIn(viewModelScope) // Quan trọng: cache PagingData
+            else{
+                if (classId=="0"){
+                    getLocalizedSpeciesUseCase.getAll(searchQuery = "")
+                        .map { pagingData ->
+                            pagingData.map { species ->
+                                val className = classMap[species.localizedClass] ?: ""
+                                species.copy(localizedClass = className)
+                            }
+                        }
+                }
+                else {
+                    Log.d("ViewModel", "Fetching paged species for classId: $classId")
+                    getLocalizedSpeciesUseCase.getByClassPaged(classIdValue = classId, searchQuery = "")
+                        .map { pagingData ->
+                            pagingData.map { species ->
+                                val className = classMap[species.localizedClass] ?: ""
+                                species.copy(localizedClass = className)
+                            }
+                        }
+                }
+            }
+        }.cachedIn(viewModelScope)
 
     init {
         loadInitialSpeciesClasses()

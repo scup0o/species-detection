@@ -29,6 +29,43 @@ class FirestoreSpeciesService @Inject constructor(
     private val firestore = Firebase.firestore
     private val speciesCollection = firestore.collection("species")
 
+    override fun getAll(
+        languageCode: String,
+        searchQuery: List<String>?,
+        sortDirection: Query.Direction,
+        pageSize: Int,
+        orderByField: String?
+    ): Flow<PagingData<Species>> {
+        var baseQuery: Query = if (searchQuery!=null)
+            speciesCollection.where(Filter.or(
+                    Filter.arrayContainsAny("name_tokens.$languageCode",searchQuery),
+                    Filter.arrayContainsAny("scientificNameToken",searchQuery)
+                ))
+        else speciesCollection
+
+
+        if (orderByField != null) {
+            baseQuery = baseQuery.orderBy(orderByField, sortDirection)
+        } else {
+            baseQuery = baseQuery.orderBy(FieldPath.documentId(), Query.Direction.ASCENDING)
+        }
+
+        return Pager(
+            config = PagingConfig(
+                pageSize = pageSize,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = {
+                SpeciesPagingSource(
+                    baseQuery = baseQuery,
+                    pageSize = pageSize,
+                    searchQuery = searchQuery,
+                    languageCode = languageCode
+                )
+            }
+        ).flow
+    }
+
     override fun getByFieldValuePaged(
         languageCode : String,
         searchQuery : List<String>?,

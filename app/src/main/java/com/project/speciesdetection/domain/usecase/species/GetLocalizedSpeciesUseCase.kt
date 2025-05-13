@@ -2,6 +2,7 @@ package com.project.speciesdetection.domain.usecase.species
 
 import androidx.compose.ui.text.toLowerCase
 import androidx.paging.PagingData
+import androidx.paging.map
 import com.project.speciesdetection.core.services.remote_database.DataResult
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species.repository.SpeciesRepository
@@ -20,6 +21,19 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
     private val remoteSpeciesRepository: SpeciesRepository,
     @Named("language_provider") private val languageProvider: LanguageProvider
 ) {
+    fun getAll(searchQuery: String): Flow<PagingData<DisplayableSpecies>>{
+        val languageCode = languageProvider.getCurrentLanguageCode()
+        return remoteSpeciesRepository.getAll(
+            searchQuery =
+                if (searchQuery!="") searchQuery
+                    .lowercase(Locale.getDefault())
+                    .trim()
+                    .split("\\s+".toRegex())
+                else null,
+            languageCode = languageCode
+        )
+    }
+
     fun getByClassPaged(
         searchQuery : String,
         classIdValue: String,
@@ -37,4 +51,5 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
             value = classIdValue
         )
     }
+
 }

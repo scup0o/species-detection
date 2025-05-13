@@ -50,10 +50,12 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.navigation.BottomNavigationBar
+import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
 import com.project.speciesdetection.ui.features.encyclopedia_main_screen.viewmodel.EncyclopediaMainScreenViewModel
-import com.project.speciesdetection.ui.widgets.common.encyclopedia.SpeciesClassChip
+import com.project.speciesdetection.ui.widgets.common.ChipPlacholder
+import com.project.speciesdetection.ui.widgets.common.ListItemPlaceholder
 
 @OptIn(ExperimentalGlideComposeApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -95,23 +97,23 @@ fun EncyclopediaMainScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-
             // Thanh chọn Species Class
-            if (speciesClassList.isNotEmpty()) {
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    //item{
-                    //    SpeciesClassChip(
-                    //        speciesClass = DisplayableSpeciesClass("0", stringResource(R.string.all),""),
-                    //        transparentColor = containerColor,
-                    //        isSelected = selectedClassId == "0",
-                    //        onClick = { viewModel.selectSpeciesClass("0")})
-                    //}
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = MaterialTheme.spacing.xs),
+                contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+            ) {
+                if (speciesClassList.isNotEmpty()) {
+
+                    item{
+                        SpeciesClassChip(
+                            speciesClass = DisplayableSpeciesClass("0", stringResource(R.string.all)),
+                            transparentColor = containerColor,
+                            isSelected = selectedClassId == "0",
+                            onClick = { viewModel.selectSpeciesClass("0")})
+                    }
 
                     items(speciesClassList, key = { it.id }) { sClass ->
                         SpeciesClassChip(
@@ -121,11 +123,9 @@ fun EncyclopediaMainScreen(
                             onClick = { viewModel.selectSpeciesClass(sClass.id) }
                         )
                     }
-                }
-            } else {
-                // Có thể hiển thị loading indicator cho species class ở đây
-                Box(modifier = Modifier.fillMaxWidth().height(50.dp), contentAlignment = Alignment.Center){
-                    Text("Loading classes...")
+                } else {
+                    //loading indicator cho species class
+                    item { ChipPlacholder() }
                 }
             }
 
@@ -134,17 +134,16 @@ fun EncyclopediaMainScreen(
             // Danh sách Species sử dụng Paging
             LazyColumn(
                 modifier = Modifier.weight(1f), // Để LazyColumn chiếm không gian còn lại
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m, vertical = MaterialTheme.spacing.xs),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
             ) {
                 // Sử dụng itemKey để Paging 3 theo dõi item hiệu quả
                 items(
                     count = lazyPagingItems.itemCount,
-                    key = lazyPagingItems.itemKey { it.id } // Sử dụng ID của DisplayableSpecies
+                    key = lazyPagingItems.itemKey { it.id }
                 ) { index ->
-                    Log.d("a",lazyPagingItems[index].toString())
                     val species = lazyPagingItems[index]
-                    species?.let { // Vẫn cần check null phòng trường hợp Paging 3 có thay đổi
+                    species?.let {
                         SpeciesListItem(species = it)
                     }
                 }
@@ -154,7 +153,7 @@ fun EncyclopediaMainScreen(
                     when {
                         refresh is LoadState.Loading -> {
                             item {
-                                SpeciesListItemPlaceholder()
+                                ListItemPlaceholder()
                             }
                         }
                         refresh is LoadState.Error -> {
@@ -179,8 +178,7 @@ fun EncyclopediaMainScreen(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    SpeciesListItemPlaceholder()
-                                    //CircularProgressIndicator(strokeWidth = 2.dp)
+                                    ListItemPlaceholder()
                                 }
                             }
                         }
@@ -216,75 +214,5 @@ fun EncyclopediaMainScreen(
     }
 }
 
-@OptIn(ExperimentalGlideComposeApi::class)
-@Composable
-fun SpeciesListItem(species: DisplayableSpecies) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            GlideImage(
-                model = species.imageURL,
-                contentDescription = species.localizedName,
-                loading = placeholder(R.drawable.error_image), // Thay bằng placeholder của bạn
-                failure = placeholder(R.drawable.error_image), // Thay bằng error image của bạn
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.size((80.dp))
-            )
-            Spacer(modifier = Modifier.width((12.dp)))
-            Column {
-                Text(
-                    text = species.localizedName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = species.scientificName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontStyle = FontStyle.Italic
-                )
-                // Thêm các thông tin khác nếu muốn
-            }
-        }
-    }
-}
 
-@Composable
-fun SpeciesListItemPlaceholder(modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Shimmer thường không có đổ bóng
-    ) {
-        Row(
-            modifier = Modifier
-                .shimmer() // <<<<< ÁP DỤNG SHIMMER
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(Color.LightGray, shape = MaterialTheme.shapes.small)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .height(20.dp)
-                        .fillMaxWidth(0.7f)
-                        .background(Color.LightGray, shape = MaterialTheme.shapes.small)
-                )
-                Box(
-                    modifier = Modifier
-                        .height(16.dp)
-                        .fillMaxWidth(0.5f)
-                        .background(Color.LightGray, shape = MaterialTheme.shapes.small)
-                )
-            }
-        }
-    }
-}
+
