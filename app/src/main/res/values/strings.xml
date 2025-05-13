@@ -2,4 +2,11 @@
     <string name="app_name">SpeciesDetection</string>
     <string name="encyclopedia_title">"ENCYCLOPEDIA"</string>
     <string name="all">All</string>
+    <string name="error_screen_headline">Error!</string>
+    <string name="error_screen_title">Something went wrong</string>
+    <string name="error_screen_description_1">We encountered an error</string>
+    <string name="error_screen_description_2">while trying to connect with our server</string>
+    <string name="error_screen_description_solution">Please try again later</string>
+    <string name="try_again">Try again</string>
+    <string name="species_family_description">a species of</string>
 </resources>

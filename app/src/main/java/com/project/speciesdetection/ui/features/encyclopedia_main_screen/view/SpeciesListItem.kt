@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.features.encyclopedia_main_screen.view
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,12 +34,20 @@ import com.project.speciesdetection.data.model.species.DisplayableSpecies
 @Composable
 fun SpeciesListItem(species: DisplayableSpecies) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = MaterialTheme.strokes.s)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        modifier = Modifier.fillMaxWidth()
+            .shadow(
+                elevation = MaterialTheme.strokes.m,
+                shape = MaterialTheme.shapes.small,
+                spotColor = MaterialTheme.colorScheme.outline,
+                ambientColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
         Row(
             modifier = Modifier.padding(MaterialTheme.spacing.xs),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
         ) {
             GlideImage(
                 model = species.imageURL,
@@ -43,19 +55,37 @@ fun SpeciesListItem(species: DisplayableSpecies) {
                 loading = placeholder(R.drawable.error_image),
                 failure = placeholder(R.drawable.error_image),
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size((80.dp))
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(MaterialTheme.spacing.xxxs)
+                    .clip(MaterialTheme.shapes.small)
             )
-            Spacer(modifier = Modifier.width((MaterialTheme.spacing.s)))
             Column {
                 Text(
                     text = species.localizedName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.tertiary
                 )
+                Row(){
+                    Text(
+                        text = stringResource(R.string.species_family_description)+" ",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    Text(
+                        text = species.localizedFamily,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+
                 Text(
                     text = species.scientificName,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontStyle = FontStyle.Italic
+                    fontStyle = FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.outline
                 )
             }
         }

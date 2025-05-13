@@ -3,4 +3,11 @@
     <string name="app_name">SpeciesDetection</string>
     <string name="encyclopedia_title">"TỪ ĐIỂN SINH VẬT"</string>
     <string name="all">Tất cả</string>
+    <string name="error_screen_headline">Lỗi!</string>
+    <string name="error_screen_title">Có lỗi xảy ra</string>
+    <string name="error_screen_description_1">Chúng tôi đã gặp phải một lỗi</string>
+    <string name="error_screen_description_2">khi cố gắng kết nối với máy chủ của mình</string>
+    <string name="error_screen_description_solution">Xin hãy thử lại sau</string>
+    <string name="try_again">Thử lại</string>
+    <string name="species_family_description">thuộc họ</string>
 </resources>

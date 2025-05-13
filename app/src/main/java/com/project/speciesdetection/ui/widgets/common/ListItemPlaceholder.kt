@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.project.speciesdetection.core.theme.spacing
 import com.valentinilk.shimmer.shimmer
 
 @Composable
@@ -30,7 +31,7 @@ fun ListItemPlaceholder(modifier: Modifier = Modifier) {
         Row(
             modifier = Modifier
                 .shimmer() // <<<<< ÁP DỤNG SHIMMER
-                .padding(8.dp),
+                .padding(MaterialTheme.spacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -38,8 +39,8 @@ fun ListItemPlaceholder(modifier: Modifier = Modifier) {
                     .size(80.dp)
                     .background(MaterialTheme.colorScheme.outlineVariant, shape = MaterialTheme.shapes.small)
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(modifier = Modifier.width(MaterialTheme.spacing.s))
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)) {
                 Box(
                     modifier = Modifier
                         .height(20.dp)
@@ -48,7 +49,7 @@ fun ListItemPlaceholder(modifier: Modifier = Modifier) {
                 )
                 Box(
                     modifier = Modifier
-                        .height(16.dp)
+                        .height(MaterialTheme.spacing.m)
                         .fillMaxWidth(0.5f)
                         .background(MaterialTheme.colorScheme.outlineVariant, shape = MaterialTheme.shapes.small)
                 )

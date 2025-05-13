@@ -16,6 +16,7 @@ import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesUs
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,7 +24,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -37,59 +41,63 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
     private val getLocalizedSpeciesClassUseCase: GetLocalizedSpeciesClassUseCase,
 ) : ViewModel() {
 
-    /*sealed interface SpeciesScreenUiState {
-        data object Loading : SpeciesScreenUiState
-        data class Success(val speciesList: List<DisplayableSpecies>) : SpeciesScreenUiState
-        data class Error(val message: String) : SpeciesScreenUiState
-        data object Empty : SpeciesScreenUiState
-    }
-
-    private val _uiState = MutableStateFlow<SpeciesScreenUiState>(SpeciesScreenUiState.Loading)
-    val uiState: StateFlow<SpeciesScreenUiState> = _uiState.asStateFlow()*/
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _speciesClassList = MutableStateFlow(emptyList<DisplayableSpeciesClass>())
-    val speciesClassList : StateFlow<List<DisplayableSpeciesClass>> = _speciesClassList.asStateFlow()
+    val speciesClassList: StateFlow<List<DisplayableSpeciesClass>> = _speciesClassList.asStateFlow()
     private val speciesClassMapFlow: StateFlow<Map<String, String>> =
         _speciesClassList
             .map { list ->
-                list.associateBy({ it.id }, { it.localizedName }) // Giả sử DisplayableSpeciesClass có id và localizedName
+                list.associateBy({ it.id }, { it.localizedName })
             }
             .stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000L), // Giữ map tồn tại một chút
-                initialValue = emptyMap() // Giá trị ban đầu
+                started = SharingStarted.WhileSubscribed(5000L), // Giữ map tồn tại
+                initialValue = emptyMap()
             )
 
     private val _selectedClassId = MutableStateFlow<String?>("0")
     val selectedClassId: StateFlow<String?> = _selectedClassId.asStateFlow()
 
+    @OptIn(FlowPreview::class)
     val speciesPagingDataFlow: Flow<PagingData<DisplayableSpecies>> =
-        combine(_selectedClassId, speciesClassMapFlow) { classId, classMap ->
-            classId to classMap
-        }.flatMapLatest { (classId, classMap) ->
+        combine(
+            _selectedClassId,
+            speciesClassMapFlow,
+            _searchQuery // Lắng nghe thay đổi searchQuery
+                .debounce(1000L) // Chờ 500ms sau khi người dùng ngừng gõ
+                .distinctUntilChanged() // Chỉ phát ra nếu giá trị thực sự thay đổi
+        ) { classId, classMap, query ->
+            Triple(classId, classMap, query) // Kết hợp thành một Triple
+        }.flatMapLatest { (classId, classMap, query) ->
+            Log.d("ViewModel", "flatMapLatest triggered. ClassId: $classId, Query: '$query'")
             if (classId == null) {
                 Log.d("ViewModel", "No classId selected, returning empty PagingData flow")
-                kotlinx.coroutines.flow.flowOf(PagingData.empty()) // Trả về PagingData rỗng nếu không có classId
-            }
-            else{
-                if (classId=="0"){
-                    getLocalizedSpeciesUseCase.getAll(searchQuery = "")
+                kotlinx.coroutines.flow.flowOf(PagingData.empty())
+            } else {
+                if (classId == "0") { // "Tất cả"
+                    Log.d("ViewModel", "Fetching ALL paged species with query: '$query'")
+                    getLocalizedSpeciesUseCase.getAll(searchQuery = query) // Truyền searchQuery
                         .map { pagingData ->
                             pagingData.map { species ->
                                 val className = classMap[species.localizedClass] ?: ""
                                 species.copy(localizedClass = className)
                             }
                         }
-                }
-                else {
-                    Log.d("ViewModel", "Fetching paged species for classId: $classId")
-                    getLocalizedSpeciesUseCase.getByClassPaged(classIdValue = classId, searchQuery = "")
+                } else {
+                    Log.d("ViewModel", "Fetching paged species for classId: $classId, query: '$query'")
+                    getLocalizedSpeciesUseCase.getByClassPaged(
+                        classIdValue = classId,
+                        searchQuery = query // Truyền searchQuery
+                    )
                         .map { pagingData ->
                             pagingData.map { species ->
                                 val className = classMap[species.localizedClass] ?: ""
                                 species.copy(localizedClass = className)
                             }
                         }
+
                 }
             }
         }.cachedIn(viewModelScope)
@@ -99,23 +107,17 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
     }
 
     private fun loadInitialSpeciesClasses() {
-        viewModelScope.launch(Dispatchers.IO) { // IO cho network/db
+        viewModelScope.launch(Dispatchers.IO) {
             getLocalizedSpeciesClassUseCase.getAll()
                 .catch { e ->
                     Log.e("ViewModel", "Error loading species classes", e)
-                    // Xử lý lỗi tải species class (ví dụ: hiển thị Snackbar)
                 }
                 .collect { result ->
                     when (result) {
                         is DataResult.Success -> {
                             _speciesClassList.value = result.data
-                            if (result.data.isNotEmpty() && _selectedClassId.value == null) {
-                                // Tự động chọn class đầu tiên nếu chưa có class nào được chọn
-                                Log.d("ViewModel", "Species classes loaded, selecting first class: ${result.data.first().id}")
-                                selectSpeciesClass(result.data.first().id)
-                            } else if (result.data.isEmpty()){
-                                Log.d("ViewModel", "No species classes found.")
-                                _selectedClassId.value = null // Đảm bảo không có class nào được chọn
+                            if (result.data.isEmpty() && _selectedClassId.value == "0") {
+                                Log.d("ViewModel", "No species classes found, but 'All' is selected.")
                             }
                         }
                         is DataResult.Error -> {
@@ -133,60 +135,11 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
         Log.d("ViewModel", "selectSpeciesClass called with ID: $classId")
         if (_selectedClassId.value != classId) {
             _selectedClassId.value = classId
-            // speciesPagingDataFlow sẽ tự động cập nhật nhờ flatMapLatest
+            // speciesPagingDataFlow tự động cập nhật nhờ flatMapLatest
         }
     }
 
-    // Phương thức handleListResult không còn cần thiết vì Paging 3 có LoadState riêng.
-    /*init{
-        viewModelScope.launch(Dispatchers.IO) {
-            getLocalizedSpeciesClassUseCase.getAll()
-                .catch {
-                    e -> _uiState.value = SpeciesScreenUiState.Error(e.localizedMessage ?: "Error")
-                }
-                .collect{
-                    when (it){
-                        is DataResult.Success -> {
-                            _speciesClassList.value = it.data
-                        }
-                        is DataResult.Error -> {
-                        }
-                        is DataResult.Loading -> {
-                        }
-                    }
-                }
-            if (_speciesClassList.value.isNotEmpty()){
-                getLocalizedSpeciesUseCase.getByClass(
-                    value = _speciesClassList.value.first().id,
-                    sortByName = true
-                )
-                    .catch { e -> _uiState.value = SpeciesScreenUiState.Error(e.localizedMessage ?: "Error") }
-                    .collect {
-
-                        handleListResult(it) }
-            }
-        }
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
     }
-
-    private fun handleListResult(result: DataResult<List<DisplayableSpecies>>) {
-        when (result) {
-            is DataResult.Success -> {
-
-                _uiState.value = if (result.data.isEmpty()) {
-                    SpeciesScreenUiState.Empty
-                } else {
-                    Log.d("a",result.data[0].toString())
-                    SpeciesScreenUiState.Success(result.data)
-
-                }
-            }
-            is DataResult.Error -> {
-                _uiState.value = SpeciesScreenUiState.Error(result.exception.localizedMessage ?: "Failed to load data")
-            }
-            is DataResult.Loading -> {
-                _uiState.value = SpeciesScreenUiState.Loading
-            }
-
-        }
-    }*/
 }

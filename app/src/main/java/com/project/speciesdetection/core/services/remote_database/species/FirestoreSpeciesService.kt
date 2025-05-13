@@ -20,7 +20,7 @@ import javax.inject.Singleton
 
 private const val TAG = "FirestoreSpeciesService"
 private const val FIRESTORE_SPECIES_SERVICE_TAG = "FirestoreSpeciesService"
-const val DEFAULT_SPECIES_PAGE_SIZE = 5
+const val DEFAULT_SPECIES_PAGE_SIZE = 15
 
 @Singleton
 class FirestoreSpeciesService @Inject constructor(
@@ -36,10 +36,19 @@ class FirestoreSpeciesService @Inject constructor(
         pageSize: Int,
         orderByField: String?
     ): Flow<PagingData<Species>> {
-        var baseQuery: Query = if (searchQuery!=null)
+
+        var lastItem =
+            if (!searchQuery.isNullOrEmpty()) searchQuery.last()
+            else ""
+        val remainingItems =
+            if (!searchQuery.isNullOrEmpty()) searchQuery.dropLast(1)
+            else emptyList()
+
+
+        var baseQuery: Query = if (!searchQuery.isNullOrEmpty() && remainingItems.isNotEmpty())
             speciesCollection.where(Filter.or(
-                    Filter.arrayContainsAny("name_tokens.$languageCode",searchQuery),
-                    Filter.arrayContainsAny("scientificNameToken",searchQuery)
+                    Filter.arrayContainsAny("nameTokens.$languageCode",remainingItems),
+                    Filter.arrayContainsAny("scientificNameToken",remainingItems)
                 ))
         else speciesCollection
 
@@ -59,7 +68,8 @@ class FirestoreSpeciesService @Inject constructor(
                 SpeciesPagingSource(
                     baseQuery = baseQuery,
                     pageSize = pageSize,
-                    searchQuery = searchQuery,
+                    searchQuery = remainingItems,
+                    lastQuery = lastItem,
                     languageCode = languageCode
                 )
             }
@@ -77,13 +87,21 @@ class FirestoreSpeciesService @Inject constructor(
     ): Flow<PagingData<Species>> {
         Log.d(FIRESTORE_SPECIES_SERVICE_TAG, "Creating PagingStream for field '$fieldPath' = '$value', orderBy: $orderByField, direction: $sortDirection")
 
-        var baseQuery: Query = if (searchQuery!=null)
-                                speciesCollection.whereEqualTo(fieldPath, value)
-                                    .where(Filter.or(
-                                        Filter.arrayContainsAny("name_tokens.$languageCode",searchQuery),
-                                        Filter.arrayContainsAny("scientificNameToken",searchQuery)
-                                    ))
-                                else speciesCollection.whereEqualTo(fieldPath, value)
+        var lastItem =
+            if (!searchQuery.isNullOrEmpty()) searchQuery.last()
+            else ""
+        val remainingItems =
+            if (!searchQuery.isNullOrEmpty()) searchQuery.dropLast(1)
+            else emptyList()
+
+        var baseQuery: Query =
+            if (!searchQuery.isNullOrEmpty() && remainingItems.isNotEmpty())
+                speciesCollection.whereEqualTo(fieldPath, value)
+                                .where(Filter.or(
+                                    Filter.arrayContainsAny("nameTokens.$languageCode",remainingItems),
+                                    Filter.arrayContainsAny("scientificNameToken",remainingItems)
+                                ))
+            else speciesCollection.whereEqualTo(fieldPath, value)
 
 
         if (orderByField != null) {
@@ -104,6 +122,7 @@ class FirestoreSpeciesService @Inject constructor(
                     baseQuery = baseQuery,
                     pageSize = pageSize,
                     searchQuery = searchQuery,
+                    lastQuery = lastItem,
                     languageCode = languageCode
                 )
             }

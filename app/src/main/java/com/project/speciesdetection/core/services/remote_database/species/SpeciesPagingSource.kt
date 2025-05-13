@@ -10,6 +10,7 @@ import com.google.firebase.firestore.QuerySnapshot
 import com.project.speciesdetection.data.model.species.Species // Đảm bảo import đúng model
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.delay
+import kotlin.coroutines.cancellation.CancellationException
 
 // Hằng số cho class PagingSource
 private const val PAGING_SOURCE_TAG = "SpeciesPagingSource"
@@ -101,89 +102,81 @@ class SpeciesPagingSource(
     private val baseQuery: Query, // Query đã bao gồm whereEqualTo và orderBy
     private val pageSize: Int,
     private val searchQuery : List<String>?=null,
+    private val lastQuery : String = "",
     private val languageCode : String
 ) : PagingSource<DocumentSnapshot, Species>() { // <<<< THAY ĐỔI Ở ĐÂY: QuerySnapshot -> DocumentSnapshot
 
     override suspend fun load(params: LoadParams<DocumentSnapshot>): LoadResult<DocumentSnapshot, Species> { // <<<< THAY ĐỔI Ở ĐÂY
 
         return try {
-
-            /*
-            //delay to test skeleton loading
-            val delayMillis = if (params.key == null) {
-                2000L // Độ trễ 2 giây cho lần tải đầu tiên (initial load)
-            } else {
-                1000L // Độ trễ 1 giây cho các lần tải thêm (append/prepend)
-            }
-            delay(delayMillis) // <<<<< THÊM DELAY Ở ĐÂY*/
-
-            // params.key giờ là DocumentSnapshot? (document cuối cùng của trang trước)
             val currentPageQuery = params.key?.let { lastVisibleDoc ->
-                Log.d(PAGING_SOURCE_TAG, "Loading next page after document: ${lastVisibleDoc.id}")
                 baseQuery.startAfter(lastVisibleDoc).limit(pageSize.toLong())
-            } ?: run {
-                Log.d(PAGING_SOURCE_TAG, "Loading initial page")
-                baseQuery.limit(pageSize.toLong())
-            }
+            } ?: baseQuery.limit(pageSize.toLong())
 
-            Log.d(PAGING_SOURCE_TAG, "Executing query for Paging")
-            val querySnapshot = currentPageQuery.get().await() // querySnapshot vẫn là QuerySnapshot
-            Log.d(PAGING_SOURCE_TAG, "Query returned ${querySnapshot.size()} documents.")
+            val querySnapshot = currentPageQuery.get().await()
+            Log.d(PAGING_SOURCE_TAG, "Firestore query returned ${querySnapshot.size()} documents.")
 
-            var filteredSpecies = mutableListOf<DocumentSnapshot>()
-            if(!searchQuery.isNullOrEmpty()){
-                querySnapshot.documents.forEach{ document ->
-                    val nameTokens = document.get("name_tokens.$languageCode") as? List<String> ?: emptyList()
-                    val sciTokens = document.get("scientificNameToken") as? List<String> ?: emptyList()
-                    val combined = nameTokens + sciTokens
-                    if (searchQuery.all { combined.contains(it) }) {
-                        filteredSpecies.add(document)
-                    }
-                    Log.d(PAGING_SOURCE_TAG, "Returning ${filteredSpecies.size} docs for this page")
+            val documentsToProcess = querySnapshot.documents
+
+
+            val speciesListFromSnapshot = documentsToProcess.mapNotNull { document ->
+                try {
+                    val species = document.toObject(Species::class.java)
+                    species?.apply { id = document.id }
+                    species
+                } catch (e: Exception) {
+                    Log.e(PAGING_SOURCE_TAG, "Error converting document ${document.id} to Species", e)
+                    null
                 }
             }
-            else{
-                filteredSpecies = querySnapshot.documents
-            }
 
+            // Thực hiện lọc SAU KHI đã convert sang Species object
+            var finalSpeciesList = if (!searchQuery.isNullOrEmpty()) {
+                speciesListFromSnapshot.filter { species ->
+                    val nameTokens = species.nameTokens?.get(languageCode) ?: emptyList()
+                    val sciTokens = species.scientificNameToken ?: emptyList()
+                    val combined = nameTokens + sciTokens
+                    searchQuery.all { combined.contains(it) }
 
-
-
-            val speciesList = filteredSpecies.mapNotNull { document ->
-                    try {
-                        val species = document.toObject(Species::class.java)
-                        species?.apply { id = document.id }
-                        species
-                    } catch (e: Exception) {
-                        Log.e(PAGING_SOURCE_TAG, "Error converting document ${document.id} to Species", e)
-                        null
-                    }
-
-            }
-            // Lấy DocumentSnapshot của item cuối cùng trong danh sách hiện tại để làm nextKey
-            val lastVisibleDocument: DocumentSnapshot? = if (querySnapshot.documents.isNotEmpty()) {
-                querySnapshot.documents.last() // DocumentSnapshot cuối cùng từ kết quả query
+                }
             } else {
-                null
+                speciesListFromSnapshot
             }
-            Log.d(PAGING_SOURCE_TAG, "Loaded ${speciesList.size} species. Last visible doc ID: ${lastVisibleDocument?.id}")
+            Log.d("a", lastQuery)
 
-            // Nếu querySnapshot rỗng (không có document nào) hoặc số lượng speciesList ít hơn pageSize,
-            // hoặc lastVisibleDocument là null, thì không còn trang tiếp theo.
-            val nextKey: DocumentSnapshot? = if (querySnapshot.isEmpty || speciesList.size < pageSize || lastVisibleDocument == null) {
+            finalSpeciesList = finalSpeciesList.filter {
+                Log.d("a", it.name[languageCode]!!)
+                Log.d("a", it.name[languageCode]!!.contains(lastQuery, true).toString())
+                it.name[languageCode]!!.contains(lastQuery, true) || it.scientificName.contains(lastQuery, true)
+            }
+            Log.d(PAGING_SOURCE_TAG, "After client-side filtering, returning ${finalSpeciesList.size} species for this page.")
+
+
+            // nextKey dựa trên kết quả *trước khi* lọc client-side để đảm bảo cursor của Firestore là đúng
+            val lastFetchedDocument = querySnapshot.documents.lastOrNull()
+
+            val nextKey = if (querySnapshot.documents.size < pageSize || lastFetchedDocument == null) {
+                // Nếu Firestore trả về ít hơn pageSize, hoặc không trả về gì, thì không còn trang tiếp theo TỪ FIRESTORE
                 null
             } else {
-                lastVisibleDocument
+                lastFetchedDocument
             }
+            // Lưu ý: Nếu sau khi lọc client-side, finalSpeciesList rỗng nhưng nextKey vẫn có,
+            // Paging sẽ tiếp tục gọi load() với nextKey đó. Điều này có thể ổn nếu bạn chấp nhận
+            // một số trang có thể trống sau khi lọc.
 
             LoadResult.Page(
-                data = speciesList,
-                prevKey = null, // Chỉ hỗ trợ cuộn xuống
-                nextKey = nextKey // <<<< nextKey giờ là DocumentSnapshot?
+                data = finalSpeciesList,
+                prevKey = null,
+                nextKey = nextKey
             )
         } catch (e: Exception) {
+            // Quan trọng: Nếu e là CancellationException, hãy rethrow nó
+            if (e is CancellationException) {
+                throw e
+            }
             Log.e(PAGING_SOURCE_TAG, "Error loading species for Paging", e)
-            LoadResult.Error(e)
+            LoadResult.Error(e) // Các lỗi khác sẽ được xử lý bởi Paging Library
         }
     }
 
