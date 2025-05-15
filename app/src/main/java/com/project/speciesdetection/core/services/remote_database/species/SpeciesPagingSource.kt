@@ -142,6 +142,7 @@ class SpeciesPagingSource(
             } else {
                 speciesListFromSnapshot
             }
+            Log.d("", finalSpeciesList.toString())
             Log.d("a", lastQuery)
 
             finalSpeciesList = finalSpeciesList.filter {

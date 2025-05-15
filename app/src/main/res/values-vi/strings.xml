@@ -10,4 +10,5 @@
     <string name="error_screen_description_solution">Xin hãy thử lại sau</string>
     <string name="try_again">Thử lại</string>
     <string name="species_family_description">thuộc họ</string>
+    <string name="species_search_hint">Nhập Tên hoặc Tên khoa học…</string>
 </resources>

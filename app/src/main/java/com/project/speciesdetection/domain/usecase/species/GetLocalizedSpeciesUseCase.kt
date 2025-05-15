@@ -28,7 +28,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
                 if (searchQuery!="") searchQuery
                     .lowercase(Locale.getDefault())
                     .trim()
-                    .split("\\s+".toRegex())
+                    .split("\\s-+".toRegex())
                 else null,
             languageCode = languageCode
         )
@@ -44,7 +44,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
             searchQuery =
                 if (searchQuery!="") searchQuery.lowercase(Locale.getDefault())
                                                 .trim()
-                                                .split("\\s+".toRegex())
+                                                .split("\\s-+".toRegex())
                 else null,
             targetField = "classId", // Trường trong Firestore để query
             languageCode = languageCode, // Dùng để map sang DisplayableSpecies

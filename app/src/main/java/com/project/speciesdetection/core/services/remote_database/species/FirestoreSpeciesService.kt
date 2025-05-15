@@ -103,7 +103,6 @@ class FirestoreSpeciesService @Inject constructor(
                                 ))
             else speciesCollection.whereEqualTo(fieldPath, value)
 
-
         if (orderByField != null) {
             baseQuery = baseQuery.orderBy(orderByField, sortDirection)
         } else {
@@ -121,7 +120,7 @@ class FirestoreSpeciesService @Inject constructor(
                 SpeciesPagingSource(
                     baseQuery = baseQuery,
                     pageSize = pageSize,
-                    searchQuery = searchQuery,
+                    searchQuery = remainingItems,
                     lastQuery = lastItem,
                     languageCode = languageCode
                 )

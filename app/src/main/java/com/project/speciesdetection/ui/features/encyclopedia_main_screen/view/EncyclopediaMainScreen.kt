@@ -16,7 +16,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -50,10 +49,10 @@ import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
 import com.project.speciesdetection.ui.features.encyclopedia_main_screen.viewmodel.EncyclopediaMainScreenViewModel
-import com.project.speciesdetection.ui.widgets.common.AppSearchBar
-import com.project.speciesdetection.ui.widgets.common.ChipPlacholder
-import com.project.speciesdetection.ui.widgets.common.ErrorScreenPlaceholder
-import com.project.speciesdetection.ui.widgets.common.ListItemPlaceholder
+import com.project.speciesdetection.ui.composable.common.AppSearchBar
+import com.project.speciesdetection.ui.composable.common.ChipPlacholder
+import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
+import com.project.speciesdetection.ui.composable.common.ListItemPlaceholder
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalGlideComposeApi::class, ExperimentalMaterial3Api::class)
@@ -133,7 +132,7 @@ fun EncyclopediaMainScreen(
                         top = MaterialTheme.spacing.xs,
                         bottom = MaterialTheme.spacing.xs
                     ),
-                hint = "search"
+                hint = stringResource(R.string.species_search_hint)
             )
 
             // Thanh chọn Species Class

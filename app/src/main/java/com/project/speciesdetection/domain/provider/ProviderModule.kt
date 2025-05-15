@@ -1,5 +1,7 @@
 package com.project.speciesdetection.domain.provider
 
+import com.project.speciesdetection.domain.provider.camera.CameraProvider
+import com.project.speciesdetection.domain.provider.camera.DefaultCameraProvider
 import com.project.speciesdetection.domain.provider.language.DeviceLanguageProvider
 import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import dagger.Binds
@@ -15,4 +17,7 @@ abstract class ProviderModule {
     @Named("language_provider")
     abstract fun bindDeviceLanguageProvider(deviceLanguageProvider: DeviceLanguageProvider): LanguageProvider
 
+    @Binds
+    @Named("camera_provider")
+    abstract fun bindDefaultCameraProvider(defaultCameraProvider: DefaultCameraProvider) : CameraProvider
 }

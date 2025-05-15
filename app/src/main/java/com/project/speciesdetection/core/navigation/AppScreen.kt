@@ -18,6 +18,10 @@ sealed class AppScreen(
         route = "camera_screen",
         icon = R.drawable.camera
     )
+    object EditImageForIdentificationScreen : AppScreen(
+        route = "editScreen/{imageUri}",
+        icon = null
+    )
     object EncyclopediaMainScreen : AppScreen(
         route = "encyclopedia_main_screen",
         icon = R.drawable.book_open)

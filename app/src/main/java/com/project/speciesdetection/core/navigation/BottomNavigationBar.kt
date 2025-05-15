@@ -47,10 +47,17 @@ fun BottomNavigationBar(
 
     Row {
         FloatingActionButton(
-            onClick = {},
+            onClick = {
+                navController.popBackStack(AppScreen.CameraScreen.route, inclusive = true, saveState = false)
+                // Người dùng nhấn vào tab khác -> điều hướng như bình thường với save/restore state
+                navController.navigate(AppScreen.CameraScreen.route) {
+                    launchSingleTop = true
+                    //restoreState = true
+                }
+            },
             shape = CircleShape,
             modifier = Modifier.padding(10.dp),
-            containerColor = MaterialTheme.colorScheme.primary
+            containerColor = MaterialTheme.colorScheme.primary,
         ) {
             Icon(
                 painterResource(AppScreen.CameraScreen.icon!!),

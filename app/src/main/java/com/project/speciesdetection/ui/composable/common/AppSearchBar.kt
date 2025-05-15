@@ -1,4 +1,4 @@
-package com.project.speciesdetection.ui.widgets.common
+package com.project.speciesdetection.ui.composable.common
 
 
 import androidx.compose.foundation.background
@@ -17,22 +17,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon // Material 3
 import androidx.compose.material3.IconButton // Material 3
 import androidx.compose.material3.MaterialTheme // Material 3
-import androidx.compose.material3.OutlinedTextField // Material 3
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text // Material 3
 import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults // Material 3 <--- QUAN TRỌNG
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.project.speciesdetection.R
 import com.project.speciesdetection.core.theme.spacing
 
 @OptIn(ExperimentalMaterial3Api::class) // Cần thiết cho TextFieldDefaults.colors
@@ -58,7 +52,9 @@ fun AppSearchBar(
             .heightIn(min = 52.dp) // Đặt chiều cao tối thiểu, Figma thường dùng 56dp hoặc tương tự
             .clip(RoundedCornerShape(percent = cornerRadiusPercent)) // Bo tròn góc
             .background(backgroundColor), // Đặt màu nền cho vùng TextField
-        placeholder = { Text(hint, color = contentColor.copy(alpha = 0.7f)) }, // Placeholder text
+        placeholder = {
+            Text(hint, color = contentColor.copy(alpha = 0.7f), fontStyle = FontStyle.Italic)
+                      }, // Placeholder text
         leadingIcon = {
             Box(
                 modifier = Modifier
