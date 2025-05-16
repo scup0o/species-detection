@@ -37,6 +37,12 @@ import com.canhub.cropper.CropImageOptions
 import com.canhub.cropper.CropImageView
 import com.project.speciesdetection.ui.features.identification_edit_image_screen.viewmodel.EditImageForIdentificationViewModel
 
+// ---- TỶ LỆ KHUNG HÌNH CỐ ĐỊNH CHO HIỂN THỊ (PHẢI KHỚP VỚI CAMERA) ----
+// Nếu FIXED_CAMERA_ASPECT_RATIO_INT trong CameraScreen là AspectRatio.RATIO_4_3
+private const val FIXED_DISPLAY_ASPECT_RATIO_FLOAT: Float = 4f / 3f
+// Nếu FIXED_CAMERA_ASPECT_RATIO_INT trong CameraScreen là AspectRatio.RATIO_16_9
+// private const val FIXED_DISPLAY_ASPECT_RATIO_FLOAT: Float = 16f / 9f
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun EditImageForIdentificationScreen(
@@ -50,14 +56,9 @@ fun EditImageForIdentificationScreen(
         if (result.isSuccessful) {
             viewModel.onImageCropped(result.uriContent)
         } else {
-            val exception = result.error
-            Log.e("EditImageScreen", "Cropping failed or cancelled", exception)
-            viewModel.onImageCropped(null) // Báo cho ViewModel crop không thành công
-            if (exception != null) {
-                Toast.makeText(context, "Crop failed: ${exception.localizedMessage}", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, "Crop cancelled.", Toast.LENGTH_SHORT).show()
-            }
+            Log.e("EditImageScreen", "Cropping failed or cancelled", result.error)
+            viewModel.onImageCropped(null)
+            Toast.makeText(context, "Crop failed: ${result.error?.localizedMessage ?: "Cancelled"}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -71,92 +72,69 @@ fun EditImageForIdentificationScreen(
                 Toast.makeText(context, uiState.error ?: "Failed to save image.", Toast.LENGTH_LONG).show()
                 viewModel.resetSaveStatus()
             }
-            null -> { /* Do nothing */ }
+            null -> {}
         }
     }
-
-    // Hiển thị Toast cho các lỗi chung không liên quan đến save
     LaunchedEffect(uiState.error) {
-        uiState.error?.let { errorMessage ->
-            // Chỉ hiển thị nếu không phải là lỗi liên quan đến save (đã được xử lý ở trên)
-            if (uiState.saveSuccess == null) {
-                Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
-                // viewModel.clearError() // Cần thêm hàm clearError trong ViewModel nếu muốn error chỉ hiện 1 lần
+        uiState.error?.let {
+            if (uiState.saveSuccess == null) { // Chỉ hiện nếu không phải lỗi save
+                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                // viewModel.resetSaveStatus() // hoặc viewModel.clearError() nếu có
             }
         }
     }
-
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Edit Image") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
                 actions = {
                     IconButton(
                         onClick = {
-                            uiState.currentImageUri?.let { uriToCrop ->
+                            uiState.currentImageUri?.let { uri ->
                                 val cropOptions = CropImageContractOptions(
-                                    uri = uriToCrop,
+                                    uri = uri,
                                     cropImageOptions = CropImageOptions(
                                         guidelines = CropImageView.Guidelines.ON_TOUCH,
-                                        fixAspectRatio = false,
+                                        fixAspectRatio = false, // Cho phép crop tự do
+                                        // Nếu muốn crop cũng theo tỷ lệ cố định:
+                                        // fixAspectRatio = true,
+                                        // aspectRatioX = 4, // Thay đổi nếu tỷ lệ khác
+                                        // aspectRatioY = 3, // Thay đổi nếu tỷ lệ khác
                                         outputCompressFormat = Bitmap.CompressFormat.JPEG,
-                                        outputCompressQuality = 90,
-                                        imageSourceIncludeCamera = false, // Không hiện option camera trong cropper
-                                        imageSourceIncludeGallery = false, // Không hiện option gallery trong cropper
-
-                                        activityBackgroundColor = Color.Black.toArgb(),
-                                        toolbarColor = Color.Black.toArgb(),
-                                        toolbarTitleColor = null,
-                                        toolbarBackButtonColor = Color.White.toArgb(),
-                                        toolbarTintColor= null,
-                                        activityMenuTextColor = Color.White.toArgb(),
+                                        outputCompressQuality = 90
                                     )
                                 )
                                 cropImageLauncher.launch(cropOptions)
                             } ?: Toast.makeText(context, "No image to crop", Toast.LENGTH_SHORT).show()
                         },
                         enabled = uiState.currentImageUri != null && !uiState.isLoading
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Crop Image")
-                    }
+                    ) { Icon(Icons.Default.Edit, "Crop Image") }
+
                     IconButton(
                         onClick = { viewModel.saveCurrentImageToGallery(context) },
                         enabled = uiState.currentImageUri != null && !uiState.isLoading
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Save Image")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                    ) { Icon(Icons.Default.Add, "Save Image") }
+                }
             )
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color.Black),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.fillMaxSize().padding(paddingValues).background(Color.Black),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                    .fillMaxSize()
+                    .weight(1f)
+                    //.aspectRatio(FIXED_DISPLAY_ASPECT_RATIO_FLOAT)
+                    .background(Color.DarkGray),
                 contentAlignment = Alignment.Center
             ) {
-                if (uiState.isLoading && uiState.saveSuccess == null) { // Chỉ hiện loading khi đang lưu
-                    CircularProgressIndicator(color = Color.White)
-                } else if (uiState.currentImageUri != null) {
+                if (uiState.isLoading && uiState.saveSuccess == null) { CircularProgressIndicator(color = Color.White) }
+                else if (uiState.currentImageUri != null) {
                     GlideImage(
                         model = uiState.currentImageUri,
                         contentDescription = "Image to edit",
@@ -164,40 +142,21 @@ fun EditImageForIdentificationScreen(
                         contentScale = ContentScale.Fit
                     )
                 } else if (uiState.error != null && uiState.currentImageUri == null) {
-                    // Hiển thị lỗi nếu không có ảnh và có lỗi (ví dụ: lỗi URI ban đầu)
-                    Text(
-                        text = "Error: ${uiState.error}",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-                else {
-                    Text(
-                        "Loading image or no image selected...",
-                        modifier = Modifier.padding(16.dp),
-                        color = Color.White
-                    )
+                    Text(text = "Error: ${uiState.error}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                } else {
+                    Text("Loading image...", modifier = Modifier.padding(16.dp), color = Color.White)
                 }
             }
 
+
             Button(
                 onClick = { viewModel.showImageInPopup() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 24.dp)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50)
-                ),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 24.dp).height(50.dp),
+                enabled = uiState.currentImageUri != null && !uiState.isLoading,
                 shape = RoundedCornerShape(12.dp),
-                enabled = uiState.currentImageUri != null && !uiState.isLoading
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
             ) {
-                Text(
-                    "Analyze",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Analyze", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -212,66 +171,24 @@ fun EditImageForIdentificationScreen(
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun AnalysisResultPopup(
-    imageUri: Uri,
-    onDismissRequest: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(dismissOnClickOutside = true, dismissOnBackPress = true)
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.85f) // Tăng nhẹ độ rộng popup
-                .wrapContentHeight()
-                .clip(RoundedCornerShape(16.dp)),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), // Màu nền Card
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    "Preview Result",
-                    style = MaterialTheme.typography.headlineSmall, // Sử dụng style từ theme
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
+fun AnalysisResultPopup(imageUri: Uri, onDismissRequest: () -> Unit) {
+    Dialog(onDismissRequest = onDismissRequest, properties = DialogProperties(dismissOnClickOutside = true, dismissOnBackPress = true)) {
+        Card(modifier = Modifier.fillMaxWidth(0.85f).wrapContentHeight().clip(RoundedCornerShape(16.dp))) {
+            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Preview Result", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1f) // Giữ tỷ lệ 1:1, hoặc bạn có thể điều chỉnh
-                        .background(
-                            Color(0xFFFFEBEE), // Màu hồng rất nhạt (Material Pink 50)
-                            RoundedCornerShape(12.dp)
-                        )
-                        .border(
-                            2.dp,
-                            Color(0xFFF06292), // Màu hồng nhạt hơn (Material Pink 300)
-                            RoundedCornerShape(12.dp)
-                        )
+                        //.aspectRatio(FIXED_DISPLAY_ASPECT_RATIO_FLOAT) // Ép tỷ lệ cho popup
+                        .background(Color(0xFFFFEBEE), RoundedCornerShape(12.dp)) // Hồng rất nhạt
+                        .border(2.dp, Color(0xFFF06292), RoundedCornerShape(12.dp)) // Hồng nhạt
                         .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    GlideImage(
-                        model = imageUri,
-                        contentDescription = "Analyzed image preview",
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)), // Clip ảnh bên trong cho mượt
-                        contentScale = ContentScale.Fit
-                    )
+                    GlideImage(model = imageUri, contentDescription = "Analyzed image preview", modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Fit)
                 }
-
                 Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = onDismissRequest,
-                    modifier = Modifier.align(Alignment.End),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Close")
-                }
+                Button(onClick = onDismissRequest, modifier = Modifier.align(Alignment.End), shape = RoundedCornerShape(8.dp)) { Text("Close") }
             }
         }
     }

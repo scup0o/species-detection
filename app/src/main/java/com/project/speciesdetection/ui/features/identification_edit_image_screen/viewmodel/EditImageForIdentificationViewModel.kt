@@ -23,10 +23,10 @@ data class EditImageUiState(
     val originalImageUri: Uri? = null,
     val currentImageUri: Uri? = null,
     val isLoading: Boolean = false,
-    val saveSuccess: Boolean? = null, // null: chưa lưu, true: thành công, false: thất bại
+    val saveSuccess: Boolean? = null,
     val error: String? = null,
-    val showAnalysisPopup: Boolean = false, // State để điều khiển popup
-    val imageForPopup: Uri? = null          // Uri cho ảnh trong popup
+    val showAnalysisPopup: Boolean = false,
+    val imageForPopup: Uri? = null
 )
 
 @HiltViewModel
@@ -48,12 +48,12 @@ class EditImageForIdentificationViewModel @Inject constructor(
                         currentImageUri = imageUri
                     )
                 } catch (e: Exception) {
-                    _uiState.value = _uiState.value.copy(error = "Invalid image URI format.")
+                    _uiState.value = _uiState.value.copy(error = "Invalid image URI.")
                     Log.e("EditImageViewModel", "Error parsing URI: $imageUriString", e)
                 }
             } else {
                 _uiState.value = _uiState.value.copy(error = "No image URI provided.")
-                Log.e("EditImageViewModel", "No image URI found in SavedStateHandle")
+                Log.e("EditImageViewModel", "No image URI found in SavedStateHandle.")
             }
         }
     }
@@ -62,10 +62,8 @@ class EditImageForIdentificationViewModel @Inject constructor(
         if (croppedUri != null) {
             _uiState.value = _uiState.value.copy(currentImageUri = croppedUri, error = null)
         } else {
-            // Crop bị hủy hoặc thất bại
             Log.w("EditImageViewModel", "Image cropping cancelled or failed.")
-            // Bạn có thể muốn hiển thị một thông báo cho người dùng ở đây nếu crop thất bại
-            // _uiState.value = _uiState.value.copy(error = "Image cropping failed.")
+            // Có thể muốn báo lỗi: _uiState.value = _uiState.value.copy(error = "Image crop failed.")
         }
     }
 
@@ -83,7 +81,7 @@ class EditImageForIdentificationViewModel @Inject constructor(
                     put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
                     put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/SpeciesDetectionApp") // Thư mục lưu
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/YourAppName") // Đổi YourAppName
                         put(MediaStore.MediaColumns.IS_PENDING, 1)
                     }
                 }
@@ -95,23 +93,28 @@ class EditImageForIdentificationViewModel @Inject constructor(
                 }
 
                 val imageOutUri = resolver.insert(collection, contentValues)
-                if (imageOutUri == null) {
-                    throw Exception("Failed to create new MediaStore record.")
-                }
+                    ?: throw Exception("Failed to create new MediaStore record.")
 
-                resolver.openOutputStream(imageOutUri).use { outputStream ->
-                    if (outputStream == null) {
-                        throw Exception("Failed to get output stream.")
-                    }
+                // Mở OutputStream trước
+                val outputStream = resolver.openOutputStream(imageOutUri)
+                    ?: throw Exception("Failed to get output stream for $imageOutUri")
+
+                outputStream.use { out -> // Khối use cho outputStream
                     val inputStream = resolver.openInputStream(imageUriToSave)
-                    if (inputStream == null) {
-                        resolver.delete(imageOutUri, null, null) // Dọn dẹp nếu không mở được input stream
-                        throw Exception("Failed to get input stream from source URI: $imageUriToSave")
-                    }
-                    inputStream.use { input ->
-                        outputStream.use { output ->
-                            input.copyTo(output)
+                        ?: run {
+                            // Nếu không mở được inputStream, phải đóng outputStream đã mở (use sẽ tự làm)
+                            // và xóa bản ghi MediaStore đã tạo
+                            resolver.delete(imageOutUri, null, null)
+                            throw Exception("Failed to get input stream from source URI: $imageUriToSave")
                         }
+
+                    inputStream.use { input -> // Khối use cho inputStream
+                        val bytesCopied = input.copyTo(out) // Thực hiện copy
+                        Log.d("EditImageViewModel", "Bytes copied: $bytesCopied")
+                        // Khối use này sẽ trả về Long (bytesCopied)
+                        // Khối use bên ngoài (cho outputStream) sẽ nhận Long này
+                        // nhưng vì chúng ta không làm gì với kết quả của outputStream.use,
+                        // nó sẽ mặc định là Unit, điều này ổn.
                     }
                 }
 
@@ -120,10 +123,8 @@ class EditImageForIdentificationViewModel @Inject constructor(
                     contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
                     resolver.update(imageOutUri, contentValues, null, null)
                 }
-
                 _uiState.value = _uiState.value.copy(isLoading = false, saveSuccess = true)
                 Log.i("EditImageViewModel", "Image saved to gallery: $imageOutUri")
-
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false, saveSuccess = false, error = "Failed to save image: ${e.localizedMessage}")
                 Log.e("EditImageViewModel", "Error saving image", e)
@@ -134,26 +135,17 @@ class EditImageForIdentificationViewModel @Inject constructor(
     fun showImageInPopup() {
         val imageToShow = _uiState.value.currentImageUri
         if (imageToShow != null) {
-            _uiState.value = _uiState.value.copy(
-                showAnalysisPopup = true,
-                imageForPopup = imageToShow,
-                error = null
-            )
+            _uiState.value = _uiState.value.copy(showAnalysisPopup = true, imageForPopup = imageToShow, error = null)
         } else {
             _uiState.value = _uiState.value.copy(error = "No image to display in popup.")
-            Log.w("EditImageViewModel", "No currentImageUri to show in popup.")
         }
     }
 
     fun dismissAnalysisPopup() {
-        _uiState.value = _uiState.value.copy(
-            showAnalysisPopup = false
-            // Không cần clear imageForPopup ngay, vì nó có thể hữu ích nếu popup được mở lại nhanh chóng
-            // Hoặc bạn có thể clear: imageForPopup = null
-        )
+        _uiState.value = _uiState.value.copy(showAnalysisPopup = false)
     }
 
     fun resetSaveStatus() {
-        _uiState.value = _uiState.value.copy(saveSuccess = null, error = null) // Clear cả error khi reset
+        _uiState.value = _uiState.value.copy(saveSuccess = null, error = null)
     }
 }
