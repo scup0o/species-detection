@@ -1,159 +1,198 @@
 package com.project.speciesdetection.ui.features.identification_camera_screen.viewmodel // Hoặc package của bạn
 
-import android.content.Context
-import android.graphics.BitmapFactory
+import android.app.Application
 import android.net.Uri
 import android.util.Log
+import android.util.Size
+import android.view.Surface
 import androidx.camera.core.*
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.project.speciesdetection.domain.provider.camera.CameraProvider
+import com.project.speciesdetection.domain.provider.camera.CameraHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
-import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
-import javax.inject.Named
 
 enum class FlashModeState { ON, OFF, AUTO } // AUTO có thể không dùng, nhưng để đó
 
-data class CameraUiState(
-    val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
-    val flashMode: FlashModeState = FlashModeState.OFF,
-    val cameraProvider: ProcessCameraProvider? = null,
-    val isCameraReady: Boolean = false,
-    val error: String? = null
-)
+sealed class CameraState {
+    object Idle : CameraState()
+    object Opening : CameraState()
+    data class Previewing(val previewSize: Size) : CameraState()
+    object Capturing : CameraState()
+    data class Error(val message: String, val cause: Throwable? = null) : CameraState()
+    object Closed : CameraState() // Trạng thái khi camera đã được đóng hoàn toàn
+}
+
+sealed class ImageCaptureResult {
+    data class Success(val uri: Uri) : ImageCaptureResult()
+    data class Error(val message: String, val cause: Throwable? = null) : ImageCaptureResult()
+}
+
+sealed class CameraNavigationEffect {
+    data class NavigateToEditScreen(val imageUri: Uri) : CameraNavigationEffect()
+}
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
-    @Named("camera_provider") private val cameraProviderSource: CameraProvider,
-    @ApplicationContext private val applicationContext: Context
-) : ViewModel() {
+    application: Application
+    // Bạn có thể inject Camera2Helper nếu muốn, hoặc tạo trực tiếp ở đây
+    // private val cameraHelper: Camera2Helper // Nếu inject
+) : AndroidViewModel(application) {
+
+    // Tạo Camera2Helper trực tiếp, truyền context và viewModelScope
+    // Hoặc inject nó nếu bạn thiết lập Hilt Module
+    private val cameraHelper = CameraHelper(application.applicationContext, viewModelScope)
 
     private val _uiState = MutableStateFlow(CameraUiState())
-    val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()
+    val uiState = _uiState.asStateFlow()
 
-    private val _capturedImageUri = MutableStateFlow<Uri?>(null)
-    val capturedImageUri: StateFlow<Uri?> = _capturedImageUri.asStateFlow()
-
-    private val _galleryImageUri = MutableStateFlow<Uri?>(null)
-    val galleryImageUri: StateFlow<Uri?> = _galleryImageUri.asStateFlow()
+    private val _navigationEffect = MutableSharedFlow<CameraNavigationEffect>()
+    val navigationEffect = _navigationEffect.asSharedFlow()
 
     init {
         viewModelScope.launch {
-            try {
-                val provider = cameraProviderSource.get()
-                _uiState.value = _uiState.value.copy(
-                    cameraProvider = provider,
-                    isCameraReady = true
-                )
-            } catch (e: Exception) {
-                Log.e("CameraViewModel", "Failed to get CameraProvider", e)
-                setCameraError("Camera initialization failed.")
+            cameraHelper.cameraState.collect { state ->
+                _uiState.update {
+                    it.copy(
+                        cameraState = state,
+                        isCameraReady = state is CameraState.Previewing,
+                        errorMessage = if (state is CameraState.Error) state.message else null
+                    )
+                }
+                if (state is CameraState.Error) {
+                    // Có thể log thêm hoặc xử lý lỗi cụ thể ở đây
+                    Log.e("CameraViewModel", "Camera Error: ${state.message}", state.cause)
+                }
+            }
+        }
+        viewModelScope.launch {
+            cameraHelper.imageCaptureResult.collect { result ->
+                when (result) {
+                    is ImageCaptureResult.Success -> {
+                        _navigationEffect.emit(CameraNavigationEffect.NavigateToEditScreen(result.uri))
+                    }
+                    is ImageCaptureResult.Error -> {
+                        _uiState.update { it.copy(errorMessage = result.message) }
+                        Log.e("CameraViewModel", "Image Capture Error: ${result.message}", result.cause)
+                    }
+                }
+            }
+        }
+        viewModelScope.launch {
+            cameraHelper.optimalPreviewSize.collect { size ->
+                _uiState.update { it.copy(optimalPreviewSize = size) }
             }
         }
     }
 
-    fun onPhotoCaptured(uri: Uri) {
-        _capturedImageUri.value = uri
-    }
-
-    fun onGalleryImageSelected(uri: Uri) {
-        _galleryImageUri.value = uri
-    }
-
-    fun clearProcessedImageUris() {
-        _capturedImageUri.value = null
-        _galleryImageUri.value = null
-    }
-
-    fun toggleFlash(camera: Camera?) {
-        camera?.let {
-            val currentFlashModeOn = it.cameraInfo.torchState.value == TorchState.ON
-            val newFlashState = if (currentFlashModeOn) FlashModeState.OFF else FlashModeState.ON
-            try {
-                it.cameraControl.enableTorch(!currentFlashModeOn)
-                _uiState.value = _uiState.value.copy(flashMode = newFlashState)
-            } catch (e: Exception) {
-                Log.e("CameraViewModel", "Toggle flash failed", e)
-                setCameraError("Failed to toggle flash.")
-            }
-        } ?: run {
-            setCameraError("Camera not available to toggle flash.")
+    fun onCameraPermissionGranted(surface: Surface, screenRotation: Int, viewWidth: Int, viewHeight: Int) {
+        if (_uiState.value.cameraState == CameraState.Idle || _uiState.value.cameraState is CameraState.Closed || _uiState.value.cameraState is CameraState.Error) {
+            cameraHelper.openCamera(
+                lensFacing = _uiState.value.lensFacing,
+                surface = surface,
+                viewWidth = viewWidth,
+                viewHeight = viewHeight,
+                screenRotationValue = screenRotation
+            )
+        } else {
+            Log.w("CameraViewModel", "Camera not in idle/closed/error state for opening: ${_uiState.value.cameraState}")
         }
     }
 
-    fun flipCamera() {
+    fun onSurfaceReady(surface: Surface, screenRotation: Int, viewWidth: Int, viewHeight: Int) {
+        // Hàm này có thể được gọi khi surface đã sẵn sàng và permission đã được cấp
+        // Hoặc khi lens facing thay đổi và cần mở lại camera với surface mới (nếu TextureView được tái tạo)
+        Log.d("CameraViewModel", "Surface ready. Current state: ${uiState.value.cameraState}")
+        if (uiState.value.cameraState == CameraState.Idle || uiState.value.cameraState is CameraState.Closed || uiState.value.cameraState is CameraState.Error) {
+            cameraHelper.openCamera(
+                lensFacing = _uiState.value.lensFacing,
+                surface = surface,
+                screenRotationValue = screenRotation,
+                viewWidth = viewWidth,
+                viewHeight = viewHeight
+            )
+        } else if (uiState.value.cameraState is CameraState.Previewing && (uiState.value.optimalPreviewSize == null || uiState.value.optimalPreviewSize?.width != viewWidth || uiState.value.optimalPreviewSize?.height != viewHeight)) {
+            // Nếu đang preview nhưng kích thước view thay đổi (ví dụ xoay màn hình và view được tái tạo)
+            // hoặc previewSurface của helper cần được cập nhật
+            Log.d("CameraViewModel", "Surface changed or needs re-initialization while previewing. Re-opening camera.")
+            cameraHelper.releaseCamera() // Đóng camera cũ trước
+            cameraHelper.openCamera( // Mở lại với thông số mới
+                lensFacing = _uiState.value.lensFacing,
+                surface = surface,
+                screenRotationValue = screenRotation,
+                viewWidth = viewWidth,
+                viewHeight = viewHeight
+            )
+        }
+    }
+
+
+    fun toggleFlash() {
+        val newFlashState = !_uiState.value.isFlashOn
+        _uiState.update { it.copy(isFlashOn = newFlashState) }
+        cameraHelper.setFlashEnabled(newFlashState)
+    }
+
+    fun flipCamera(surface: Surface, screenRotation: Int, viewWidth: Int, viewHeight: Int) {
         val newLensFacing = if (_uiState.value.lensFacing == CameraSelector.LENS_FACING_BACK) {
             CameraSelector.LENS_FACING_FRONT
         } else {
             CameraSelector.LENS_FACING_BACK
         }
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(lensFacing = newLensFacing) }
+        // Quan trọng: phải đóng camera cũ trước khi mở camera mới
+        cameraHelper.releaseCamera() // Đảm bảo tài nguyên cũ được giải phóng
+        // Sau khi release, camera state sẽ chuyển sang Closed hoặc Idle
+        // onSurfaceReady hoặc một cơ chế tương tự sẽ được gọi lại từ Composable để mở camera mới
+        // Hoặc gọi trực tiếp ở đây nếu đảm bảo surface vẫn valid.
+        // Để an toàn, ta có thể chờ Composable cung cấp lại surface nếu nó bị hủy và tạo lại.
+        // Tuy nhiên, nếu surface không bị hủy, có thể mở lại ngay.
+        // Tạm thời gọi openCamera trực tiếp, nhưng cần kiểm tra kỹ luồng tái tạo surface.
+        cameraHelper.openCamera(
             lensFacing = newLensFacing,
-            flashMode = FlashModeState.OFF
+            surface = surface,
+            screenRotationValue = screenRotation,
+            viewWidth = viewWidth,
+            viewHeight = viewHeight
         )
     }
 
-    suspend fun takePhoto(
-        imageCapture: ImageCapture, // Nhận ImageCapture instance
-        onImageCaptured: (Uri) -> Unit,
-        onError: (ImageCaptureException) -> Unit
-    ) {
-        val photoFile = createPhotoFile(applicationContext)
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
-
-        // Không thể đọc trực tiếp crop AR từ imageCapture ở đây với API mới
-        Log.i("CameraViewModel", "Attempting to take photo. ImageCapture received. Crop will be handled by ViewPort in UseCaseGroup.")
-
-        imageCapture.takePicture(
-            outputOptions,
-            ContextCompat.getMainExecutor(applicationContext),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    val savedUri = outputFileResults.savedUri ?: Uri.fromFile(photoFile)
-                    // Log kích thước ảnh ở đây vẫn rất quan trọng
-                    try {
-                        applicationContext.contentResolver.openFileDescriptor(savedUri, "r")?.use { pfd ->
-                            val options = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                            android.graphics.BitmapFactory.decodeFileDescriptor(pfd.fileDescriptor, null, options)
-                            Log.d("CameraViewModel", "Photo saved to: $savedUri")
-                            Log.i("CameraViewModel", "SAVED IMAGE Actual Dimensions: ${options.outWidth}x${options.outHeight}, AspectRatio: ${if (options.outHeight != 0) options.outWidth.toFloat() / options.outHeight.toFloat() else "N/A"}")
-                        } ?: Log.e("CameraViewModel", "Could not open ParcelFileDescriptor for $savedUri")
-                    } catch (e: Exception) {
-                        Log.e("CameraViewModel", "Error getting saved image dimensions", e)
-                    }
-                    onImageCaptured(savedUri)
-                }
-
-                override fun onError(exception: ImageCaptureException) {
-                    Log.e("CameraViewModel", "Photo capture error: ${exception.message}, Code: ${exception.imageCaptureError}", exception)
-                    onError(exception)
-                }
-            }
-        )
+    fun takePicture() {
+        cameraHelper.captureImage()
     }
 
-    private fun createPhotoFile(context: Context): File {
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val imageFileName = "JPEG_${timeStamp}_"
-        val storageDir: File? = context.cacheDir
-        return File.createTempFile(imageFileName, ".jpg", storageDir)
+    fun onGalleryImageSelected(uri: Uri) {
+        viewModelScope.launch {
+            _navigationEffect.emit(CameraNavigationEffect.NavigateToEditScreen(uri))
+        }
     }
 
-    fun setCameraError(errorMessage: String) {
-        _uiState.value = _uiState.value.copy(error = errorMessage)
+    fun onScreenRotationChanged(newRotation: Int) {
+        cameraHelper.updateScreenRotation(newRotation)
+        // Nếu đang preview, có thể cần cấu hình lại transform matrix của TextureView (nếu bạn tự quản lý)
+        // Hoặc nếu optimalPreviewSize thay đổi đáng kể, có thể cần mở lại camera.
+        // Hiện tại, Camera2Helper đã xử lý JPEG orientation dựa trên screenRotation.
     }
 
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
+    override fun onCleared() {
+        super.onCleared()
+        cameraHelper.releaseCamera() // Quan trọng: giải phóng tài nguyên camera
+        Log.d("CameraViewModel", "ViewModel cleared, camera released.")
     }
 }
+
+data class CameraUiState(
+    val isFlashOn: Boolean = false,
+    val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
+    val cameraState: CameraState = CameraState.Idle,
+    val isCameraReady: Boolean = false,
+    val errorMessage: String? = null,
+    val optimalPreviewSize: Size? = null
+)
