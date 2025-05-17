@@ -10,4 +10,5 @@
     <string name="try_again">Try again</string>
     <string name="species_family_description">a species of</string>
     <string name="species_search_hint">Type Name or Scientific name…</string>
+    <string name="camera_permission_denied">Camera permission denied</string>
 </resources>

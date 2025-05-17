@@ -11,4 +11,6 @@
     <string name="try_again">Thử lại</string>
     <string name="species_family_description">thuộc họ</string>
     <string name="species_search_hint">Nhập Tên hoặc Tên khoa học…</string>
+    <string name="camera_permission_denied">Quyền truy cập Camera bị từ chối</string>
+
 </resources>

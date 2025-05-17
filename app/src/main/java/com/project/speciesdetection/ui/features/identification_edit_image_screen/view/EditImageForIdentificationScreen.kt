@@ -1,10 +1,14 @@
 package com.project.speciesdetection.ui.features.identification_edit_image_screen.view
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.ColorInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -51,6 +56,17 @@ fun EditImageForIdentificationScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    val requestPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                // Quyền đã được cấp, tiến hành lưu ảnh
+                viewModel.saveCurrentImageToGallery(context)
+            } else {
+                // Quyền bị từ chối
+                Toast.makeText(context, "Storage permission denied. Cannot save image.", Toast.LENGTH_LONG).show()
+            }
+        }
 
     val cropImageLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
@@ -113,9 +129,30 @@ fun EditImageForIdentificationScreen(
                     ) { Icon(Icons.Default.Edit, "Crop Image") }
 
                     IconButton(
-                        onClick = { viewModel.saveCurrentImageToGallery(context) },
+                        onClick = {
+                            // Kiểm tra quyền trước khi gọi viewModel.saveCurrentImageToGallery
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) { // Chỉ cần kiểm tra cho Android 9 (API 28) trở xuống
+                                when (ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                )) {
+                                    PackageManager.PERMISSION_GRANTED -> {
+                                        // Quyền đã được cấp
+                                        viewModel.saveCurrentImageToGallery(context)
+                                    }
+                                    else -> {
+                                        // Yêu cầu quyền
+                                        requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                    }
+                                }
+                            } else {
+                                // Android 10 (Q) trở lên, MediaStore không cần quyền này để ghi vào thư mục public
+                                // (như Pictures/YourAppName mà ViewModel đang dùng)
+                                viewModel.saveCurrentImageToGallery(context)
+                            }
+                        },
                         enabled = uiState.currentImageUri != null && !uiState.isLoading
-                    ) { Icon(Icons.Default.Add, "Save Image") }
+                    ){ Icon(Icons.Default.Add, "Save Image") }
                 }
             )
         }

@@ -100,7 +100,8 @@ fun AppNavigation(
                     // Screen 2 sẽ cần parse lại Uri này
                     val encodedUri = Uri.encode(uri.toString())
                     navController.navigate("editScreen/$encodedUri")
-                }
+                },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

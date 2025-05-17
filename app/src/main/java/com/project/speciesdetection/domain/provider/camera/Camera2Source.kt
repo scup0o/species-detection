@@ -4,34 +4,50 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.*
+import android.hardware.camera2.CameraAccessException
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraMetadata
+import android.hardware.camera2.CaptureFailure
+import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.TotalCaptureResult
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
 import android.media.Image
 import android.media.ImageReader
 import android.net.Uri
-import android.os.*
+import android.os.Build
+import android.os.Environment
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
 import android.util.Size
 import android.view.Surface
-import com.project.speciesdetection.ui.features.identification_camera_screen.viewmodel.CameraState
-import com.project.speciesdetection.ui.features.identification_camera_screen.viewmodel.ImageCaptureResult
-import kotlinx.coroutines.*
+import com.project.speciesdetection.domain.model.camera.CameraState
+import com.project.speciesdetection.domain.model.camera.ImageCaptureResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.text.SimpleDateFormat
-import java.util.*
-import java.util.concurrent.Executor // Import đúng
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.Executor
+import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import android.graphics.Rect
+
 // Import suspendCancellableCoroutine nếu chưa có
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.math.abs
 
 
 private const val TAG = "Camera2Helper"
@@ -44,7 +60,7 @@ private val ORIENTATIONS = mapOf(
     Surface.ROTATION_270 to 270
 )
 
-class CameraHelper(
+class Camera2Source @Inject constructor(
     private val context: Context,
     private val coroutineScope: CoroutineScope
 ) {
@@ -54,11 +70,12 @@ class CameraHelper(
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
     private var previewSurface: Surface? = null
+    private var previewRequestBuilder: CaptureRequest.Builder? = null // Store the builder
 
     private var currentCameraId: String? = null
     private var currentLensFacing: Int = CameraCharacteristics.LENS_FACING_BACK
     private var currentFlashEnabled: Boolean = false
-    private var currentScreenRotationDegrees: Int = 0 // Lưu trữ độ xoay của màn hình
+    private var currentScreenRotationDegrees: Int = 0
 
     private var cameraThread: HandlerThread? = null
     private var cameraHandler: Handler? = null
@@ -73,6 +90,11 @@ class CameraHelper(
 
     private val _optimalPreviewSize = MutableStateFlow<Size?>(null)
     val optimalPreviewSize = _optimalPreviewSize.asStateFlow()
+
+    // Zoom related properties
+    private var activeArraySize: Rect? = null
+    private var maxDigitalZoom: Float = 1.0f
+    private var currentZoomRatio: Float = 1.0f
 
     init {
         startBackgroundThreads()
@@ -114,11 +136,12 @@ class CameraHelper(
             Log.w(TAG, "Camera is not in a state to be opened: ${_cameraState.value}")
             return
         }
-        startBackgroundThreads() // Đảm bảo thread chạy
+        startBackgroundThreads()
 
         this.currentLensFacing = lensFacing
         this.previewSurface = surface
-        this.currentScreenRotationDegrees = ORIENTATIONS[screenRotationValue] ?: 0 // Chuyển đổi Surface.ROTATION_* thành độ
+        this.currentScreenRotationDegrees = ORIENTATIONS[screenRotationValue] ?: 0
+        this.currentZoomRatio = 1.0f // Reset zoom on camera open/flip
 
         coroutineScope.launch(Dispatchers.Default) {
             _cameraState.value = CameraState.Opening
@@ -133,6 +156,13 @@ class CameraHelper(
                 val characteristics = cameraManager.getCameraCharacteristics(cameraId)
                 val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
                     ?: throw IllegalStateException("Cannot get SCALER_STREAM_CONFIGURATION_MAP for camera $cameraId")
+
+                // Store zoom capabilities
+                activeArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)
+                maxDigitalZoom = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM) ?: 1.0f
+                // Some devices report 0.0 for max zoom, default to a reasonable max like 8x if so
+                if (maxDigitalZoom <= 1.0f) maxDigitalZoom = 8.0f
+
 
                 val chosenPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture::class.java), viewWidth, viewHeight)
                 _optimalPreviewSize.value = chosenPreviewSize
@@ -151,11 +181,11 @@ class CameraHelper(
                 val session = createCaptureSessionInternal(openedDevice, sessionTargets)
                 captureSession = session
 
-                startPreviewInternal(session, openedDevice, surface)
+                startPreviewInternal(session, openedDevice, surface) // This will init previewRequestBuilder
                 _cameraState.value = CameraState.Previewing(chosenPreviewSize)
-                Log.i(TAG, "Camera opened and preview started successfully for $cameraId.")
+                Log.i(TAG, "Camera opened and preview started successfully for $cameraId. Max Zoom: $maxDigitalZoom")
 
-            } catch (e: Exception) { // Bắt Exception chung để bao quát hơn
+            } catch (e: Exception) {
                 Log.e(TAG, "Error while opening camera: ${e.message}", e)
                 _cameraState.value = CameraState.Error("Failed to open camera: ${e.localizedMessage}", e)
                 closeCameraInternal()
@@ -164,7 +194,6 @@ class CameraHelper(
     }
 
     private fun findCameraId(lensFacing: Int): String? {
-        // ... (giữ nguyên)
         return try {
             cameraManager.cameraIdList.firstOrNull { id ->
                 val characteristics = cameraManager.getCameraCharacteristics(id)
@@ -178,21 +207,19 @@ class CameraHelper(
     }
 
     private fun chooseOptimalSize(choices: Array<Size>, viewWidth: Int, viewHeight: Int): Size {
-        val targetAspectRatio = 4f / 3f // hoặc 16f / 9f
-        val suitableSizes = choices.filter {
-            val ratio = it.width.toFloat() / it.height.toFloat()
-            kotlin.math.abs(ratio - targetAspectRatio) < 0.01
+        // Implement your logic, or use a simple one:
+        // This is a very basic implementation. You might want a more sophisticated one.
+        val bigEnough = choices.filter { it.width >= viewWidth && it.height >= viewHeight }
+        return if (bigEnough.isNotEmpty()) {
+            bigEnough.minByOrNull { it.width * it.height } ?: choices[0]
+        } else {
+            choices.maxByOrNull { it.width * it.height } ?: choices[0]
         }
-
-        return suitableSizes
-            .minByOrNull { kotlin.math.abs(it.width - viewWidth) + kotlin.math.abs(it.height - viewHeight) }
-            ?: choices[0]
     }
 
     @SuppressLint("MissingPermission")
     private suspend fun openCameraDeviceInternal(cameraId: String): CameraDevice =
         suspendCancellableCoroutine { continuation ->
-            // ... (giữ nguyên)
             val callback = object : CameraDevice.StateCallback() {
                 override fun onOpened(device: CameraDevice) {
                     Log.d(TAG, "Camera $cameraId opened successfully.")
@@ -203,6 +230,7 @@ class CameraHelper(
                     device.close()
                     if (continuation.isActive) {
                         _cameraState.value = CameraState.Error("Camera $cameraId disconnected unexpectedly")
+                        //continuation.resumeWithException(CameraAccessException(CameraAccessException.CAMERA_DISCONNECTED, "Camera $cameraId disconnected"))
                     }
                 }
                 override fun onError(device: CameraDevice, error: Int) {
@@ -217,18 +245,18 @@ class CameraHelper(
             }
             try {
                 cameraManager.openCamera(cameraId, callback, cameraHandler)
-            } catch (e: Exception) { // Bắt Exception chung
+            } catch (e: Exception) {
                 Log.e(TAG, "Failed to initiate openCamera for $cameraId", e)
                 if (continuation.isActive) continuation.resumeWithException(e)
             }
             continuation.invokeOnCancellation {
                 Log.d(TAG, "Camera opening coroutine for $cameraId was cancelled.")
+                // Potentially close the device if it was opened but coroutine cancelled before resume
             }
         }
 
     private suspend fun createCaptureSessionInternal(device: CameraDevice, targets: List<Surface>): CameraCaptureSession =
         suspendCancellableCoroutine { continuation ->
-            // ... (giữ nguyên như đã sửa ở lần trước, sử dụng Executor từ Handler)
             val sessionStateCallback = object : CameraCaptureSession.StateCallback() {
                 override fun onConfigured(session: CameraCaptureSession) {
                     Log.d(TAG, "Capture session configured successfully.")
@@ -243,7 +271,7 @@ class CameraHelper(
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     val outputConfigs = targets.map { OutputConfiguration(it) }
-                    val cameraExecutor = Executor { command -> cameraHandler!!.post(command) }
+                    val cameraExecutor = Executor { cameraHandler?.post(it) } // Make sure cameraHandler is not null
                     val sessionConfig = SessionConfiguration(
                         SessionConfiguration.SESSION_REGULAR,
                         outputConfigs,
@@ -255,7 +283,7 @@ class CameraHelper(
                     @Suppress("DEPRECATION")
                     device.createCaptureSession(targets, sessionStateCallback, cameraHandler)
                 }
-            } catch (e: Exception) { // Bắt Exception chung
+            } catch (e: Exception) {
                 Log.e(TAG, "Failed to create capture session", e)
                 if (continuation.isActive) continuation.resumeWithException(e)
             }
@@ -265,18 +293,20 @@ class CameraHelper(
         }
 
     private fun startPreviewInternal(session: CameraCaptureSession, device: CameraDevice, surface: Surface) {
-        // ... (giữ nguyên)
         if (cameraDevice == null || captureSession == null) {
             Log.w(TAG, "Cannot start preview, camera or session is null.")
             _cameraState.value = CameraState.Error("Preview failed: camera/session null")
             return
         }
         try {
-            val captureRequestBuilder = device.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
+            previewRequestBuilder = device.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW).apply {
                 addTarget(surface)
                 set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO)
                 set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                 set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
+                // Apply current zoom
+                applyZoomToRequestBuilder(this)
+
                 val characteristics = cameraManager.getCameraCharacteristics(device.id)
                 val hasFlash = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) ?: false
                 if (hasFlash && currentFlashEnabled) {
@@ -285,8 +315,8 @@ class CameraHelper(
                     set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
                 }
             }
-            session.setRepeatingRequest(captureRequestBuilder.build(), null, cameraHandler)
-        } catch (e: Exception) { // Bắt Exception chung
+            session.setRepeatingRequest(previewRequestBuilder!!.build(), null, cameraHandler)
+        } catch (e: Exception) {
             Log.e(TAG, "Failed to start preview session", e)
             _cameraState.value = CameraState.Error("Preview failed: ${e.localizedMessage}", e)
         }
@@ -307,7 +337,6 @@ class CameraHelper(
             }
             return
         }
-
         _cameraState.value = CameraState.Capturing
         Log.d(TAG, "Attempting to capture image. Flash enabled: $currentFlashEnabled. Screen Rotation Degrees: $currentScreenRotationDegrees")
         try {
@@ -317,26 +346,17 @@ class CameraHelper(
 
             val captureBuilder = device.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE).apply {
                 addTarget(readerSurface)
-                // Không nên set CONTROL_AF_MODE ở đây nếu bạn không trigger AF trước.
-                // Nếu muốn AF, bạn cần một chu trình AF riêng. Để đơn giản, tạm bỏ.
-                // set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                // Apply current zoom to capture request
+                applyZoomToRequestBuilder(this)
 
                 val characteristics = cameraManager.getCameraCharacteristics(device.id)
                 val sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
-
-                // ***** THAY ĐỔI QUAN TRỌNG Ở ĐÂY *****
-                val jpegOrientation: Int
                 val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
-                if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                    jpegOrientation = (sensorOrientation + currentScreenRotationDegrees + 360) % 360
-                } else { // BACK-facing
-                    jpegOrientation = (sensorOrientation - currentScreenRotationDegrees + 360) % 360
-                }
-                // Một số thiết bị/API có thể cần đảo ngược kết quả cho camera trước
-                // if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
-                //     jpegOrientation = (360 - jpegOrientation) % 360;
-                // }
 
+                val jpegOrientation = when (facing) {
+                    CameraCharacteristics.LENS_FACING_FRONT -> (sensorOrientation + currentScreenRotationDegrees) % 360
+                    else -> (sensorOrientation - currentScreenRotationDegrees + 360) % 360
+                }
                 set(CaptureRequest.JPEG_ORIENTATION, jpegOrientation)
                 Log.d(TAG, "Sensor Orientation: $sensorOrientation, Screen Rotation Degrees: $currentScreenRotationDegrees -> JPEG Orientation: $jpegOrientation")
 
@@ -345,7 +365,7 @@ class CameraHelper(
                     set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_ALWAYS_FLASH)
                     set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_SINGLE)
                 } else {
-                    set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON) // Hoặc OFF nếu không muốn AE ảnh hưởng
+                    set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
                     set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
                 }
             }
@@ -355,7 +375,7 @@ class CameraHelper(
                     Log.d(TAG, "Image capture completed.")
                     val currentPreviewSurface = previewSurface
                     if (cameraDevice != null && currentPreviewSurface != null) {
-                        startPreviewInternal(s, cameraDevice!!, currentPreviewSurface)
+                        startPreviewInternal(s, cameraDevice!!, currentPreviewSurface) // Restart preview
                         _cameraState.value = CameraState.Previewing(_optimalPreviewSize.value ?: Size(0,0) )
                     } else {
                         _cameraState.value = CameraState.Error("Failed to restart preview post-capture")
@@ -368,14 +388,13 @@ class CameraHelper(
                     }
                     val currentPreviewSurface = previewSurface
                     if (cameraDevice != null && currentPreviewSurface != null) {
-                        startPreviewInternal(s, cameraDevice!!, currentPreviewSurface)
+                        startPreviewInternal(s, cameraDevice!!, currentPreviewSurface) // Restart preview
                         _cameraState.value = CameraState.Previewing(_optimalPreviewSize.value ?: Size(0,0))
                     } else {
                         _cameraState.value = CameraState.Error("Failed to restart preview post-capture-failure")
                     }
-                }
-            }, cameraHandler)
-        } catch (e: Exception) { // Bắt Exception chung
+                } }, cameraHandler)
+        } catch (e: Exception) {
             Log.e(TAG, "Failed to initiate capture or during capture callback", e)
             coroutineScope.launch {
                 _imageCaptureResult.emit(ImageCaptureResult.Error("Capture failed: ${e.localizedMessage}", e))
@@ -385,7 +404,6 @@ class CameraHelper(
     }
 
     private val onImageAvailableListener = ImageReader.OnImageAvailableListener { reader ->
-        // ... (giữ nguyên)
         val image: Image? = try {
             reader.acquireLatestImage()
         } catch (e: Exception) {
@@ -413,35 +431,98 @@ class CameraHelper(
         }
     }
 
-    // Hàm này không còn cần thiết vì ta dùng currentScreenRotationDegrees trực tiếp
-    // private fun getJpegRotation(deviceOrientation: Int): Int { ... }
-
     fun setFlashEnabled(enabled: Boolean) {
-        // ... (giữ nguyên)
         currentFlashEnabled = enabled
         if (_cameraState.value is CameraState.Previewing && cameraDevice != null && captureSession != null && previewSurface != null) {
-            startPreviewInternal(captureSession!!, cameraDevice!!, previewSurface!!)
+            // Update repeating request with new flash state
+            previewRequestBuilder?.let { builder ->
+                val characteristics = cameraManager.getCameraCharacteristics(cameraDevice!!.id)
+                val hasFlash = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) ?: false
+                if (hasFlash && currentFlashEnabled) {
+                    builder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH)
+                } else {
+                    builder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
+                }
+                try {
+                    captureSession?.setRepeatingRequest(builder.build(), null, cameraHandler)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to update flash state for preview", e)
+                }
+            }
         }
     }
 
-    fun updateScreenRotation(newScreenRotationValue: Int) { // Nhận Surface.ROTATION_*
+    fun updateScreenRotation(newScreenRotationValue: Int) {
         this.currentScreenRotationDegrees = ORIENTATIONS[newScreenRotationValue] ?: 0
         Log.d(TAG, "Screen rotation updated. New Surface.ROTATION value: $newScreenRotationValue, Degrees: $currentScreenRotationDegrees")
     }
 
+    // --- ZOOM FUNCTIONALITY ---
+    private fun applyZoomToRequestBuilder(builder: CaptureRequest.Builder) {
+        val sensorRect = activeArraySize ?: return // No zoom if we don't have the active array size
+
+        val zoom = currentZoomRatio.coerceIn(1.0f, maxDigitalZoom)
+
+        val cropWidth = (sensorRect.width() / zoom).toInt()
+        val cropHeight = (sensorRect.height() / zoom).toInt()
+
+        val cropLeft = (sensorRect.width() - cropWidth) / 2
+        val cropTop = (sensorRect.height() - cropHeight) / 2
+        val cropRight = cropLeft + cropWidth
+        val cropBottom = cropTop + cropHeight
+
+        val cropRect = Rect(cropLeft, cropTop, cropRight, cropBottom)
+        builder.set(CaptureRequest.SCALER_CROP_REGION, cropRect)
+    }
+
+    fun setZoom(zoomRatio: Float) {
+        if (cameraDevice == null || captureSession == null || previewRequestBuilder == null || activeArraySize == null) {
+            Log.w(TAG, "Cannot set zoom, camera not ready or activeArraySize not available.")
+            return
+        }
+        if (_cameraState.value !is CameraState.Previewing) {
+            Log.w(TAG, "Cannot set zoom, not in previewing state.")
+            return
+        }
+
+        val newZoom = zoomRatio.coerceIn(1.0f, maxDigitalZoom)
+        if (newZoom == currentZoomRatio) return // No change
+
+        currentZoomRatio = newZoom
+        Log.d(TAG, "Setting zoom to: $currentZoomRatio (clamped from $zoomRatio, max: $maxDigitalZoom)")
+
+        applyZoomToRequestBuilder(previewRequestBuilder!!) // Update the stored builder
+        try {
+            captureSession?.setRepeatingRequest(previewRequestBuilder!!.build(), null, cameraHandler)
+        } catch (e: CameraAccessException) {
+            Log.e(TAG, "Failed to set repeating request for zoom", e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Illegal state while setting repeating request for zoom (session might be closed)", e)
+        }
+    }
+    // --- END ZOOM FUNCTIONALITY ---
+
+
     fun releaseCamera() {
-        // ... (giữ nguyên)
         Log.i(TAG, "Release camera requested.")
         closeCameraInternal()
         stopBackgroundThreads()
         _cameraState.value = CameraState.Closed
         _optimalPreviewSize.value = null
+        // Reset zoom related properties
+        activeArraySize = null
+        maxDigitalZoom = 1.0f
+        currentZoomRatio = 1.0f
+        previewRequestBuilder = null
         Log.i(TAG, "Camera and threads released.")
     }
 
     private fun closeCameraInternal() {
-        // ... (giữ nguyên)
         Log.d(TAG, "Closing camera internal resources...")
+        try {
+            captureSession?.stopRepeating() // Important to stop repeating requests
+            captureSession?.abortCaptures()
+        } catch (e: Exception) {Log.e(TAG, "Error stopping session", e)}
         try {
             captureSession?.close()
             captureSession = null
@@ -454,5 +535,6 @@ class CameraHelper(
             imageReader?.close()
             imageReader = null
         } catch (e: Exception) { Log.e(TAG, "Error closing image reader", e) }
+        previewRequestBuilder = null // Clear the builder
     }
 }
