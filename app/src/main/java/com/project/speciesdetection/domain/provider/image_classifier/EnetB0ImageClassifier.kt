@@ -120,7 +120,10 @@ class EnetB0ImageClassifier @Inject constructor(
             if (index < labels.size) pq.add(Recognition(labels[index], labels[index], prob))
         }
 
-        return@withContext List(min(pq.size, MAX_RESULTS)) { pq.poll() }
+        //Log.i(TAG, List(min(pq.size, MAX_RESULTS)) { pq.poll() }.toString())
+
+
+        return@withContext List(min(pq.size, MAX_RESULTS)) { pq.poll()!! }
     }
 
     fun preprocessFloatInput(bitmap: Bitmap): ByteBuffer {

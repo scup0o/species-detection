@@ -2,6 +2,11 @@ package com.project.speciesdetection.ui.features.identification_analysis.view
 
 import android.net.Uri
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -12,9 +17,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.domain.provider.image_classifier.Recognition // Đảm bảo import đúng
+import com.project.speciesdetection.ui.composable.common.ItemErrorPlaceholder
+import com.project.speciesdetection.ui.composable.common.species.SpeciesListItem
 import com.project.speciesdetection.ui.features.identification_analysis.viewmodel.AnalysisUiState
 import com.project.speciesdetection.ui.features.identification_analysis.viewmodel.AnalysisViewModel
 
@@ -23,21 +32,32 @@ import com.project.speciesdetection.ui.features.identification_analysis.viewmode
 fun AnalysisResultPBS(
     onDismiss: () -> Unit,
     analysisImage: Uri,
-    analysisViewModel: AnalysisViewModel // Nhận AnalysisViewModel
-) {
+    analysisViewModel: AnalysisViewModel = hiltViewModel(),)
+{
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val currentAnalysisState by analysisViewModel.uiState.collectAsState() // Lấy state từ ViewModel
 
     ModalBottomSheet(
         sheetState = sheetState,
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            analysisViewModel.resetState()
+            onDismiss()},
         modifier = Modifier.defaultMinSize(minHeight = 200.dp)
     ) {
+        Row(){
+            IconButton(
+                onClick = onDismiss
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,null
+                )
+            }
+        }
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Analysis Result", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 16.dp))
+            //Text("Analysis Result", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 16.dp))
 
             GlideImage(
                 model = analysisImage,
@@ -49,47 +69,44 @@ fun AnalysisResultPBS(
             when (val state = currentAnalysisState) {
                 AnalysisUiState.ClassifierInitializing -> {
                     CircularProgressIndicator()
-                    Text("Initializing analysis engine...", modifier = Modifier.padding(top = 8.dp))
                 }
                 AnalysisUiState.ImageProcessing -> {
                     CircularProgressIndicator()
-                    Text("Analyzing image...", modifier = Modifier.padding(top = 8.dp))
                 }
                 is AnalysisUiState.Success -> {
                     if (state.recognitions.isNotEmpty()) {
-                        Text("Top Predictions:", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
-                        state.recognitions.forEach { recognition ->
-                            RecognitionItemInBottomSheet(recognition)
+                        Text(
+                            "Top suggestions:",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp))
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            contentPadding =
+                                PaddingValues(
+                                    vertical = MaterialTheme.spacing.xxxs),
+                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
+                        ) {
+                            items(state.recognitions, key = { it.id }) { species ->
+                                SpeciesListItem(species)
+                            }
+
                         }
-                    } else { // Trường hợp này nên được xử lý bởi NoResults
-                        Text("Analysis complete, but no specific organisms recognized.")
+                        //Spacer(modifier = Modifier.height(MaterialTheme.spacing.m))
+
+                    } else {
+                        ItemErrorPlaceholder(onClick ={analysisViewModel.startImageAnalysis(analysisImage)})
                     }
                 }
                 is AnalysisUiState.Error -> {
-                    Text(state.message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                    ItemErrorPlaceholder(onClick ={analysisViewModel.startImageAnalysis(analysisImage)})
                 }
                 AnalysisUiState.NoResults -> {
-                    Text("No organisms could be identified in this image.", textAlign = TextAlign.Center)
+                    ItemErrorPlaceholder(onClick ={analysisViewModel.startImageAnalysis(analysisImage)})
                 }
                 AnalysisUiState.Initial -> {
-                    Text("Analysis has not started or was reset.", textAlign = TextAlign.Center)
+                    ItemErrorPlaceholder(onClick ={analysisViewModel.startImageAnalysis(analysisImage)})
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onDismiss) { Text("Close") }
-            Spacer(modifier = Modifier.height(16.dp))
         }
-    }
-}
-
-@Composable
-fun RecognitionItemInBottomSheet(recognition: Recognition) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = recognition.title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(text = String.format("%.1f%%", recognition.confidence * 100), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
     }
 }

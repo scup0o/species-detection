@@ -198,7 +198,6 @@ fun ImageSourceSelectionBottomSheet(
     }
 }
 
-// Composable để hiển thị một mục lựa chọn (giữ nguyên)
 @Composable
 private fun OptionDisplayItem(
     icon: Painter,

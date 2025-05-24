@@ -17,7 +17,7 @@ interface SpeciesRepository {
     fun getAll(
         searchQuery : List<String>?,
         languageCode: String,
-        ) : Flow<PagingData<DisplayableSpecies>>
+        ) : Flow<PagingData<Species>>
 
     fun getSpeciesByFieldPaged(
         searchQuery : List<String>?,
@@ -26,7 +26,9 @@ interface SpeciesRepository {
         value: String,
         // orderBy và sortDirection sẽ được xử lý bởi FirestoreSpeciesService
         // sortByName (client-side sorting) không áp dụng trực tiếp với PagingData
-        // vì PagingData đã được sắp xếp từ server. Nếu cần sắp xếp lại
-        // sau khi map, sẽ phức tạp hơn và thường không khuyến khích.
-    ): Flow<PagingData<DisplayableSpecies>>
+    ): Flow<PagingData<Species>>
+
+    suspend fun getSpeciesById(
+        idList : List<String>,
+    ) : List<Species>
 }

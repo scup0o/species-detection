@@ -31,10 +31,15 @@ interface SpeciesDatabaseService<T : Any, ID> {
         orderByField: String?,
         sortDirection: Query.Direction
     ): Flow<PagingData<T>>
+
+    suspend fun getById(
+        idList : List<String>
+    ) : List<T>
 }
 
 interface SpeciesClassDatabaseService<T : Any, ID> {
-    fun getAll(options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
+    fun getAllSpeciesClass(options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
+    suspend fun getAll() : List<T>
 }
 
 interface UserDatabaseService<T : Any, ID> {

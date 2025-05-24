@@ -80,7 +80,7 @@ fun SpeciesListItem(species: DisplayableSpecies) {
                 }
 
                 Text(
-                    text = species.scientificName,
+                    text = species.getScientificName()!!,
                     style = MaterialTheme.typography.bodyMedium,
                     fontStyle = FontStyle.Italic,
                     color = MaterialTheme.colorScheme.outline

@@ -6,6 +6,7 @@ import androidx.paging.PagingData
 import androidx.paging.Pager
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldPath.documentId
 import com.google.firebase.firestore.Filter
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
@@ -126,6 +127,21 @@ class FirestoreSpeciesService @Inject constructor(
                 )
             }
         ).flow
+    }
+
+    override suspend fun getById(idList: List<String>): List<Species> {
+        val speciesList = mutableListOf<Species>()
+        val snapshot = speciesCollection
+            .whereIn(documentId(), idList)
+            .get()
+            .await()
+
+        for (document in snapshot.documents) {
+            document.toObject(Species::class.java)?.let {
+                speciesList.add(it.apply { id = document.id })
+            }
+        }
+        return speciesList
     }
 
     /*override fun getByFieldValue(

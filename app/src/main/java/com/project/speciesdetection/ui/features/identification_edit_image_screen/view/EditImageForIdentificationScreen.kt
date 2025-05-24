@@ -44,14 +44,14 @@ import com.project.speciesdetection.ui.features.identification_edit_image_screen
 @Composable
 fun EditImageForIdentificationScreen(
     viewModel: EditImageForIdentificationViewModel = hiltViewModel(),
-    analysisViewModel: AnalysisViewModel = hiltViewModel(),
+
     onNavigateBack: () -> Unit
 ) {
     val editImageUiState by viewModel.uiState.collectAsState()
     // Không cần collect analysisUiState ở đây nữa, PBS sẽ làm
     val context = LocalContext.current
 
-    var showCancelAnalysisDialog by remember { mutableStateOf(false) }
+    /*var showCancelAnalysisDialog by remember { mutableStateOf(false) }
     var pendingBackNavigation by remember { mutableStateOf(false) }
     var pendingCropActionUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -59,7 +59,7 @@ fun EditImageForIdentificationScreen(
         showCancelAnalysisDialog = true
         pendingBackNavigation = true
         pendingCropActionUri = null
-    }
+    }*/
 
     val requestStoragePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) viewModel.saveCurrentImageToGallery()
@@ -67,18 +67,18 @@ fun EditImageForIdentificationScreen(
     }
 
     val cropImageLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
-        val uriToCropAfterConfirmation = pendingCropActionUri ?: editImageUiState.currentImageUri
+        val uriToCropAfterConfirmation = /*pendingCropActionUri ?: */editImageUiState.currentImageUri
 
-        if (analysisViewModel.isProcessing() && pendingCropActionUri == null) { // Nếu đang xử lý và người dùng bấm Crop lần đầu
+        /*if (analysisViewModel.isProcessing() && pendingCropActionUri == null) { // Nếu đang xử lý và người dùng bấm Crop lần đầu
             showCancelAnalysisDialog = true
             pendingCropActionUri = uriToCropAfterConfirmation // Lưu uri hiện tại để crop sau
             pendingBackNavigation = false
-        } else { // Không xử lý hoặc đã xác nhận hủy
+        } else { */// Không xử lý hoặc đã xác nhận hủy
             if (result.isSuccessful) {
                 viewModel.onImageCropped(result.uriContent)
             }
-            pendingCropActionUri = null // Reset lại sau khi thực hiện
-        }
+            /*pendingCropActionUri = null // Reset lại sau khi thực hiện
+        }*/
     }
 
     LaunchedEffect(editImageUiState.saveSuccess) {
@@ -99,7 +99,7 @@ fun EditImageForIdentificationScreen(
         }
     }
 
-    if (showCancelAnalysisDialog) {
+    /*if (showCancelAnalysisDialog) {
         AlertDialog(
             onDismissRequest = {
                 showCancelAnalysisDialog = false
@@ -131,7 +131,7 @@ fun EditImageForIdentificationScreen(
                 }) { Text("No, Continue") }
             }
         )
-    }
+    }*/
 
     if (editImageUiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
@@ -146,21 +146,21 @@ fun EditImageForIdentificationScreen(
                     title = {},
                     navigationIcon = {
                         IconButton(onClick = {
-                            if (analysisViewModel.isProcessing()) {
+                            /*if (analysisViewModel.isProcessing()) {
                                 showCancelAnalysisDialog = true; pendingBackNavigation = true; pendingCropActionUri = null
-                            } else { onNavigateBack() }
+                            } else { */onNavigateBack() //}
                         }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                     },
                     actions = {
                         IconButton(onClick = { // Crop Button
                             val uriToCrop = editImageUiState.currentImageUri
-                            if (analysisViewModel.isProcessing()){
+                            /*if (analysisViewModel.isProcessing()){
                                 showCancelAnalysisDialog = true; pendingCropActionUri = uriToCrop; pendingBackNavigation = false
-                            } else {
+                            } else {*/
                                 uriToCrop?.let {
                                     val cropOptions = CropImageContractOptions(it, CropImageOptions(guidelines = CropImageView.Guidelines.ON_TOUCH, fixAspectRatio = false, outputCompressFormat = Bitmap.CompressFormat.JPEG, outputCompressQuality = 90))
                                     cropImageLauncher.launch(cropOptions)
-                                }
+                                //}
                             }
                         }) { Icon(Icons.Default.Edit, "Crop") }
                         IconButton(onClick = { // Save Button
@@ -181,7 +181,6 @@ fun EditImageForIdentificationScreen(
                         // Khi nút được nhấn, EditImageViewModel sẽ hiển thị popup
                         viewModel.showAnalysisPopup()
                     },
-                    viewModel = analysisViewModel // Truyền instance của AnalysisViewModel
                 )
             },
             floatingActionButtonPosition = FabPosition.EndOverlay
@@ -193,10 +192,8 @@ fun EditImageForIdentificationScreen(
             if (editImageUiState.showAnalysisPopup && editImageUiState.currentImageUri != null) {
                 AnalysisResultPBS(
                     analysisImage = editImageUiState.currentImageUri!!,
-                    analysisViewModel = analysisViewModel, // Truyền AnalysisViewModel
                     onDismiss = {
                         viewModel.dismissAnalysisPopup()
-                        analysisViewModel.resetState() // Reset AnalysisViewModel khi đóng PBS
                     }
                 )
             }

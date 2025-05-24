@@ -7,15 +7,24 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel // Sử dụng AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.project.speciesdetection.core.services.remote_database.DataResult
+import com.project.speciesdetection.data.model.species.DisplayableSpecies
+import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
 import com.project.speciesdetection.domain.provider.image_classifier.ImageClassifierProvider
 import com.project.speciesdetection.domain.provider.image_classifier.Recognition
+import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesClassUseCase
+import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -26,13 +35,14 @@ sealed class AnalysisUiState {
     object Initial : AnalysisUiState() // Trạng thái ban đầu, chưa có yêu cầu
     object ClassifierInitializing : AnalysisUiState() // Classifier (trong AnalysisVM) đang được khởi tạo
     object ImageProcessing : AnalysisUiState()      // Đang xử lý ảnh (load bitmap, classify)
-    data class Success(val recognitions: List<Recognition>) : AnalysisUiState() // Thành công
+    data class Success(val recognitions: List<DisplayableSpecies>) : AnalysisUiState() // Thành công
     data class Error(val message: String) : AnalysisUiState()              // Lỗi
     object NoResults : AnalysisUiState()                                  // Không có kết quả
 }
 
 @HiltViewModel
 class AnalysisViewModel @Inject constructor(
+    private val getLocalizedSpeciesUseCase: GetLocalizedSpeciesUseCase,
     application: Application, // Inject Application
     @Named("enetb0_classifier_provider") private val classifier: ImageClassifierProvider // Inject Classifier (từ AppModule)
 ) : AndroidViewModel(application) {
@@ -73,9 +83,16 @@ class AnalysisViewModel @Inject constructor(
                 if (bitmap != null) {
                     Log.d(TAG, "Bitmap loaded. Starting classification...")
                     val results = classifier.classify(bitmap)
+                    Log.i(TAG, results.toString())
                     if (results.isNotEmpty()) {
-                        _uiState.value = AnalysisUiState.Success(results)
-                        Log.i(TAG, "Analysis successful with ${results.size} results.")
+
+                        Log.i(TAG, results.toString())
+                        val speciesMap = getLocalizedSpeciesUseCase.getById(results.map { result -> result.id }).associateBy { it.id }
+                        val orderedSpecies = results.mapNotNull { recognition ->
+                            speciesMap[recognition.id]
+                        }
+                        _uiState.value =AnalysisUiState.Success(orderedSpecies)
+                        Log.i(TAG, _uiState.value.toString())
                     } else {
                         _uiState.value = AnalysisUiState.NoResults
                         Log.i(TAG, "Analysis returned no results.")
@@ -110,7 +127,7 @@ class AnalysisViewModel @Inject constructor(
             Log.w(TAG, "ResetState called while processing, cancelling current analysis.")
             cancelAnalysis()
         }
-        _uiState.value = AnalysisUiState.Initial
+        else {_uiState.value = AnalysisUiState.Initial}
         Log.i(TAG, "AnalysisViewModel state reset to Initial.")
     }
 
@@ -145,6 +162,7 @@ class AnalysisViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         currentAnalysisJob?.cancel()
+        _uiState.value = AnalysisUiState.Initial
         Log.d(TAG, "AnalysisViewModel cleared.")
         // Classifier is likely a Singleton, Hilt manages its lifecycle beyond this ViewModel.
         // If Classifier needs explicit cleanup tied to this VM, call classifier.close() here.

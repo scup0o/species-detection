@@ -21,7 +21,7 @@ class RemoteSpeciesRepository @Inject constructor(
     override fun getAll(
         searchQuery: List<String>?,
         languageCode: String
-    ): Flow<PagingData<DisplayableSpecies>> {
+    ): Flow<PagingData<Species>> {
         val orderByFieldForQuery: String? = "name.$languageCode"
         return databaseService.getAll(
             languageCode = languageCode,
@@ -29,14 +29,7 @@ class RemoteSpeciesRepository @Inject constructor(
             sortDirection = Query.Direction.ASCENDING,
             orderByField = orderByFieldForQuery,
             pageSize = DEFAULT_SPECIES_PAGE_SIZE
-        ).map { pagingDataSpecies ->
-            pagingDataSpecies.map { species ->
-                val updatedSpecies = species.copy(
-                    imageURL = species.imageURL?.let { CloudinaryImageURLHelper.getSquareImageURL(it) }
-                )
-                updatedSpecies.toDisplayable(languageCode)
-            }
-        }
+        )
     }
 
     override fun getSpeciesByFieldPaged(
@@ -44,7 +37,7 @@ class RemoteSpeciesRepository @Inject constructor(
         targetField: String,
         languageCode: String,
         value: String
-    ): Flow<PagingData<DisplayableSpecies>> {
+    ): Flow<PagingData<Species>> {
         // Xác định fieldPath và orderByField cho Firestore query
         // QUAN TRỌNG: Firestore orderBy phải dựa trên các trường thực tế trong document.
         // Nếu `targetField` là một map (ví dụ: `commonName: {en: "Lion", vi: "Sư tử"}`),
@@ -68,17 +61,13 @@ class RemoteSpeciesRepository @Inject constructor(
             pageSize = DEFAULT_SPECIES_PAGE_SIZE, // Sử dụng hằng số từ service
             orderByField = orderByFieldForQuery, // ví dụ: "scientificName" hoặc fieldPathForQuery
             sortDirection = Query.Direction.ASCENDING // Hoặc DESCENDING tùy nhu cầu
-        ).map { pagingDataSpecies: PagingData<Species> ->
-            pagingDataSpecies.map { species ->
-
-                // Tạo bản sao để tránh thay đổi species gốc
-                val updatedSpecies = species.copy(
-                    imageURL = species.imageURL?.let { CloudinaryImageURLHelper.getSquareImageURL(it) }
-                )
-                updatedSpecies.toDisplayable(languageCode)
-            }
-        }
+        )
     }
+
+    override suspend fun getSpeciesById(idList: List<String>) : List<Species>{
+        return databaseService.getById(idList)
+    }
+
 
     /*override fun getSpeciesByField(
         targetField: String,

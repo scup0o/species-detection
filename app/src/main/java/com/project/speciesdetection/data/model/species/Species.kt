@@ -1,6 +1,7 @@
 package com.project.speciesdetection.data.model.species
 
 import com.google.firebase.database.PropertyName
+import com.project.speciesdetection.data.model.species_class.SpeciesClass
 
 data class Species(
     @get:PropertyName("documentId")
@@ -30,11 +31,16 @@ data class Species(
                 else this.name[languageCode]!!,
             localizedClass = this.classId,
             localizedFamily =
-                if (this.family[languageCode].isNullOrEmpty()) ""
-                else this.family[languageCode]!!,
+                        if (this.family[languageCode].isNullOrEmpty()) ""
+                        else this.family[languageCode]!!,
             /*localizedDescription = this.getLocalizedDescription(languageCode),*/
             imageURL = this.imageURL,
-            scientificName = this.scientificName
+            scientific = mapOf(
+                "name" to this.scientificName,
+                "family" to
+                        if (this.family["scientific"].isNullOrEmpty()) ""
+                        else this.family["scientific"]!!,
+                )
         )
     }
 }

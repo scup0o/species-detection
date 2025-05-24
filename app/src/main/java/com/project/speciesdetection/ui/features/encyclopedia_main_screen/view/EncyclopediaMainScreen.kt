@@ -52,6 +52,7 @@ import com.project.speciesdetection.ui.features.encyclopedia_main_screen.viewmod
 import com.project.speciesdetection.ui.composable.common.AppSearchBar
 import com.project.speciesdetection.ui.composable.common.ChipPlacholder
 import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
+import com.project.speciesdetection.ui.composable.common.ItemErrorPlaceholder
 import com.project.speciesdetection.ui.composable.common.ListItemPlaceholder
 import com.project.speciesdetection.ui.composable.common.species.SpeciesListItem
 import kotlinx.coroutines.delay
@@ -270,15 +271,7 @@ fun EncyclopediaMainScreen(
                                                 .padding(16.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            Text(
-                                                "Error loading more: ${e.error.localizedMessage}",
-                                                color = MaterialTheme.colorScheme.error,
-                                                textAlign = TextAlign.Center
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Button(onClick = { lazyPagingItems.retry() }) {
-                                                Text("Retry Load More")
-                                            }
+                                            ItemErrorPlaceholder(onClick = {lazyPagingItems.retry()})
                                         }
                                     }
                                     is LoadState.NotLoading -> {

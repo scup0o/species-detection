@@ -81,8 +81,15 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
                     getLocalizedSpeciesUseCase.getAll(searchQuery = query) // Truyền searchQuery
                         .map { pagingData ->
                             pagingData.map { species ->
+                                val scientificList =
+                                    species.scientific + mapOf(
+                                        "class" to species.localizedClass.replaceFirstChar {
+                                            if (it.isLowerCase()) it.titlecase() else it.toString()
+                                                })
                                 val className = classMap[species.localizedClass] ?: ""
-                                species.copy(localizedClass = className)
+                                species.copy(
+                                    localizedClass = className,
+                                    scientific = scientificList)
                             }
                         }
                 } else {
@@ -93,8 +100,15 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
                     )
                         .map { pagingData ->
                             pagingData.map { species ->
+                                val scientificList =
+                                    species.scientific + mapOf(
+                                        "class" to species.localizedClass.replaceFirstChar {
+                                            if (it.isLowerCase()) it.titlecase() else it.toString()
+                                        })
                                 val className = classMap[species.localizedClass] ?: ""
-                                species.copy(localizedClass = className)
+                                species.copy(
+                                    localizedClass = className,
+                                    scientific = scientificList)
                             }
                         }
 
