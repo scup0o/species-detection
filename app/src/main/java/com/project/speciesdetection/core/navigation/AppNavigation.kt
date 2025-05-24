@@ -18,7 +18,6 @@ import com.project.speciesdetection.ui.features.community_main_screen.view.Commu
 import com.project.speciesdetection.ui.features.encyclopedia_main_screen.view.EncyclopediaMainScreen
 import com.project.speciesdetection.ui.features.profile_main_screen.view.ProfileMainScreen
 import com.project.speciesdetection.ui.features.setting_main_screen.view.SettingMainScreen
-import com.project.speciesdetection.ui.features.identification_camera_screen.view.CameraScreen
 import com.project.speciesdetection.ui.features.identification_edit_image_screen.view.EditImageForIdentificationScreen
 
 @Composable
@@ -91,7 +90,7 @@ fun AppNavigation(
                 navController = navController)
         }
 
-        composable(
+        /*composable(
             route = AppScreen.CameraScreen.route
         ) {
             CameraScreen(
@@ -103,14 +102,20 @@ fun AppNavigation(
                 },
                 onNavigateBack = { navController.popBackStack() }
             )
-        }
+        }*/
 
         composable(
-            route = AppScreen.EditImageForIdentificationScreen.route,
-            arguments = listOf(navArgument("imageUri") { type = NavType.StringType })
-        ) { EditImageForIdentificationScreen(
-            onNavigateBack = { navController.popBackStack() },
-        )
+            route = AppScreen.EditImageForIdentificationScreen.route, // imageUri là placeholder
+            arguments = listOf(
+                navArgument("imageUri") {
+                    type = NavType.StringType
+                    nullable = false
+                }
+            )
+        ) { // backStackEntry -> không cần dùng trực tiếp ở đây nếu ViewModel lấy từ SavedStateHandle
+            EditImageForIdentificationScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
 

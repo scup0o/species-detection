@@ -1,5 +1,6 @@
 package com.project.speciesdetection.core.navigation
 
+import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Home
@@ -14,14 +15,20 @@ sealed class AppScreen(
     val route: String,
     val icon: Int?,
 ) {
-    object CameraScreen : AppScreen(
+    /*object CameraScreen : AppScreen(
         route = "camera_screen",
         icon = R.drawable.camera
-    )
+    )*/
+
     object EditImageForIdentificationScreen : AppScreen(
-        route = "editScreen/{imageUri}",
+        route = "edit_image_screen/{imageUri}",
         icon = null
-    )
+    ) {
+        fun createRoute(imageUri: Uri): String {
+            val encodedUri = Uri.encode(imageUri.toString())
+            return "edit_image_screen/$encodedUri"
+        }
+    }
     object EncyclopediaMainScreen : AppScreen(
         route = "encyclopedia_main_screen",
         icon = R.drawable.book_open)

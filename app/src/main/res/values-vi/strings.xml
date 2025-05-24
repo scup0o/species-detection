@@ -11,6 +11,15 @@
     <string name="try_again">Thử lại</string>
     <string name="species_family_description">thuộc họ</string>
     <string name="species_search_hint">Nhập Tên hoặc Tên khoa học…</string>
-    <string name="camera_permission_denied">Quyền truy cập Camera bị từ chối</string>
 
+    <string name="camera_permission_denied">Quyền truy cập Máy ảnh bị từ chối</string>
+    <string name="storage_permission_denied">Quyền truy cập Kho lưu trữ bị từ chối</string>
+
+    <string name="image_not_found">Không tìm thấy ảnh đã chụp.</string>
+    <string name="error">Lỗi! Xin hãy thử lại sau</string>
+    <string name="save_image_successfuly">Lưu ảnh thành công!</string>
+
+
+    <string name="gallery_source_for_identification">Chọn Ảnh</string>
+    <string name="camera_source_for_identification">Chụp Ảnh</string>
 </resources>

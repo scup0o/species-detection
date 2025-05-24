@@ -1,3 +1,4 @@
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -45,6 +46,9 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Ngăn không nén file TFLite
+    androidResources.noCompress.add("tflite")
 }
 
 dependencies {
@@ -103,7 +107,15 @@ dependencies {
     //ImageCropper
     implementation(libs.android.image.cropper)
 
+    // TensorFlow Lite
+    implementation("org.tensorflow:tensorflow-lite:2.17.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
+    //implementation ("org.tensorflow:tensorflow-lite-select-tf-ops:2.16.1") //EB0
 
+    configurations.all {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-api")
+    }
 }
 
 kapt {

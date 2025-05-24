@@ -2,18 +2,16 @@ package com.project.speciesdetection.ui.features.identification_edit_image_scree
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
+import android.graphics.Bitmap // Vẫn cần cho CropImageOptions
 import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.ColorInt
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -22,16 +20,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -40,192 +33,180 @@ import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.canhub.cropper.CropImageView
+import com.project.speciesdetection.R
+import com.project.speciesdetection.ui.features.identification_analysis.view.AnalysisButton
+import com.project.speciesdetection.ui.features.identification_analysis.view.AnalysisResultPBS
+import com.project.speciesdetection.ui.features.identification_analysis.viewmodel.AnalysisViewModel
 import com.project.speciesdetection.ui.features.identification_edit_image_screen.viewmodel.EditImageForIdentificationViewModel
-
-// ---- TỶ LỆ KHUNG HÌNH CỐ ĐỊNH CHO HIỂN THỊ (PHẢI KHỚP VỚI CAMERA) ----
-// Nếu FIXED_CAMERA_ASPECT_RATIO_INT trong CameraScreen là AspectRatio.RATIO_4_3
-private const val FIXED_DISPLAY_ASPECT_RATIO_FLOAT: Float = 4f / 3f
-// Nếu FIXED_CAMERA_ASPECT_RATIO_INT trong CameraScreen là AspectRatio.RATIO_16_9
-// private const val FIXED_DISPLAY_ASPECT_RATIO_FLOAT: Float = 16f / 9f
+import com.project.speciesdetection.ui.features.identification_edit_image_screen.viewmodel.EditImageUiState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun EditImageForIdentificationScreen(
     viewModel: EditImageForIdentificationViewModel = hiltViewModel(),
+    analysisViewModel: AnalysisViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val editImageUiState by viewModel.uiState.collectAsState()
+    // Không cần collect analysisUiState ở đây nữa, PBS sẽ làm
     val context = LocalContext.current
 
-    val requestPermissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
-                // Quyền đã được cấp, tiến hành lưu ảnh
-                viewModel.saveCurrentImageToGallery(context)
-            } else {
-                // Quyền bị từ chối
-                Toast.makeText(context, "Storage permission denied. Cannot save image.", Toast.LENGTH_LONG).show()
-            }
-        }
+    var showCancelAnalysisDialog by remember { mutableStateOf(false) }
+    var pendingBackNavigation by remember { mutableStateOf(false) }
+    var pendingCropActionUri by remember { mutableStateOf<Uri?>(null) }
+
+    BackHandler(enabled = analysisViewModel.isProcessing()) {
+        showCancelAnalysisDialog = true
+        pendingBackNavigation = true
+        pendingCropActionUri = null
+    }
+
+    val requestStoragePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) viewModel.saveCurrentImageToGallery()
+        else Toast.makeText(context, context.getString(R.string.storage_permission_denied), Toast.LENGTH_LONG).show()
+    }
 
     val cropImageLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
-        if (result.isSuccessful) {
-            viewModel.onImageCropped(result.uriContent)
-        } else {
-            Log.e("EditImageScreen", "Cropping failed or cancelled", result.error)
-            viewModel.onImageCropped(null)
-            Toast.makeText(context, "Crop failed: ${result.error?.localizedMessage ?: "Cancelled"}", Toast.LENGTH_SHORT).show()
+        val uriToCropAfterConfirmation = pendingCropActionUri ?: editImageUiState.currentImageUri
+
+        if (analysisViewModel.isProcessing() && pendingCropActionUri == null) { // Nếu đang xử lý và người dùng bấm Crop lần đầu
+            showCancelAnalysisDialog = true
+            pendingCropActionUri = uriToCropAfterConfirmation // Lưu uri hiện tại để crop sau
+            pendingBackNavigation = false
+        } else { // Không xử lý hoặc đã xác nhận hủy
+            if (result.isSuccessful) {
+                viewModel.onImageCropped(result.uriContent)
+            }
+            pendingCropActionUri = null // Reset lại sau khi thực hiện
         }
     }
 
-    LaunchedEffect(uiState.saveSuccess) {
-        when (uiState.saveSuccess) {
-            true -> {
-                Toast.makeText(context, "Image saved successfully!", Toast.LENGTH_SHORT).show()
-                viewModel.resetSaveStatus()
-            }
-            false -> {
-                Toast.makeText(context, uiState.error ?: "Failed to save image.", Toast.LENGTH_LONG).show()
-                viewModel.resetSaveStatus()
-            }
-            null -> {}
+    LaunchedEffect(editImageUiState.saveSuccess) {
+        if (editImageUiState.saveSuccess == true) {
+            Toast.makeText(context, context.getString(R.string.save_image_successfuly), Toast.LENGTH_SHORT).show()
+            viewModel.resetSaveStatus()
+        } else if (editImageUiState.saveSuccess == false && editImageUiState.error != null) {
+            // Lỗi save đã được xử lý bằng cách hiển thị trong error
+            // viewModel.resetSaveStatus() // Đã có thể được gọi nếu bạn muốn xóa error luôn
         }
     }
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let {
-            if (uiState.saveSuccess == null) { // Chỉ hiện nếu không phải lỗi save
-                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-                // viewModel.resetSaveStatus() // hoặc viewModel.clearError() nếu có
+    LaunchedEffect(editImageUiState.error) {
+        editImageUiState.error?.let {
+            if (editImageUiState.saveSuccess != false) { // Chỉ hiển thị Toast nếu không phải lỗi từ save (đã xử lý riêng)
+                Toast.makeText(context, "Error: $it", Toast.LENGTH_LONG).show()
             }
+            // viewModel.clearGeneralError() // Có thể gọi ở đây hoặc để người dùng tự xóa
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Edit Image") },
-                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            uiState.currentImageUri?.let { uri ->
-                                val cropOptions = CropImageContractOptions(
-                                    uri = uri,
-                                    cropImageOptions = CropImageOptions(
-                                        guidelines = CropImageView.Guidelines.ON_TOUCH,
-                                        fixAspectRatio = false, // Cho phép crop tự do
-                                        // Nếu muốn crop cũng theo tỷ lệ cố định:
-                                        // fixAspectRatio = true,
-                                        // aspectRatioX = 4, // Thay đổi nếu tỷ lệ khác
-                                        // aspectRatioY = 3, // Thay đổi nếu tỷ lệ khác
-                                        outputCompressFormat = Bitmap.CompressFormat.JPEG,
-                                        outputCompressQuality = 90
-                                    )
-                                )
-                                cropImageLauncher.launch(cropOptions)
-                            } ?: Toast.makeText(context, "No image to crop", Toast.LENGTH_SHORT).show()
-                        },
-                        enabled = uiState.currentImageUri != null && !uiState.isLoading
-                    ) { Icon(Icons.Default.Edit, "Crop Image") }
+    if (showCancelAnalysisDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showCancelAnalysisDialog = false
+                pendingBackNavigation = false
+                pendingCropActionUri = null
+            },
+            title = { Text("Stop Analysis?") },
+            text = { Text("This action will stop the current image analysis. Are you sure?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    analysisViewModel.cancelAnalysis()
+                    showCancelAnalysisDialog = false
+                    if (pendingBackNavigation) {
+                        onNavigateBack()
+                    }
+                    pendingCropActionUri?.let { uriForCrop ->
+                        val cropOptions = CropImageContractOptions(uriForCrop, CropImageOptions(guidelines = CropImageView.Guidelines.ON_TOUCH /* Thêm options khác nếu cần */))
+                        cropImageLauncher.launch(cropOptions)
+                    }
+                    pendingBackNavigation = false
+                    pendingCropActionUri = null
+                }) { Text("Yes, Stop") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showCancelAnalysisDialog = false
+                    pendingBackNavigation = false
+                    pendingCropActionUri = null
+                }) { Text("No, Continue") }
+            }
+        )
+    }
 
-                    IconButton(
-                        onClick = {
-                            // Kiểm tra quyền trước khi gọi viewModel.saveCurrentImageToGallery
-                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) { // Chỉ cần kiểm tra cho Android 9 (API 28) trở xuống
-                                when (ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                                )) {
-                                    PackageManager.PERMISSION_GRANTED -> {
-                                        // Quyền đã được cấp
-                                        viewModel.saveCurrentImageToGallery(context)
-                                    }
-                                    else -> {
-                                        // Yêu cầu quyền
-                                        requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                                    }
-                                }
+    if (editImageUiState.isLoading) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Color.White)
+            Text("Loading image...", color = Color.White, modifier = Modifier.padding(top = 70.dp))
+        }
+    } else if (editImageUiState.currentImageUri != null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent, titleContentColor = Color.White, navigationIconContentColor = Color.White, actionIconContentColor = Color.White),
+                    title = {},
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (analysisViewModel.isProcessing()) {
+                                showCancelAnalysisDialog = true; pendingBackNavigation = true; pendingCropActionUri = null
+                            } else { onNavigateBack() }
+                        }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    },
+                    actions = {
+                        IconButton(onClick = { // Crop Button
+                            val uriToCrop = editImageUiState.currentImageUri
+                            if (analysisViewModel.isProcessing()){
+                                showCancelAnalysisDialog = true; pendingCropActionUri = uriToCrop; pendingBackNavigation = false
                             } else {
-                                // Android 10 (Q) trở lên, MediaStore không cần quyền này để ghi vào thư mục public
-                                // (như Pictures/YourAppName mà ViewModel đang dùng)
-                                viewModel.saveCurrentImageToGallery(context)
+                                uriToCrop?.let {
+                                    val cropOptions = CropImageContractOptions(it, CropImageOptions(guidelines = CropImageView.Guidelines.ON_TOUCH, fixAspectRatio = false, outputCompressFormat = Bitmap.CompressFormat.JPEG, outputCompressQuality = 90))
+                                    cropImageLauncher.launch(cropOptions)
+                                }
                             }
-                        },
-                        enabled = uiState.currentImageUri != null && !uiState.isLoading
-                    ){ Icon(Icons.Default.Add, "Save Image") }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues).background(Color.Black),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    //.aspectRatio(FIXED_DISPLAY_ASPECT_RATIO_FLOAT)
-                    .background(Color.DarkGray),
-                contentAlignment = Alignment.Center
-            ) {
-                if (uiState.isLoading && uiState.saveSuccess == null) { CircularProgressIndicator(color = Color.White) }
-                else if (uiState.currentImageUri != null) {
-                    GlideImage(
-                        model = uiState.currentImageUri,
-                        contentDescription = "Image to edit",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
-                } else if (uiState.error != null && uiState.currentImageUri == null) {
-                    Text(text = "Error: ${uiState.error}", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
-                } else {
-                    Text("Loading image...", modifier = Modifier.padding(16.dp), color = Color.White)
-                }
+                        }) { Icon(Icons.Default.Edit, "Crop") }
+                        IconButton(onClick = { // Save Button
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                when (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                                    PackageManager.PERMISSION_GRANTED -> viewModel.saveCurrentImageToGallery()
+                                    else -> requestStoragePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                }
+                            } else { viewModel.saveCurrentImageToGallery() }
+                        }) { Icon(Icons.Default.Add, "Save") }
+                    }
+                )
+            },
+            floatingActionButton = {
+                AnalysisButton(
+                    currentImageUriToAnalyze = editImageUiState.currentImageUri,
+                    onAnalysisActionTriggered = {
+                        // Khi nút được nhấn, EditImageViewModel sẽ hiển thị popup
+                        viewModel.showAnalysisPopup()
+                    },
+                    viewModel = analysisViewModel // Truyền instance của AnalysisViewModel
+                )
+            },
+            floatingActionButtonPosition = FabPosition.EndOverlay
+        ) { paddingValues ->
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black).padding(paddingValues), contentAlignment = Alignment.Center) {
+                GlideImage(model = editImageUiState.currentImageUri, contentDescription = "Image to edit", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
             }
 
-
-            Button(
-                onClick = { viewModel.showImageInPopup() },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 24.dp).height(50.dp),
-                enabled = uiState.currentImageUri != null && !uiState.isLoading,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-            ) {
-                Text("Analyze", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            if (editImageUiState.showAnalysisPopup && editImageUiState.currentImageUri != null) {
+                AnalysisResultPBS(
+                    analysisImage = editImageUiState.currentImageUri!!,
+                    analysisViewModel = analysisViewModel, // Truyền AnalysisViewModel
+                    onDismiss = {
+                        viewModel.dismissAnalysisPopup()
+                        analysisViewModel.resetState() // Reset AnalysisViewModel khi đóng PBS
+                    }
+                )
             }
         }
-
-        if (uiState.showAnalysisPopup && uiState.imageForPopup != null) {
-            AnalysisResultPopup(
-                imageUri = uiState.imageForPopup!!,
-                onDismissRequest = { viewModel.dismissAnalysisPopup() }
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalGlideComposeApi::class)
-@Composable
-fun AnalysisResultPopup(imageUri: Uri, onDismissRequest: () -> Unit) {
-    Dialog(onDismissRequest = onDismissRequest, properties = DialogProperties(dismissOnClickOutside = true, dismissOnBackPress = true)) {
-        Card(modifier = Modifier.fillMaxWidth(0.85f).wrapContentHeight().clip(RoundedCornerShape(16.dp))) {
-            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Preview Result", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(bottom = 16.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        //.aspectRatio(FIXED_DISPLAY_ASPECT_RATIO_FLOAT) // Ép tỷ lệ cho popup
-                        .background(Color(0xFFFFEBEE), RoundedCornerShape(12.dp)) // Hồng rất nhạt
-                        .border(2.dp, Color(0xFFF06292), RoundedCornerShape(12.dp)) // Hồng nhạt
-                        .padding(8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    GlideImage(model = imageUri, contentDescription = "Analyzed image preview", modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Fit)
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = onDismissRequest, modifier = Modifier.align(Alignment.End), shape = RoundedCornerShape(8.dp)) { Text("Close") }
+    } else {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = editImageUiState.error ?: "Cannot load image. Please try again.", color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onNavigateBack) { Text("Go Back") }
             }
         }
     }

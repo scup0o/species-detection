@@ -1,9 +1,9 @@
 package com.project.speciesdetection.domain.provider
 
 import android.content.Context
-import com.project.speciesdetection.domain.provider.camera.Camera2Source
-import com.project.speciesdetection.domain.provider.camera.CameraProvider
-import com.project.speciesdetection.domain.provider.camera.DefaultCameraProvider
+import com.project.speciesdetection.domain.provider.image_classifier.EnetB0ImageClassifier
+import com.project.speciesdetection.domain.provider.image_classifier.EnetLite0ImageClassifier
+import com.project.speciesdetection.domain.provider.image_classifier.ImageClassifierProvider
 import com.project.speciesdetection.domain.provider.language.DeviceLanguageProvider
 import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import dagger.Binds
@@ -20,20 +20,39 @@ import kotlinx.coroutines.SupervisorJob
 import javax.inject.Named
 import javax.inject.Qualifier
 
-// Qualifier cho CoroutineScope của Camera
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class CameraCoroutineScope
-
 @Module
-@InstallIn(SingletonComponent::class) // Module này có thể chứa các binding cho các scope khác nhau
-abstract class LanguageProviderModule { // Tách module language riêng cho rõ ràng
+@InstallIn(SingletonComponent::class)
+abstract class LanguageProviderModule {
     @Binds
-    @Named("language_provider") // Giả sử language provider là singleton
+    @Named("language_provider")
     abstract fun bindDeviceLanguageProvider(
         deviceLanguageProvider: DeviceLanguageProvider
     ): LanguageProvider
 }
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class ImageClassifierProviderModule {
+    @Binds
+    @Named("enetlite0_classifier_provider")
+    abstract fun bindImageClassifierProvider(
+        imageClassifierProviderModule: EnetLite0ImageClassifier
+    ): ImageClassifierProvider
+
+    @Binds
+    @Named("enetb0_classifier_provider")
+    abstract fun bindEnetB0ImageClassifierProvider(
+        imageClassifierProviderModule: EnetB0ImageClassifier
+    ): ImageClassifierProvider
+}
+
+
+
+/*
+// Qualifier cho CoroutineScope của Camera
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class CameraCoroutineScope
 
 @Module
 @InstallIn(ViewModelComponent::class) // Cài đặt vào ViewModelComponent vì camera thường gắn với ViewModel
@@ -64,4 +83,4 @@ object CameraProviderModule {
     ): CameraProvider {
         return DefaultCameraProvider(camera2Source)
     }
-}
+}*/

@@ -7,8 +7,19 @@
     <string name="error_screen_description_1">We encountered an error</string>
     <string name="error_screen_description_2">while trying to connect with our server</string>
     <string name="error_screen_description_solution">Please try again later</string>
-    <string name="try_again">Try again</string>
+
     <string name="species_family_description">a species of</string>
     <string name="species_search_hint">Type Name or Scientific name…</string>
+
     <string name="camera_permission_denied">Camera permission denied</string>
+    <string name="storage_permission_denied">Storage permission denied</string>
+
+    <string name="image_not_found">Image not found</string>
+    <string name="error">Error! Please try again later</string>
+    <string name="save_image_successfuly">Image saved successfully!</string>
+    <string name="try_again">Try again</string>
+
+    <string name="gallery_source_for_identification">Choose Image</string>
+    <string name="camera_source_for_identification">Take Photo</string>
+
 </resources>

@@ -53,6 +53,7 @@ import com.project.speciesdetection.ui.composable.common.AppSearchBar
 import com.project.speciesdetection.ui.composable.common.ChipPlacholder
 import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
 import com.project.speciesdetection.ui.composable.common.ListItemPlaceholder
+import com.project.speciesdetection.ui.composable.common.species.SpeciesListItem
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalGlideComposeApi::class, ExperimentalMaterial3Api::class)

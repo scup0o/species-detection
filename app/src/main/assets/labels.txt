@@ -1,0 +1,9 @@
+Bubalus_bubalis
+Callosciurus_erythraeus
+Canis_familiaris
+Felis_catus
+Lutrogale_perspicillata
+Macaca_fascicularis
+Macaca_mulatta
+Panthera_tigris
+Rusa_unicolor

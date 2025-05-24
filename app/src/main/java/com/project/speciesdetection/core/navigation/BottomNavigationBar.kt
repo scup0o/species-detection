@@ -1,13 +1,12 @@
 package com.project.speciesdetection.core.navigation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +15,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -25,6 +27,8 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.project.speciesdetection.R
+import com.project.speciesdetection.ui.features.identification_image_source.view.ImageSourceSelectionBottomSheet
 
 @Composable
 fun BottomNavigationBar(
@@ -45,24 +49,34 @@ fun BottomNavigationBar(
         disabledIconColor = MaterialTheme.colorScheme.outlineVariant,
         disabledTextColor = MaterialTheme.colorScheme.outlineVariant)
 
+    var showImageSourcePicker by remember { mutableStateOf(false) }
+
+    ImageSourceSelectionBottomSheet(
+        showBottomSheet = showImageSourcePicker,
+        onDismissRequest = {
+            showImageSourcePicker = false
+        },
+        onImageSelected = { uri ->
+            navController.popBackStack(AppScreen.EditImageForIdentificationScreen.createRoute(uri), inclusive = true, saveState = false)
+            navController.navigate(AppScreen.EditImageForIdentificationScreen.createRoute(uri)) {
+                launchSingleTop = true
+            }
+        }
+    )
+
     Row {
         FloatingActionButton(
             onClick = {
-                navController.popBackStack(AppScreen.CameraScreen.route, inclusive = true, saveState = false)
-                // Người dùng nhấn vào tab khác -> điều hướng như bình thường với save/restore state
-                navController.navigate(AppScreen.CameraScreen.route) {
-                    launchSingleTop = true
-                    //restoreState = true
-                }
+                showImageSourcePicker = true
             },
             shape = CircleShape,
-            modifier = Modifier.padding(10.dp),
+            modifier = Modifier.padding(10.dp).size(60.dp),
             containerColor = MaterialTheme.colorScheme.primary,
         ) {
             Icon(
-                painterResource(AppScreen.CameraScreen.icon!!),
+                painterResource(R.drawable.identify_icon),
                 null,
-                Modifier.size(24.dp))
+                Modifier.size(30.dp))
         }
         NavigationBar(
             modifier = Modifier
