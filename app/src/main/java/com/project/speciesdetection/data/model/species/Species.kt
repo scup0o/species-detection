@@ -15,7 +15,7 @@ data class Species(
     @PropertyName("family")
     var family : Map<String, String> = emptyMap(),
     @get:PropertyName("imageURL")
-    var imageURL: String? = null,
+    var imageURL: List<String>? = null,
     @PropertyName("nameTokens")
     var nameTokens: Map<String, List<String>>? = null,
     @get:PropertyName("scientificNameToken")

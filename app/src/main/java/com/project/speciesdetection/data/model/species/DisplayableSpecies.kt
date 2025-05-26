@@ -7,7 +7,7 @@ data class DisplayableSpecies(
     var scientific: Map<String, String>,
     var localizedFamily : String,
     /*val localizedDescription: String,*/
-    var imageURL: String? = null
+    var imageURL: List<String>? = null
 ){
     fun getScientificName() = this.scientific["name"]
     fun getScientificFamily() = this.scientific["family"]

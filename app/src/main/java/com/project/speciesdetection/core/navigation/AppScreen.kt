@@ -32,6 +32,12 @@ sealed class AppScreen(
     object EncyclopediaMainScreen : AppScreen(
         route = "encyclopedia_main_screen",
         icon = R.drawable.book_open)
+
+    object EncyclopediaDetailScreen : AppScreen(
+        route = "encyclopedia_detail_screen",
+        icon = null
+    )
+
     object CommunityScreen : AppScreen(
         route = "community_screen",
         icon = R.drawable.message_circle)

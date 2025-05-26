@@ -48,7 +48,7 @@ fun SpeciesListItem(species: DisplayableSpecies) {
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
         ) {
             GlideImage(
-                model = species.imageURL,
+                model = species.imageURL?.get(0),
                 contentDescription = species.localizedName,
                 loading = placeholder(R.drawable.error_image),
                 failure = placeholder(R.drawable.error_image),

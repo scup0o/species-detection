@@ -39,7 +39,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
         ).map { pagingDataSpecies ->
             pagingDataSpecies.map { species ->
                 val updatedSpecies = species.copy(
-                    imageURL = species.imageURL?.let { CloudinaryImageURLHelper.getSquareImageURL(it) }
+                    imageURL = species.imageURL?.map { CloudinaryImageURLHelper.getSquareImageURL(it) }
                 )
                 updatedSpecies.toDisplayable(languageCode)
             }
@@ -64,7 +64,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
         ).map { pagingDataSpecies ->
             pagingDataSpecies.map { species ->
                 val updatedSpecies = species.copy(
-                    imageURL = species.imageURL?.let { CloudinaryImageURLHelper.getSquareImageURL(it) }
+                    imageURL = species.imageURL?.map { CloudinaryImageURLHelper.getSquareImageURL(it) }
                 )
 
                 //Log.i("a", updatedSpecies.copy().toString())
@@ -82,7 +82,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
 
         return remoteSpeciesRepository.getSpeciesById(idList).map { species ->
             val updatedSpecies = species.toDisplayable(languageCode).copy(
-                imageURL = species.imageURL?.let { CloudinaryImageURLHelper.getSquareImageURL(it) }
+                imageURL = species.imageURL?.map { CloudinaryImageURLHelper.getSquareImageURL(it) }
             )
             val scientificList =
                 updatedSpecies.scientific + mapOf(
