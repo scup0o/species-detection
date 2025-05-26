@@ -44,6 +44,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.project.speciesdetection.R
+import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.navigation.BottomNavigationBar
 import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
@@ -245,7 +246,26 @@ fun EncyclopediaMainScreen(
                         ) { index ->
                             val species = lazyPagingItems[index]
                             species?.let {
-                                SpeciesListItem(species = it)
+                                SpeciesListItem(
+                                    species = it,
+                                    onClick = {
+                                        navController.popBackStack(
+                                            AppScreen.EncyclopediaDetailScreen.createRoute(
+                                                species = it,
+                                                imageUri = null
+                                            ),
+                                            inclusive = true,
+                                            saveState = false)
+                                        navController.navigate(
+                                            AppScreen.EncyclopediaDetailScreen.createRoute(
+                                                species = it,
+                                                imageUri = null
+                                            )
+                                        ) {
+                                            launchSingleTop = true
+                                        }
+                                    })
+
                             }
                         }
 

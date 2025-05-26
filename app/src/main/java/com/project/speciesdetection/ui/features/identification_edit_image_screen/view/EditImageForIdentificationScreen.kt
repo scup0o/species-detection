@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.canhub.cropper.CropImageContract
@@ -45,7 +46,7 @@ import com.project.speciesdetection.ui.features.identification_edit_image_screen
 fun EditImageForIdentificationScreen(
     viewModel: EditImageForIdentificationViewModel = hiltViewModel(),
 
-    onNavigateBack: () -> Unit
+    navController: NavController
 ) {
     val editImageUiState by viewModel.uiState.collectAsState()
     // Không cần collect analysisUiState ở đây nữa, PBS sẽ làm
@@ -148,7 +149,7 @@ fun EditImageForIdentificationScreen(
                         IconButton(onClick = {
                             /*if (analysisViewModel.isProcessing()) {
                                 showCancelAnalysisDialog = true; pendingBackNavigation = true; pendingCropActionUri = null
-                            } else { */onNavigateBack() //}
+                            } else { */navController.popBackStack()//}
                         }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                     },
                     actions = {
@@ -194,7 +195,8 @@ fun EditImageForIdentificationScreen(
                     analysisImage = editImageUiState.currentImageUri!!,
                     onDismiss = {
                         viewModel.dismissAnalysisPopup()
-                    }
+                    },
+                    navController = navController
                 )
             }
         }
@@ -203,7 +205,7 @@ fun EditImageForIdentificationScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = editImageUiState.error ?: "Cannot load image. Please try again.", color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onNavigateBack) { Text("Go Back") }
+                Button(onClick = {navController.popBackStack()}) { Text("Go Back") }
             }
         }
     }

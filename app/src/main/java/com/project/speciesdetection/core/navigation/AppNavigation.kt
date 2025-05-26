@@ -14,16 +14,21 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.ui.features.community_main_screen.view.CommunityFeed
 import com.project.speciesdetection.ui.features.encyclopedia_main_screen.view.EncyclopediaMainScreen
 import com.project.speciesdetection.ui.features.profile_main_screen.view.ProfileMainScreen
 import com.project.speciesdetection.ui.features.setting_main_screen.view.SettingMainScreen
 import com.project.speciesdetection.ui.features.identification_edit_image_screen.view.EditImageForIdentificationScreen
+import kotlinx.serialization.json.Json
+import androidx.core.net.toUri
+import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view.EncyclopediaDetailScreen
 
 @Composable
 fun AppNavigation(
     activity : Activity
 ){
+    val json = Json { ignoreUnknownKeys = true }
     val navController = rememberNavController()
 
     // Danh sách các route là tab gốc
@@ -112,15 +117,48 @@ fun AppNavigation(
                     nullable = false
                 }
             )
-        ) { // backStackEntry -> không cần dùng trực tiếp ở đây nếu ViewModel lấy từ SavedStateHandle
+        ) { // backStackEntry -> không cần dùng trực tiếp ở đây vì ViewModel lấy từ SavedStateHandle
             EditImageForIdentificationScreen(
-                onNavigateBack = { navController.popBackStack() }
+                navController = navController
             )
         }
 
+        composable(
+            route = AppScreen.EncyclopediaDetailScreen.route,
+            arguments = listOf(
+                navArgument("speciesJson") { type = NavType.StringType },
+                navArgument("imageUri") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {backStackEntry ->
+            val speciesJsonEncoded = backStackEntry.arguments?.getString("speciesJson")
+            val speciesJson = speciesJsonEncoded?.let { Uri.decode(it) }
+            val species = speciesJson?.let {
+                try {
+                    json.decodeFromString<DisplayableSpecies>(it)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
+            }
 
+            val imageUriEncoded = backStackEntry.arguments?.getString("imageUri")
+            val imageUri = imageUriEncoded?.let { Uri.decode(it).toUri() }
 
-
+            if (species != null) {
+                EncyclopediaDetailScreen(
+                    species = species,
+                    observationImage = imageUri,
+                    navController = navController
+                )
+            } else {
+                // Text("Error: Could not load species data.")
+                navController.popBackStack()
+            }
+        }
     }
 
 }

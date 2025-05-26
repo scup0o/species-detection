@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.composable.common.species
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,17 +31,24 @@ import com.project.speciesdetection.data.model.species.DisplayableSpecies
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun SpeciesListItem(species: DisplayableSpecies) {
+fun SpeciesListItem(
+    species: DisplayableSpecies,
+    onClick : () -> Unit
+    ) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .shadow(
                 elevation = MaterialTheme.strokes.m,
                 shape = MaterialTheme.shapes.small,
                 spotColor = MaterialTheme.colorScheme.outline,
-                ambientColor = MaterialTheme.colorScheme.surfaceContainer),
+                ambientColor = MaterialTheme.colorScheme.surfaceContainer)
+            .clickable(
+                onClick = onClick
+            ),
     ) {
         Row(
             modifier = Modifier.padding(MaterialTheme.spacing.xs),

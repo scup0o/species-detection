@@ -10,15 +10,20 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import com.project.speciesdetection.R
+import com.project.speciesdetection.data.model.species.DisplayableSpecies
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 sealed class AppScreen(
     val route: String,
     val icon: Int?,
+    val agruments : List<String>? = emptyList()
 ) {
     /*object CameraScreen : AppScreen(
         route = "camera_screen",
         icon = R.drawable.camera
     )*/
+    val json = Json { ignoreUnknownKeys = true }
 
     object EditImageForIdentificationScreen : AppScreen(
         route = "edit_image_screen/{imageUri}",
@@ -34,9 +39,22 @@ sealed class AppScreen(
         icon = R.drawable.book_open)
 
     object EncyclopediaDetailScreen : AppScreen(
-        route = "encyclopedia_detail_screen",
+        route = "encyclopedia_detail_screen/{speciesJson}?imageURi={imageUri}",
         icon = null
-    )
+    ){
+        fun createRoute(species: DisplayableSpecies, imageUri: Uri?) : String{
+            val speciesJsonString = json.encodeToString(species)
+            val speciesJsonEncoded = Uri.encode(speciesJsonString)
+
+            var route = "encyclopedia_detail_screen/$speciesJsonEncoded"
+
+            imageUri?.let {
+                val encodedImageUri = Uri.encode(it.toString())
+                route += "?imageURi=$encodedImageUri"
+            }
+            return route
+        }
+    }
 
     object CommunityScreen : AppScreen(
         route = "community_screen",

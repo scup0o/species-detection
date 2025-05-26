@@ -1,5 +1,8 @@
 package com.project.speciesdetection.data.model.species
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class DisplayableSpecies(
     val id: String,
     var localizedName: String,

@@ -18,8 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.domain.provider.image_classifier.Recognition // Đảm bảo import đúng
 import com.project.speciesdetection.ui.composable.common.ItemErrorPlaceholder
@@ -30,6 +32,7 @@ import com.project.speciesdetection.ui.features.identification_analysis.viewmode
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun AnalysisResultPBS(
+    navController: NavController,
     onDismiss: () -> Unit,
     analysisImage: Uri,
     analysisViewModel: AnalysisViewModel = hiltViewModel(),)
@@ -87,7 +90,25 @@ fun AnalysisResultPBS(
                             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
                         ) {
                             items(state.recognitions, key = { it.id }) { species ->
-                                SpeciesListItem(species)
+                                SpeciesListItem(
+                                    species=species,
+                                    onClick = {
+                                        navController.popBackStack(
+                                            AppScreen.EncyclopediaDetailScreen.createRoute(
+                                                species = species,
+                                                imageUri = analysisImage
+                                            ),
+                                            inclusive = true,
+                                            saveState = false)
+                                        navController.navigate(
+                                            AppScreen.EncyclopediaDetailScreen.createRoute(
+                                                species = species,
+                                                imageUri = analysisImage
+                                            )
+                                        ) {
+                                            launchSingleTop = true
+                                        }
+                                    })
                             }
 
                         }
