@@ -63,8 +63,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui.text.google.fonts)
-    implementation(libs.firebase.database.ktx)
-    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.googleid)
+    implementation(libs.play.services.auth)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -83,6 +84,9 @@ dependencies {
     //Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
 
     //Glide
     implementation(libs.glide)
@@ -114,7 +118,13 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
     //implementation ("org.tensorflow:tensorflow-lite-select-tf-ops:2.16.1") //EB0
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    //Serizalization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0-alpha02")
+    implementation ("com.google.android.gms:play-services-auth:21.3.0")
 
     configurations.all {
         exclude(group = "com.google.ai.edge.litert", module = "litert-api")

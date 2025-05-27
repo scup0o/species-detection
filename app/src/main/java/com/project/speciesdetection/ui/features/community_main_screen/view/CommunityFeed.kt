@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.features.community_main_screen.view
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -20,6 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.project.speciesdetection.core.navigation.BottomNavigationBar
 import com.project.speciesdetection.ui.features.community_main_screen.viewmodel.CommunityFeedViewModel
+import com.project.speciesdetection.ui.features.login.view.AuthScreen
 
 
 @Composable
@@ -30,12 +32,18 @@ fun CommunityFeed(
 ){
     val open by viewModel.searchQuery.collectAsState()
 
+
+
+
     Scaffold(
         containerColor = containerColor!!,
         bottomBar = {BottomNavigationBar(navController)}
     ){
         innerPadding ->
-        Column {Text(
+        Box(Modifier.padding(innerPadding)){
+            AuthScreen()
+        }
+        /*Column {Text(
             modifier = Modifier.padding(innerPadding),
             text="community")
             Button(
@@ -46,7 +54,7 @@ fun CommunityFeed(
             }
             if (open){
                 Text("a")
-            }  }
+            }  }*/
 
     }
 }

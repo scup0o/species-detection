@@ -37,7 +37,7 @@ fun AnalysisResultPBS(
     analysisImage: Uri,
     analysisViewModel: AnalysisViewModel = hiltViewModel(),)
 {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val currentAnalysisState by analysisViewModel.uiState.collectAsState() // Lấy state từ ViewModel
 
     ModalBottomSheet(
@@ -45,7 +45,7 @@ fun AnalysisResultPBS(
         onDismissRequest = {
             analysisViewModel.resetState()
             onDismiss()},
-        modifier = Modifier.defaultMinSize(minHeight = 200.dp)
+        //modifier = Modifier.defaultMinSize(minHeight = 200.dp)
     ) {
         Row(){
             IconButton(
