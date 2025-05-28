@@ -56,6 +56,21 @@ sealed class AppScreen(
         }
     }
 
+    object LoginScreen : AppScreen(
+        route = "login_screen",
+        icon = null,
+    )
+
+    object SignUpScreen : AppScreen(
+        route = "signup_screen",
+        icon = null,
+    )
+
+    object ForgotPasswordScreen : AppScreen(
+        route = "forgot_password_screen",
+        icon = null,
+    )
+
     object CommunityScreen : AppScreen(
         route = "community_screen",
         icon = R.drawable.message_circle)

@@ -1,4 +1,4 @@
-package com.project.speciesdetection.ui.features.login.viewmodel
+package com.project.speciesdetection.ui.features.auth.viewmodel
 
 import android.app.Activity
 import android.app.Application
@@ -7,12 +7,10 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
-import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -31,7 +29,8 @@ data class AuthState(
     val isLoading: Boolean = false,
     val currentUser: FirebaseUser? = null,
     val error: String? = null,
-    val isGoogleSignInInProgress: Boolean = false // Bạn có thể giữ lại hoặc loại bỏ nếu không dùng nữa
+    val isGoogleSignInInProgress: Boolean = false,
+    val resendCooldownSeconds: Int = 0
 )
 
 sealed class UiEvent {
@@ -51,6 +50,9 @@ class AuthViewModel @Inject constructor(
     private val _uiEvent = MutableSharedFlow<UiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
 
+    private val _resendEmailState = MutableStateFlow(false)
+    val resendEmailState = _resendEmailState.asStateFlow()
+
     private var googleSignInApiRequest: GetCredentialRequest? = null
 
     init {
@@ -66,10 +68,13 @@ class AuthViewModel @Inject constructor(
         googleSignInApiRequest = repository.createGoogleSignInRequest()
     }
 
-    fun initiateGoogleSignIn(activityContext: Activity) {
+    fun initiateGoogleSignIn(
+        activityContext: Activity,
+        errorMessage: String,
+        successMessage : String) {
         val currentRequest = googleSignInApiRequest ?: run {
             _authState.update { it.copy(isLoading = false, error = "Google Sign-In request not ready.") }
-            viewModelScope.launch { _uiEvent.emit(UiEvent.ShowSnackbar("Google Sign-In request not ready.")) }
+            viewModelScope.launch { _uiEvent.emit(UiEvent.ShowSnackbar(errorMessage)) }
             return
         }
 
@@ -81,9 +86,8 @@ class AuthViewModel @Inject constructor(
                     request = currentRequest,
                     context = activityContext,
                 )
-                // Xử lý credential thành công (như code hiện tại của bạn)
                 val credential = result.credential
-                var idToken: String? = null
+                var idToken: String?
 
                 if (credential is GoogleIdTokenCredential) {
                     idToken = credential.idToken
@@ -93,14 +97,14 @@ class AuthViewModel @Inject constructor(
                         val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                         idToken = googleIdTokenCredential.idToken
                     } catch (e: GoogleIdTokenParsingException) {
-                        Log.e("AuthViewModel", "GoogleIdTokenParsingException", e)
-                        handleAuthError(Exception("Failed to parse Google ID token."), "Google Sign-In Failed: ")
+                        //Log.e("AuthViewModel", "GoogleIdTokenParsingException", e)
+                        handleAuthError(Exception(errorMessage), "Google Sign-In Failed: ")
                         return@launch
                     }
                 } else {
-                    Log.e("AuthViewModel", "Unexpected credential type: ${credential::class.java.simpleName}")
+                    //Log.e("AuthViewModel", "Unexpected credential type: ${credential::class.java.simpleName}")
                     _authState.update { it.copy(isLoading = false, error = "Unexpected credential type.") }
-                    _uiEvent.emit(UiEvent.ShowSnackbar("Unexpected credential type."))
+                    _uiEvent.emit(UiEvent.ShowSnackbar(errorMessage))
                     return@launch
                 }
 
@@ -108,63 +112,79 @@ class AuthViewModel @Inject constructor(
                     repository.signInWithGoogleIdToken(idToken).fold(
                         onSuccess = { firebaseUser ->
                             _authState.update { it.copy(isLoading = false, currentUser = firebaseUser, error = null) }
-                            _uiEvent.emit(UiEvent.ShowSnackbar("Google Sign-In Successful"))
+                            _uiEvent.emit(UiEvent.ShowSnackbar(successMessage))
                         },
                         onFailure = { exception ->
-                            handleAuthError(exception, "Google Sign-In (Firebase) Failed: ")
+                            handleAuthError(exception, errorMessage)
                         }
                     )
                 } else {
-                    handleAuthError(Exception("Google ID Token was null."), "Google Sign-In Failed: ")
+                    handleAuthError(Exception(errorMessage), "Google Sign-In Failed: ")
                 }
 
-            } catch (e: GetCredentialException) { // Bắt lỗi chung từ Credential Manager
+            } catch (e: GetCredentialException) {
                 _authState.update { it.copy(isLoading = false) }
                 if (e is GetCredentialCancellationException) {
-                    Log.i("AuthViewModel", "Google Sign-In cancelled by user.")
-                    _uiEvent.emit(UiEvent.ShowSnackbar("Google Sign-In cancelled."))
+                    //Log.i("AuthViewModel", "Google Sign-In cancelled by user.")
+                    _uiEvent.emit(UiEvent.ShowSnackbar(errorMessage))
                 } else {
-                    // Các lỗi khác từ GetCredentialException (có thể bao gồm cả NoCredentialException,
-                    // nhưng CredentialManager sẽ tự xử lý UI cho trường hợp không có tài khoản).
-                    // Thường thì khi đến đây, có thể là lỗi mạng hoặc cấu hình sai.
-                    Log.e("AuthViewModel", "GetCredentialException: ${e.message}", e)
-                    _uiEvent.emit(UiEvent.ShowSnackbar("Google Sign-In failed. Please try again."))
+                    //Log.e("AuthViewModel", "GetCredentialException: ${e.message}", e)
+                    _uiEvent.emit(UiEvent.ShowSnackbar(errorMessage))
                 }
-            } catch (e: Exception) { // Bắt các lỗi khác không mong muốn
-                handleAuthError(e, "Google Sign-In (General) Failed: ")
+            } catch (e: Exception) {
+                handleAuthError(e, errorMessage)
             }
         }
     }
 
-    fun signUpWithEmail(email: String, pass: String, name: String) {
+    fun signUpWithEmail(
+        email: String,
+        pass: String,
+        name: String,
+        errorMessage: String,
+        successMessage : String) {
         if (name.isBlank()) {
             _authState.update { it.copy(error = "Name cannot be empty") }
             return
         }
-        _authState.update { it.copy(isLoading = true, error = null) }
+        _authState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             repository.signUpWithEmailPassword(email, pass, name).fold(
                 onSuccess = { firebaseUser ->
+                    startCooldown()
                     _authState.update { it.copy(isLoading = false, currentUser = firebaseUser, error = null) }
-                    _uiEvent.emit(UiEvent.ShowSnackbar("Sign-Up Successful"))
+                    _resendEmailState.value = true
+                    _uiEvent.emit(
+                        UiEvent.ShowSnackbar("Sign up successful! A verification email has been sent.")
+                    )
                 },
                 onFailure = { exception ->
-                    handleAuthError(exception, "Sign-Up Failed: ")
+                    handleAuthError(exception, errorMessage)
                 }
             )
         }
     }
 
-    fun signInWithEmail(email: String, pass: String) {
-        _authState.update { it.copy(isLoading = true, error = null) }
+    fun signInWithEmail(
+        email: String,
+        pass: String,
+        errorMessage: String,
+        successMessage : String) {
+        _authState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             repository.signInWithEmailPassword(email, pass).fold(
                 onSuccess = { firebaseUser ->
+                    if (!firebaseUser.isEmailVerified) {
+                        _authState.update { it.copy(isLoading = false, error = "Email not verified.") }
+                        _uiEvent.emit(UiEvent.ShowSnackbar("Please verify your email before signing in."))
+                        return@launch
+                    }
+
                     _authState.update { it.copy(isLoading = false, currentUser = firebaseUser, error = null) }
-                    _uiEvent.emit(UiEvent.ShowSnackbar("Sign-In Successful"))
+                    _uiEvent.emit(UiEvent.ShowSnackbar(successMessage))
                 },
                 onFailure = { exception ->
-                    handleAuthError(exception, "Sign-In Failed: ")
+                    handleAuthError(exception, errorMessage)
                 }
             )
         }
@@ -172,30 +192,88 @@ class AuthViewModel @Inject constructor(
 
     fun signOut() {
         viewModelScope.launch {
+            _authState.update { it.copy(isLoading = true, error = null) }
             repository.signOut()
             _authState.update { AuthState() }
-            _uiEvent.emit(UiEvent.ShowSnackbar("Signed Out"))
+            //_uiEvent.emit(UiEvent.ShowSnackbar("Signed Out"))
             try {
                 credentialManager.clearCredentialState(ClearCredentialStateRequest())
-                Log.i("AuthViewModel", "Credential state cleared on sign out.")
+                //Log.i("AuthViewModel", "Credential state cleared on sign out.")
             } catch (e: ClearCredentialException) {
-                Log.e("AuthViewModel", "Failed to clear credential state: ${e.message}", e)
+                //Log.e("AuthViewModel", "Failed to clear credential state: ${e.message}", e)
+            }
+        }
+    }
+
+    fun resetPassword(email: String) {
+        _authState.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            if (email.isBlank()) {
+                _authState.update { it.copy(isLoading = false, error = "empty email") }
+                _uiEvent.emit(UiEvent.ShowSnackbar("Please enter your email."))
+                return@launch
+            }
+
+            val result = repository.sendPasswordResetEmail(email)
+            result.fold(
+                onSuccess = {
+                    _authState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(UiEvent.ShowSnackbar("Password reset email sent. Please check your inbox."))
+                },
+                onFailure = { error ->
+                    handleAuthError(error,"Error")
+                    _uiEvent.emit(UiEvent.ShowSnackbar(error.message ?: "Failed to send reset email."))
+                }
+            )
+        }
+    }
+
+    fun resendVerificationEmail() {
+        viewModelScope.launch {
+            if (authState.value.resendCooldownSeconds > 0) return@launch
+
+            _authState.update { it.copy(isLoading = true) }
+
+            val result = repository.resendVerificationEmail()
+            result.fold(
+                onSuccess = {
+                    _authState.update { it.copy(isLoading = false) }
+                    _resendEmailState.value = true
+                    _uiEvent.emit(UiEvent.ShowSnackbar("Verification email has been resent. Please check your inbox."))
+
+                    startCooldown()
+                },
+                onFailure = { e ->
+                    _authState.update { it.copy(isLoading = false) }
+                    _uiEvent.emit(UiEvent.ShowSnackbar(e.message ?: "Failed to resend verification email."))
+                }
+            )
+        }
+    }
+
+    private fun startCooldown() {
+        val cooldown = 60 // thời gian chờ (giây)
+        viewModelScope.launch {
+            for (i in cooldown downTo 0) {
+                _authState.update { it.copy(resendCooldownSeconds = i) }
+                kotlinx.coroutines.delay(1000L)
             }
         }
     }
 
     private suspend fun handleAuthError(exception: Throwable, prefix: String) {
         Log.e("AuthViewModel", "$prefix ${exception.message}", exception)
-        val errorMessage = when (exception.message) {
+        /*val errorMessage = when (exception.message) {
             "Email_already_registered_with_password" -> "This email is registered with email/password. Please sign in with your password."
             "Email_already_registered_with_google_or_password" -> "This email is already in use with Google or another password account. Please try logging in or use a different email."
             else -> exception.localizedMessage ?: "An unknown error occurred"
-        }
-        _authState.update { it.copy(isLoading = false, error = errorMessage) }
-        _uiEvent.emit(UiEvent.ShowSnackbar(errorMessage))
+        }*/
+        _authState.update { it.copy(isLoading = false, error = exception.message) }
+        _uiEvent.emit(UiEvent.ShowSnackbar(exception.message!!))
     }
 
     fun clearError() {
         _authState.update { it.copy(error = null) }
+        _resendEmailState.value = false
     }
 }

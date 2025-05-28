@@ -13,4 +13,6 @@ interface AuthServiceInterface {
     suspend fun saveUserProfile(user: User): Result<Unit>
     fun getCurrentUser(): FirebaseUser?
     suspend fun signOut()
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit>
+    suspend fun resendVerificationEmail(): Result<Unit>
 }

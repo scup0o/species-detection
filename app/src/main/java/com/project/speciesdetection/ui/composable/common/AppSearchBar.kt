@@ -23,9 +23,11 @@ import androidx.compose.material3.TextFieldDefaults // Material 3 <--- QUAN TR�
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.project.speciesdetection.core.theme.spacing
 
@@ -39,16 +41,24 @@ fun AppSearchBar(
     modifier: Modifier = Modifier,
     hint: String = "search",
     // Thêm các tham số tùy chỉnh màu sắc và hình dạng nếu cần
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), // Màu nền tùy chỉnh (điều chỉnh alpha nếu cần)
+    backgroundColor: Color = MaterialTheme.colorScheme.surface, // Màu nền tùy chỉnh (điều chỉnh alpha nếu cần)
     contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant, // Màu chữ và icon
-    cornerRadiusPercent: Int = 50 // 50% để tạo hình viên thuốc
+    cornerRadiusPercent: Int = 50, // 50% để tạo hình viên thuốc,
+    elevation: Dp = 5.dp
 ) {
 
-    TextField( // ĐỔI TỪ OutlinedTextField SANG TextField
+    TextField(
         value = query,
         onValueChange = onQueryChanged,
         modifier = modifier
             .fillMaxWidth()
+            .shadow( // << THÊM MODIFIER SHADOW Ở ĐÂY
+                elevation = elevation,
+                shape = RoundedCornerShape(percent = cornerRadiusPercent), // Shadow sẽ theo hình dạng này
+                clip = false, // Để shadow không bị cắt bởi clip của TextField bên dưới
+                ambientColor = MaterialTheme.colorScheme.surfaceVariant,
+                spotColor = MaterialTheme.colorScheme.outlineVariant
+            )
             .heightIn(min = 52.dp) // Đặt chiều cao tối thiểu, Figma thường dùng 56dp hoặc tương tự
             .clip(RoundedCornerShape(percent = cornerRadiusPercent)) // Bo tròn góc
             .background(backgroundColor), // Đặt màu nền cho vùng TextField

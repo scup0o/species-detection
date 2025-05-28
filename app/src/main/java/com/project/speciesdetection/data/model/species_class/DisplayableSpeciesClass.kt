@@ -8,7 +8,7 @@ data class DisplayableSpeciesClass(
 ) {
     fun getIcon() :Int?{
         return when (this.id){
-            "1" -> R.drawable.mammal
+            "mammalia" -> R.drawable.mammal
             else -> {null}
         }
     }

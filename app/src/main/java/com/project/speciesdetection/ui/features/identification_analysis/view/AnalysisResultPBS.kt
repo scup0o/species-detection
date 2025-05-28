@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.project.speciesdetection.core.navigation.AppScreen
@@ -32,7 +33,7 @@ import com.project.speciesdetection.ui.features.identification_analysis.viewmode
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun AnalysisResultPBS(
-    navController: NavController,
+    navController: NavHostController,
     onDismiss: () -> Unit,
     analysisImage: Uri,
     analysisViewModel: AnalysisViewModel = hiltViewModel(),)

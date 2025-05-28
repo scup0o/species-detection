@@ -22,4 +22,6 @@
     <string name="gallery_source_for_identification">Choose Image</string>
     <string name="camera_source_for_identification">Take Photo</string>
 
+    <string name="setting">Settings</string>
+    <string name="log_out">Logout</string>
 </resources>

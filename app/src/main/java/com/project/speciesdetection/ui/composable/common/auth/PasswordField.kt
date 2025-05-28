@@ -1,0 +1,91 @@
+package com.project.speciesdetection.ui.composable.common.auth
+
+import android.util.Log
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
+import com.project.speciesdetection.core.theme.spacing
+import com.project.speciesdetection.ui.composable.common.CustomTextField
+import com.project.speciesdetection.ui.composable.common.ErrorText
+
+@Composable
+fun PasswordField(
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    passwordVisible: Boolean,
+    onToggleVisibility: () -> Unit,
+    error: String?
+) {
+
+
+    CustomTextField(
+        value = password,
+        onValueChange = onPasswordChange,
+        placeholder = {
+            Text(
+                "Password",
+            ) },
+        supportingText = {
+            if (error?.contains("empty") == true && password.isEmpty())
+                ErrorText("Password cannot be empty")
+            if (error?.contains("incorrect") == true)
+                ErrorText("Invalid email or password")
+            if (error?.contains("invalid")==true)
+                ErrorText(error)
+        },
+        visualTransformation =
+            if (passwordVisible)
+                VisualTransformation.None
+            else PasswordVisualTransformation(),
+        leadingIcon = {
+            Icon(
+                Icons.Default.Lock, null,
+
+                modifier = Modifier.padding(start = 20.dp),
+            )
+        },
+
+        trailingIcon = {
+            IconButton(onClick = onToggleVisibility) {
+                Icon(
+                    modifier = Modifier.padding(end = 20.dp),
+                    imageVector =
+                        if (passwordVisible)
+                            Icons.Default.PlayArrow
+                        else Icons.Default.Build,
+                    contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                )
+            }
+        },
+        shape = MaterialTheme.shapes.extraLarge,
+
+        modifier = Modifier.fillMaxWidth(),
+        isError = error?.contains("empty") == true && password.isEmpty()
+                || error?.contains("incorrect") == true
+                || error?.contains("invalid")==true,
+        paddingValues = 20.dp,
+
+    )
+}

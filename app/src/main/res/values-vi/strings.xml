@@ -22,4 +22,8 @@
 
     <string name="gallery_source_for_identification">Chọn Ảnh</string>
     <string name="camera_source_for_identification">Chụp Ảnh</string>
+
+    <string name="setting">Cài đặt</string>
+    <string name="log_out">Đăng xuất</string>
+
 </resources>

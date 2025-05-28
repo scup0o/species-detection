@@ -1,6 +1,7 @@
 package com.project.speciesdetection.core.navigation
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -64,7 +65,8 @@ fun BottomNavigationBar(
         }
     )
 
-    Row {
+    Row(
+    ) {
         FloatingActionButton(
             onClick = {
                 showImageSourcePicker = true
@@ -87,7 +89,8 @@ fun BottomNavigationBar(
                         bottomStart = 0.dp,
                         bottomEnd = 0.dp
                     )
-                ),
+                ).height(80.dp)
+                ,
             containerColor = MaterialTheme.colorScheme.surface
         )
         {
@@ -97,6 +100,7 @@ fun BottomNavigationBar(
             screens.forEach { screen ->
                 val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
                 NavigationBarItem(
+                    modifier = Modifier,
                     icon = {
                         Icon(
                             painter = painterResource(screen.icon!!),

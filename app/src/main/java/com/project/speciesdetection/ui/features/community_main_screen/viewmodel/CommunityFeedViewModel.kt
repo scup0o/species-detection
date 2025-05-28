@@ -23,16 +23,19 @@ class CommunityFeedViewModel @Inject constructor(
         data class Error(val message: String) : UiState()
     }
 
-    private val _searchQuery = MutableStateFlow(
+    /*private val _searchQuery = MutableStateFlow(
         savedStateHandle.get<Boolean>(SAVED_SEARCH_QUERY_KEY) ?: false
-    )
+    )*/
+
+    private val _searchQuery = MutableStateFlow(false)
+
     // 2. Expose nó ra bên ngoài dưới dạng StateFlow (read-only)
     val searchQuery: StateFlow<Boolean> = _searchQuery.asStateFlow()
 
     // Phương thức để cập nhật giá trị (chỉ có thể gọi từ bên trong ViewModel)
     fun updateSearchQuery(query: Boolean) {
         _searchQuery.value = query // Cập nhật MutableStateFlow
-        savedStateHandle[SAVED_SEARCH_QUERY_KEY] = query // Lưu vào SavedStateHandle
+        //savedStateHandle[SAVED_SEARCH_QUERY_KEY] = query // Lưu vào SavedStateHandle
     }
 
 }

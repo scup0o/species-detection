@@ -29,4 +29,10 @@ class RemoteUserRepository @Inject constructor(
     override fun getCurrentUser(): FirebaseUser? = authService.getCurrentUser()
 
     override suspend fun signOut() = authService.signOut()
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return authService.sendPasswordResetEmail(email)
+    }
+    override suspend fun resendVerificationEmail(): Result<Unit> {
+        return authService.resendVerificationEmail()
+    }
 }

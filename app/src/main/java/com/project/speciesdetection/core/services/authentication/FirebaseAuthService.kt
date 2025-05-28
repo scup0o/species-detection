@@ -1,4 +1,3 @@
-// data/service/FirestoreAuthService.kt
 package com.project.speciesdetection.core.services.authentication
 
 import android.content.Context
@@ -60,8 +59,6 @@ class FirebaseAuthService @Inject constructor(
                 Result.success(firebaseUser)
             } ?: Result.failure(Exception("Firebase user is null after Google sign-in"))
         } catch (e: FirebaseAuthUserCollisionException) {
-            // Xảy ra khi "One account per email address" được bật trong Firebase Console
-            // và email này đã được sử dụng bởi một nhà cung cấp khác (ví dụ: Email/Password)
             Result.failure(Exception("Email_already_registered_with_password"))
         } catch (e: Exception) {
             Result.failure(e)
@@ -80,6 +77,10 @@ class FirebaseAuthService @Inject constructor(
                     photoUrl = null,
                     source = "email_password"
                 )
+
+                // Gửi email xác thực
+                firebaseUser.sendEmailVerification().await()
+
                 saveUserProfile(userProfile).fold(
                     onSuccess = { Result.success(firebaseUser) },
                     onFailure = { ex -> Result.failure(Exception("User created, but failed to save profile: ${ex.message}", ex)) }
@@ -116,7 +117,31 @@ class FirebaseAuthService @Inject constructor(
 
     override suspend fun signOut() {
         auth.signOut()
-        // Theo tài liệu Credential Manager, việc signOut khỏi FirebaseAuth là đủ.
-        // Hệ thống sẽ quản lý trạng thái đăng nhập Google.
     }
+
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun resendVerificationEmail(): Result<Unit> {
+        val user = auth.currentUser
+        return if (user != null && !user.isEmailVerified) {
+            try {
+                user.sendEmailVerification().await()
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        } else if (user == null) {
+            Result.failure(Exception("No logged-in user found."))
+        } else {
+            Result.failure(Exception("Email is already verified."))
+        }
+    }
+
 }

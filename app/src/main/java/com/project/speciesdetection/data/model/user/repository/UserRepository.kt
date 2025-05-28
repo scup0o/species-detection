@@ -12,4 +12,6 @@ interface UserRepository {
     suspend fun signInWithEmailPassword(email: String, pass: String): Result<FirebaseUser>
     fun getCurrentUser(): FirebaseUser?
     suspend fun signOut()
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit>
+    suspend fun resendVerificationEmail(): Result<Unit>
 }

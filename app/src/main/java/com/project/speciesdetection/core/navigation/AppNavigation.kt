@@ -22,6 +22,13 @@ import com.project.speciesdetection.ui.features.setting_main_screen.view.Setting
 import com.project.speciesdetection.ui.features.identification_edit_image_screen.view.EditImageForIdentificationScreen
 import kotlinx.serialization.json.Json
 import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.project.speciesdetection.ui.features.auth.view.AuthScreen
+import com.project.speciesdetection.ui.features.auth.view.ForgotPasswordScreen
+import com.project.speciesdetection.ui.features.auth.view.LoginScreen
+import com.project.speciesdetection.ui.features.auth.view.SignupScreen
+import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view.EncyclopediaDetailScreen
 
 @Composable
@@ -30,13 +37,14 @@ fun AppNavigation(
 ){
     val json = Json { ignoreUnknownKeys = true }
     val navController = rememberNavController()
+    val authViewModel : AuthViewModel = hiltViewModel()
 
     // Danh sách các route là tab gốc
     val rootDestinations = listOf(
         AppScreen.CommunityScreen.route,
         AppScreen.EncyclopediaMainScreen.route,
         AppScreen.ProfileMainScreen.route,
-        AppScreen.SettingMainScreen.route
+        //AppScreen.SettingMainScreen.route
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -61,10 +69,46 @@ fun AppNavigation(
             enterTransition = {EnterTransition.None},
             exitTransition = {ExitTransition.None}
         ){
-            CommunityFeed(
-                navController = navController,
-                containerColor = containerColor)
+                CommunityFeed(
+                    navController = navController,
+                    containerColor = containerColor,
+                    authViewModel = authViewModel)
+
         }
+        composable(
+            route = AppScreen.LoginScreen.route,
+            enterTransition = {EnterTransition.None},
+            exitTransition = {ExitTransition.None}
+        ){
+
+            LoginScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable(
+            route = AppScreen.SignUpScreen.route,
+            enterTransition = {EnterTransition.None},
+            exitTransition = {ExitTransition.None}
+        ){
+            SignupScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable(
+            route = AppScreen.ForgotPasswordScreen.route,
+            enterTransition = {EnterTransition.None},
+            exitTransition = {ExitTransition.None}
+        ){
+            ForgotPasswordScreen(
+                navController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
         composable(
             route = AppScreen.EncyclopediaMainScreen.route,
             enterTransition = {EnterTransition.None},
@@ -92,7 +136,8 @@ fun AppNavigation(
             exitTransition = {ExitTransition.None}
         ){
             SettingMainScreen(
-                navController = navController)
+                navController = navController,
+                authViewModel = authViewModel)
         }
 
         /*composable(
