@@ -6,5 +6,7 @@ import com.project.speciesdetection.data.model.species_class.SpeciesClass
 import kotlinx.coroutines.flow.Flow
 
 interface SpeciesClassRepository {
-    fun getAllSpeciesClass(languageCode: String) : Flow<DataResult<List<DisplayableSpeciesClass>>>
+    fun getAllSpeciesClass() : Flow<DataResult<List<SpeciesClass>>>
+
+    suspend fun getAll() : List<SpeciesClass>
 }

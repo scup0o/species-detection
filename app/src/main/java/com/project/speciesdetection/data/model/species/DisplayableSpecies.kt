@@ -1,10 +1,18 @@
 package com.project.speciesdetection.data.model.species
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class DisplayableSpecies(
     val id: String,
-    val localizedName: String,
-    val localizedClass: String,
-    val scientificName: String,
+    var localizedName: String,
+    var localizedClass: String,
+    var scientific: Map<String, String>,
+    var localizedFamily : String,
     /*val localizedDescription: String,*/
-    var imageURL: String? = null
-)
+    var imageURL: List<String>? = null
+){
+    fun getScientificName() = this.scientific["name"]
+    fun getScientificFamily() = this.scientific["family"]
+    fun getScientificClass() = this.scientific["class"]
+}

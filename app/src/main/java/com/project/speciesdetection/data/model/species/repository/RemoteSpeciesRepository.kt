@@ -1,14 +1,20 @@
 package com.project.speciesdetection.data.model.species.repository
 
+import android.util.Log
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.google.firebase.firestore.Query
 import com.project.speciesdetection.core.helpers.CloudinaryImageURLHelper
+import com.project.speciesdetection.core.services.backend.species.RemoteSpeciesPagingSource
+import com.project.speciesdetection.core.services.backend.species.SpeciesApiService
 import com.project.speciesdetection.core.services.remote_database.DataResult
 import com.project.speciesdetection.core.services.remote_database.SpeciesDatabaseService
 import com.project.speciesdetection.core.services.remote_database.species.DEFAULT_SPECIES_PAGE_SIZE
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species.Species
+import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.Locale
@@ -16,83 +22,88 @@ import javax.inject.Inject
 import javax.inject.Named
 
 class RemoteSpeciesRepository @Inject constructor(
-    @Named("species_db") private val databaseService: SpeciesDatabaseService<Species, String>,
+    private val apiService: SpeciesApiService,
+    @Named("language_provider") private val languageProvider: LanguageProvider // Inject LanguageProvider để PagingSource có thể lấy ngôn ngữ hiện tại
 ):SpeciesRepository{
-
-    override fun getSpeciesByFieldPaged(
-        searchQuery : List<String>?,
-        targetField: String,
-        languageCode: String,
-        value: String
-    ): Flow<PagingData<DisplayableSpecies>> {
-        // Xác định fieldPath và orderByField cho Firestore query
-        // QUAN TRỌNG: Firestore orderBy phải dựa trên các trường thực tế trong document.
-        // Nếu `targetField` là một map (ví dụ: `commonName: {en: "Lion", vi: "Sư tử"}`),
-        // bạn không thể dễ dàng `orderBy` trên `commonName.en` nếu `whereEqualTo` là trên `classId`.
-        // Bạn cần một trường riêng cho việc sắp xếp hoặc chấp nhận sắp xếp theo trường mặc định (ví dụ: id document).
-        val fieldPathForQuery: String
-        val orderByFieldForQuery: String? = "name.$languageCode"
-        // Ví dụ đơn giản:
-        if (targetField == "classId") {
-            fieldPathForQuery = targetField
-            // Mặc định sắp xếp theo một trường chung nào đó, ví dụ `scientificName` hoặc `id`
-            // Hoặc để FirestoreSpeciesService tự quyết định (sắp xếp theo ID nếu null)
-            //orderByFieldForQuery = "" // HOẶC null để FirestoreSpeciesService dùng default
-        } else {
-            // Đây là trường hợp phức tạp hơn nếu targetField là một map.
-            // Giả sử targetField là tên của một trường map, ví dụ "commonName"
-            // và bạn muốn lọc dựa trên giá trị bên trong map đó (ví dụ commonName.en == "Lion")
-            // Firestore query sẽ là: .whereEqualTo("commonName.$languageCode", value)
-            fieldPathForQuery = "$targetField.$languageCode"
-            // Việc orderBy trên một sub-field của map (`commonName.$languageCode`) khi có `whereEqualTo`
-            // trên cùng sub-field đó thường được hỗ trợ và cần index.
-            //orderByFieldForQuery = fieldPathForQuery
-        }
-
-
-        return databaseService.getByFieldValuePaged(
-            languageCode = languageCode,
-            searchQuery = searchQuery,
-            fieldPath = fieldPathForQuery,
-            value = value,
-            pageSize = DEFAULT_SPECIES_PAGE_SIZE, // Sử dụng hằng số từ service
-            orderByField = orderByFieldForQuery, // ví dụ: "scientificName" hoặc fieldPathForQuery
-            sortDirection = Query.Direction.ASCENDING // Hoặc DESCENDING tùy nhu cầu
-        ).map { pagingDataSpecies: PagingData<Species> ->
-            pagingDataSpecies.map { species ->
-                // Tạo bản sao để tránh thay đổi species gốc
-                val updatedSpecies = species.copy(
-                    imageURL = species.imageURL?.let { CloudinaryImageURLHelper.getSquareImageURL(it) }
-                )
-                updatedSpecies.toDisplayable(languageCode)
-            }
-        }
+    companion object {
+        private const val TAG = "RemoteSpeciesRepoImpl" // Tag cho Log
+        const val DEFAULT_PAGE_SIZE = 10 // Số item PagingConfig sẽ yêu cầu PagingSource load ban đầu và các lần sau
+        const val PREFETCH_DISTANCE = 3    // Số lượng trang Paging 3 sẽ cố gắng load trước khi người dùng cuộn tới
+        // Ví dụ: nếu pageSize=10, prefetchDistance=3, Paging 3 có thể load trước 30 items.
     }
 
-    /*override fun getSpeciesByField(
-        targetField: String,
-        languageCode: String,
-        value: String,
-        sortByName: Boolean
-    ): Flow<DataResult<List<DisplayableSpecies>>> {
-        val fieldPathForQuery = if (targetField=="classId") targetField
-                                else "$targetField.$languageCode"
-        val options = mutableMapOf<String, Any>()
-        return databaseService.getByFieldValue(fieldPathForQuery, value, options).map { result ->
-            when (result) {
-                is DataResult.Success -> {
-                    var displayableList = result.data.map {
-                        it.imageURL = CloudinaryImageURLHelper.getSquareImageURL(it.imageURL!!)
-                        it.toDisplayable(languageCode)
-                    }
-                    if (sortByName) {
-                        displayableList = displayableList.sortedBy { it.localizedName }
-                    }
-                    DataResult.Success(displayableList)
-                }
-                is DataResult.Error -> DataResult.Error(result.exception)
-                is DataResult.Loading -> DataResult.Loading
+    override fun getAll(
+        searchQuery: List<String>?,
+        languageCode: String // languageCode này có thể không cần thiết nếu PagingSource tự lấy từ LanguageProvider
+    ): Flow<PagingData<DisplayableSpecies>> {
+        val queryStr = searchQuery?.joinToString(" ")?.trim() // Chuyển List<String> thành một chuỗi query
+        Log.d(TAG, "getAll called. Query: '$queryStr', Effective Lang (from PagingSource): ${languageProvider.getCurrentLanguageCode()}")
+        return Pager(
+            config = PagingConfig(
+                pageSize = DEFAULT_PAGE_SIZE,
+                enablePlaceholders = false, // Thường là false cho PagingSource chỉ lấy từ mạng
+                prefetchDistance = PREFETCH_DISTANCE
+                // initialLoadSize = DEFAULT_PAGE_SIZE * 2 // Tùy chọn: số item load lần đầu, mặc định là pageSize * 3
+            ),
+            pagingSourceFactory = {
+                RemoteSpeciesPagingSource(
+                    apiService = apiService,
+                    languageProvider = languageProvider, // Truyền LanguageProvider cho PagingSource
+                    searchQuery = queryStr,
+                    classId = null // Đối với getAll, classId là null (không lọc theo class)
+                )
             }
+        ).flow // Trả về Flow của PagingData
+    }
+
+    override fun getSpeciesByClassPaged(
+        searchQuery: List<String>?,
+        classIdValue: String,
+        languageCode: String // languageCode này có thể không cần thiết nếu PagingSource tự lấy
+    ): Flow<PagingData<DisplayableSpecies>> {
+        val queryStr = searchQuery?.joinToString(" ")?.trim()
+        Log.d(TAG, "getSpeciesByClassPaged called. Query: '$queryStr', ClassId: '$classIdValue', Effective Lang (from PagingSource): ${languageProvider.getCurrentLanguageCode()}")
+        return Pager(
+            config = PagingConfig(
+                pageSize = DEFAULT_PAGE_SIZE,
+                enablePlaceholders = false,
+                prefetchDistance = PREFETCH_DISTANCE
+            ),
+            pagingSourceFactory = {
+                RemoteSpeciesPagingSource(
+                    apiService = apiService,
+                    languageProvider = languageProvider,
+                    searchQuery = queryStr,
+                    classId = if (classIdValue == "0") null else classIdValue // Nếu classIdValue là "0" (Tất cả), coi như không lọc (null)
+                )
+            }
+        ).flow
+    }
+
+    override suspend fun getSpeciesById(
+        idList: List<String>,
+        languageCode: String
+    ): List<DisplayableSpecies> {
+        if (idList.isEmpty()) {
+            Log.d(TAG, "getSpeciesById called with empty idList.")
+            return emptyList()
         }
-    }*/
+        Log.d(TAG, "getSpeciesById called with ids: ${idList.joinToString(",")}, lang: $languageCode")
+        return try {
+            val response = apiService.getSpeciesByIds(
+                ids = idList.joinToString(","), // API nhận chuỗi ID cách nhau bởi dấu phẩy
+                languageCode = languageCode
+            )
+            if (response.success) {
+                Log.d(TAG, "getSpeciesById successful, fetched ${response.data.size} items.")
+                response.data // API trả về ApiPagedResponse, lấy data từ đó
+            } else {
+                Log.e(TAG, "API Error in getSpeciesById: ${response.message}")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in getSpeciesById", e)
+            emptyList()
+        }
+    }
 }

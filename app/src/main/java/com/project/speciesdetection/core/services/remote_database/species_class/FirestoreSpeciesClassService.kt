@@ -23,7 +23,7 @@ class FirestoreSpeciesClassService @Inject constructor() :
     private val speciesClassCollection = firestore.collection("speciesClass")
     private val TAG = "FirestoreSpeciesClassService"
 
-    override fun getAll(options: Map<String, Any>?): Flow<DataResult<List<SpeciesClass>>> = callbackFlow {
+    override fun getAllSpeciesClass(options: Map<String, Any>?): Flow<DataResult<List<SpeciesClass>>> = callbackFlow {
 
         trySend(DataResult.Loading)
         try {
@@ -42,27 +42,18 @@ class FirestoreSpeciesClassService @Inject constructor() :
             close(e)
         }
         awaitClose { }
-
-        /*val speciesList = mutableListOf<SpeciesClass>()
-        for (document in querySnapshot.documents) {
-            try {
-                val species = SpeciesClass(
-                    id = document.id,
-                    nameVietnamese = document.getString("nameVietnamese"),
-                    nameScientific = document.getString("nameScientific"),
-                    description = document.getString("description")
-                )
-                speciesList.add(species)
-
-                // Hoặc dùng toObject nếu data class có @DocumentId
-                // val species = document.toObject(SpeciesClass::class.java)
-                // if (species != null) {
-                //     speciesList.add(species)
-                // }
-            } catch (e: Exception) {
-                Log.e("Firestore", "Lỗi khi parse document ${document.id}: ${e.message}", e)
-            }
-        }*/
     }
+
+    override suspend fun getAll(): List<SpeciesClass> {
+        val querySnapshot = speciesClassCollection.get().await()
+        val speciesClassList = querySnapshot.documents.mapNotNull { document ->
+            try { val speciesClass: SpeciesClass? = document.toObject(SpeciesClass::class.java)
+                speciesClass?.apply { id = document.id }
+                }
+            catch (e: Exception) { Log.e(TAG, "Error converting document ${document.id}", e); null }
+        }
+        return speciesClassList
+    }
+
 
 }

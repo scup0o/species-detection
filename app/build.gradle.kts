@@ -1,3 +1,4 @@
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +6,7 @@ plugins {
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -45,6 +47,9 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Ngăn không nén file TFLite
+    androidResources.noCompress.add("tflite")
 }
 
 dependencies {
@@ -58,8 +63,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui.text.google.fonts)
-    implementation(libs.firebase.database.ktx)
-    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.googleid)
+    implementation(libs.play.services.auth)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -78,6 +84,9 @@ dependencies {
     //Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.firestore.ktx)
+    implementation(libs.firebase.auth.ktx)
 
     //Glide
     implementation(libs.glide)
@@ -92,7 +101,41 @@ dependencies {
     //Valentinilk
     implementation(libs.compose.shimmer)
 
+    // CameraX
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.video)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.extensions)
 
+    //ImageCropper
+    implementation(libs.android.image.cropper)
+
+    // TensorFlow Lite
+    implementation("org.tensorflow:tensorflow-lite:2.17.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    implementation("org.tensorflow:tensorflow-lite-gpu:2.17.0")
+    //implementation ("org.tensorflow:tensorflow-lite-select-tf-ops:2.16.1") //EB0
+
+    //Serizalization
+    implementation(libs.kotlinx.serialization.json)
+
+    // Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0-alpha02")
+    implementation ("com.google.android.gms:play-services-auth:21.3.0")
+
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    configurations.all {
+        exclude(group = "com.google.ai.edge.litert", module = "litert-api")
+    }
 }
 
 kapt {

@@ -11,8 +11,12 @@ sealed class DataResult<out T> {
 }
 
 interface SpeciesDatabaseService<T : Any, ID> {
-    /*fun getAll(options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
-    //fun getById(id: ID): Flow<DataResult<T?>>
+    fun getAll(languageCode : String,
+               searchQuery : List<String>?=null,
+               sortDirection: Query.Direction,
+               pageSize: Int,
+               orderByField: String?,): Flow<PagingData<T>>
+    /*fun getById(id: ID): Flow<DataResult<T?>>
     fun getByFieldValue(fieldPath: String, value: Any, options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
     //suspend fun add(item: T, documentId: String? = null): DataResult<String>
     //suspend fun update(id: ID, item: T): DataResult<Unit>
@@ -27,10 +31,15 @@ interface SpeciesDatabaseService<T : Any, ID> {
         orderByField: String?,
         sortDirection: Query.Direction
     ): Flow<PagingData<T>>
+
+    suspend fun getById(
+        idList : List<String>
+    ) : List<T>
 }
 
 interface SpeciesClassDatabaseService<T : Any, ID> {
-    fun getAll(options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
+    fun getAllSpeciesClass(options: Map<String, Any>? = null): Flow<DataResult<List<T>>>
+    suspend fun getAll() : List<T>
 }
 
 interface UserDatabaseService<T : Any, ID> {
