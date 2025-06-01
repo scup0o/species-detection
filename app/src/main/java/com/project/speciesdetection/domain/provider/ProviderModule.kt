@@ -1,24 +1,38 @@
 package com.project.speciesdetection.domain.provider
 
 import android.content.Context
+import android.net.ConnectivityManager
+import androidx.credentials.CredentialManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.project.speciesdetection.core.services.backend.species.SpeciesApiService
 import com.project.speciesdetection.domain.provider.image_classifier.EnetB0ImageClassifier
 import com.project.speciesdetection.domain.provider.image_classifier.EnetLite0ImageClassifier
 import com.project.speciesdetection.domain.provider.image_classifier.ImageClassifierProvider
 import com.project.speciesdetection.domain.provider.language.DeviceLanguageProvider
 import com.project.speciesdetection.domain.provider.language.LanguageProvider
+import com.project.speciesdetection.domain.provider.network.ConnectivityObserver
+import com.project.speciesdetection.domain.provider.network.NetworkConnectivityObserver
 import dagger.Binds
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ViewModelScoped
-import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import javax.inject.Named
 import javax.inject.Qualifier
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import kotlinx.serialization.json.Json
+import retrofit2.Retrofit
+import javax.inject.Singleton
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -44,6 +58,86 @@ abstract class ImageClassifierProviderModule {
     abstract fun bindEnetB0ImageClassifierProvider(
         imageClassifierProviderModule: EnetB0ImageClassifier
     ): ImageClassifierProvider
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+
+    private const val BASE_URL = "https://species-detection-web-server-git-master-scup0os-projects.vercel.app"
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY // Log request/response body
+            })
+            // .connectTimeout(30, TimeUnit.SECONDS) // Tùy chỉnh timeout nếu cần
+            // .readTimeout(30, TimeUnit.SECONDS)
+            // .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideJson(): Json {
+        return Json {
+            ignoreUnknownKeys = true // Rất quan trọng nếu API có thể trả về thêm trường
+            isLenient = true         // Cho phép một số định dạng JSON không chuẩn (ít dùng)
+            // prettyPrint = true    // Chỉ bật khi debug, tắt khi release
+        }
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit {
+        val contentType = "application/json".toMediaType()
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL) // Sử dụng BASE_URL đã cập nhật
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSpeciesApiService(retrofit: Retrofit): SpeciesApiService {
+        return retrofit.create(SpeciesApiService::class.java)
+    }
+}
+
+
+@Module
+@InstallIn(SingletonComponent::class)
+object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideConnectivityManager(@ApplicationContext context: Context): ConnectivityManager {
+        return context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
+
+    @Provides
+    @Singleton
+    fun provideConnectivityObserver(connectivityManager: ConnectivityManager): ConnectivityObserver {
+        return NetworkConnectivityObserver(connectivityManager)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideCredentialManager(@ApplicationContext context: Context): CredentialManager {
+        return CredentialManager.create(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+
 }
 
 

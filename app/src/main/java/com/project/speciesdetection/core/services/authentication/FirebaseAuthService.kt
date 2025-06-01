@@ -53,7 +53,7 @@ class FirebaseAuthService @Inject constructor(
                     name = firebaseUser.displayName ?: "Google User",
                     email = firebaseUser.email,
                     photoUrl = firebaseUser.photoUrl?.toString(),
-                    source = "google"
+                    source = "google.com"
                 )
                 saveUserProfile(userProfile)
                 Result.success(firebaseUser)
@@ -75,7 +75,7 @@ class FirebaseAuthService @Inject constructor(
                     name = name,
                     email = firebaseUser.email,
                     photoUrl = null,
-                    source = "email_password"
+                    source = "password"
                 )
 
                 // Gửi email xác thực
@@ -85,6 +85,7 @@ class FirebaseAuthService @Inject constructor(
                     onSuccess = { Result.success(firebaseUser) },
                     onFailure = { ex -> Result.failure(Exception("User created, but failed to save profile: ${ex.message}", ex)) }
                 )
+
             } ?: Result.failure(Exception("Firebase user is null after email/password sign-up"))
         } catch (e: FirebaseAuthUserCollisionException) {
             Result.failure(Exception("Email_already_registered_with_google_or_password"))

@@ -1,6 +1,7 @@
 package com.project.speciesdetection.ui.features.encyclopedia_main_screen.view
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -65,6 +67,9 @@ fun EncyclopediaMainScreen(
     navController: NavHostController,
     viewModel: EncyclopediaMainScreenViewModel = hiltViewModel(),
 ) {
+    val scaledHeight = LocalConfiguration.current.screenHeightDp.dp
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+
     val speciesClassList by viewModel.speciesClassList.collectAsStateWithLifecycle()
     val lazyPagingItems: LazyPagingItems<DisplayableSpecies> =
         viewModel.speciesPagingDataFlow.collectAsLazyPagingItems()
@@ -93,6 +98,7 @@ fun EncyclopediaMainScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             CenterAlignedTopAppBar(
+                expandedHeight = MaterialTheme.spacing.xxl,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                 ),
@@ -100,105 +106,76 @@ fun EncyclopediaMainScreen(
                     Text(
                         text = stringResource(R.string.encyclopedia_title),
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.titleMedium
                     )
                 },
                 scrollBehavior = scrollBehavior
             )
         },
         containerColor = containerColor!!,
-        bottomBar = { BottomNavigationBar(navController) }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
+        Box(){
+            Column(modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
-        ) {
+                .fillMaxSize()) {
+                AppSearchBar(
+                    query = searchQuery,
+                    onQueryChanged = { viewModel.onSearchQueryChanged(it) },
+                    onSearchAction = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
+                    },
+                    onClearQuery = {
+                        viewModel.onSearchQueryChanged("")
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
+                    },
+                    modifier = Modifier
+                        .padding(
+                            start = MaterialTheme.spacing.m,
+                            end = MaterialTheme.spacing.m,
+                            top = MaterialTheme.spacing.xs,
+                            bottom = MaterialTheme.spacing.xs
+                        ),
+                    hint = stringResource(R.string.species_search_hint)
+                )
 
-            AppSearchBar(
-                query = searchQuery,
-                onQueryChanged = { viewModel.onSearchQueryChanged(it) },
-                onSearchAction = {
-                    keyboardController?.hide()
-                    focusManager.clearFocus()
-                    // Bạn có thể thêm logic khác ở đây nếu cần khi search được thực hiện
-                },
-                onClearQuery = {
-                    viewModel.onSearchQueryChanged("")
-                    keyboardController?.hide() // Tùy chọn: ẩn bàn phím khi xóa
-                    focusManager.clearFocus() // Tùy chọn: xóa focus khi xóa
-                },
-                modifier = Modifier
-                    .padding(
-                        start = MaterialTheme.spacing.m,
-                        end = MaterialTheme.spacing.m,
-                        top = MaterialTheme.spacing.xs,
-                        bottom = MaterialTheme.spacing.xs
-                    ),
-                hint = stringResource(R.string.species_search_hint)
-            )
+                // Thanh chọn Species Class
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = MaterialTheme.spacing.xs),
+                    contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
+                    horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+                ) {
+                    if (speciesClassList.isNotEmpty() || selectedClassId == "0") { // Hiển thị "Tất cả" ngay cả khi class list chưa load xong
+                        item {
+                            SpeciesClassChip(
+                                speciesClass = DisplayableSpeciesClass("0", stringResource(R.string.all)),
+                                transparentColor = containerColor,
+                                isSelected = selectedClassId == "0",
+                                onClick = { viewModel.selectSpeciesClass("0") })
+                        }
+                    }
 
-            // Thanh chọn Species Class
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = MaterialTheme.spacing.xs),
-                contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
-            ) {
-                if (speciesClassList.isNotEmpty() || selectedClassId == "0") { // Hiển thị "Tất cả" ngay cả khi class list chưa load xong
-                    item {
-                        SpeciesClassChip(
-                            speciesClass = DisplayableSpeciesClass("0", stringResource(R.string.all)),
-                            transparentColor = containerColor,
-                            isSelected = selectedClassId == "0",
-                            onClick = { viewModel.selectSpeciesClass("0") })
+                    if (speciesClassList.isNotEmpty()) {
+                        items(speciesClassList, key = { it.id }) { sClass ->
+                            SpeciesClassChip(
+                                transparentColor = containerColor,
+                                speciesClass = sClass,
+                                isSelected = sClass.id == selectedClassId,
+                                onClick = { viewModel.selectSpeciesClass(sClass.id) }
+                            )
+                        }
+                    } else if (selectedClassId != "0") { // Chỉ hiển thị placeholder nếu không phải "Tất cả" và list rỗng
+                        item { ChipPlacholder() }
                     }
                 }
 
-                if (speciesClassList.isNotEmpty()) {
-                    items(speciesClassList, key = { it.id }) { sClass ->
-                        SpeciesClassChip(
-                            transparentColor = containerColor,
-                            speciesClass = sClass,
-                            isSelected = sClass.id == selectedClassId,
-                            onClick = { viewModel.selectSpeciesClass(sClass.id) }
-                        )
-                    }
-                } else if (selectedClassId != "0") { // Chỉ hiển thị placeholder nếu không phải "Tất cả" và list rỗng
-                    item { ChipPlacholder() }
-                }
-            }
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            when {
-                loadState.refresh is LoadState.Error -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = MaterialTheme.spacing.m),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        ErrorScreenPlaceholder(onClick = { lazyPagingItems.retry() })
-                    }
-                }
-
-                loadState.refresh is LoadState.Loading -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(
-                            horizontal = MaterialTheme.spacing.m,
-                            vertical = MaterialTheme.spacing.xs),
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
-                    ) {
-                        items(3) { ListItemPlaceholder() }
-                    }
-                }
-
-                // 3. HIỂN THỊ MÀN HÌNH RỖNG KHI TẢI XONG, KHÔNG LỖI, VÀ KHÔNG CÓ ITEM
-                loadState.refresh is LoadState.NotLoading && lazyPagingItems.itemCount == 0 -> {
-                    if (showEmptyState){
+                when {
+                    loadState.refresh is LoadState.Error -> {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -206,112 +183,147 @@ fun EncyclopediaMainScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            if (searchQuery.isNotEmpty()) {
-                                Text(
-                                    text = "no item", // String resource
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(bottom = MaterialTheme.spacing.m)
-                                )
-                                Button(onClick = {lazyPagingItems.retry()}){
-                                    Text("retry")
-                                }
-                            } else {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = MaterialTheme.spacing.m),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    ErrorScreenPlaceholder(onClick = { lazyPagingItems.retry() })
-                                }
-                            }
+                            ErrorScreenPlaceholder(onClick = { lazyPagingItems.retry() })
                         }
                     }
 
-                }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding =
-                            PaddingValues(
+                    loadState.refresh is LoadState.Loading -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(
                                 horizontal = MaterialTheme.spacing.m,
                                 vertical = MaterialTheme.spacing.xs),
-                        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
-                    ) {
-                        items(
-                            count = lazyPagingItems.itemCount,
-                            key = lazyPagingItems.itemKey { it.id }
-                        ) { index ->
-                            val species = lazyPagingItems[index]
-                            species?.let {
-                                SpeciesListItem(
-                                    species = it,
-                                    onClick = {
-                                        navController.popBackStack(
-                                            AppScreen.EncyclopediaDetailScreen.createRoute(
-                                                species = it,
-                                                imageUri = null
-                                            ),
-                                            inclusive = true,
-                                            saveState = false)
-                                        navController.navigate(
-                                            AppScreen.EncyclopediaDetailScreen.createRoute(
-                                                species = it,
-                                                imageUri = null
-                                            )
-                                        ) {
-                                            launchSingleTop = true
-                                        }
-                                    })
+                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
+                        ) {
+                            items(3) { ListItemPlaceholder() }
+                        }
+                    }
 
+                    // 3. HIỂN THỊ MÀN HÌNH RỖNG KHI TẢI XONG, KHÔNG LỖI, VÀ KHÔNG CÓ ITEM
+                    loadState.refresh is LoadState.NotLoading && lazyPagingItems.itemCount == 0 -> {
+                        if (showEmptyState){
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = MaterialTheme.spacing.m),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                if (searchQuery.isNotEmpty()) {
+                                    Text(
+                                        text = "no item", // String resource
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(bottom = MaterialTheme.spacing.m)
+                                    )
+                                    Button(onClick = {lazyPagingItems.retry()}){
+                                        Text("retry")
+                                    }
+                                } else {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(horizontal = MaterialTheme.spacing.m),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        ErrorScreenPlaceholder(onClick = { lazyPagingItems.retry() })
+                                    }
+                                }
                             }
                         }
 
-                        // Xử lý trạng thái APPEND (tải thêm khi cuộn xuống)
-                        item {
-                            lazyPagingItems.loadState.append.let { appendState ->
-                                when (appendState) {
-                                    is LoadState.Loading -> {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 8.dp),
-                                            horizontalArrangement = Arrangement.Center
-                                        ) {
-                                            ListItemPlaceholder()
-                                        }
-                                    }
-                                    is LoadState.Error -> {
-                                        val e = appendState
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            ItemErrorPlaceholder(onClick = {lazyPagingItems.retry()})
-                                        }
-                                    }
-                                    is LoadState.NotLoading -> {
-                                        if (appendState.endOfPaginationReached && lazyPagingItems.itemCount > 0) {
-                                            //Text(
-                                            //    text = "end", // String resource
-                                            //    modifier = Modifier
-                                            //        .fillMaxWidth()
-                                            //        .padding(16.dp),
-                                            //    textAlign = TextAlign.Center,
-                                            //    style = MaterialTheme.typography.bodySmall
-                                            //)
-                                        }
-                                    }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier,
+                            contentPadding =
+                                PaddingValues(
+                                    horizontal = MaterialTheme.spacing.m,
+                                    vertical = MaterialTheme.spacing.xs),
+                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
+                        ) {
+                            items(
+                                count = lazyPagingItems.itemCount,
+                                key = lazyPagingItems.itemKey { it.id }
+                            ) { index ->
+                                val species = lazyPagingItems[index]
+                                species?.let {
+                                    SpeciesListItem(
+                                        species = it,
+                                        onClick = {
+                                            navController.popBackStack(
+                                                AppScreen.EncyclopediaDetailScreen.createRoute(
+                                                    species = it,
+                                                    imageUri = null
+                                                ),
+                                                inclusive = true,
+                                                saveState = false)
+                                            navController.navigate(
+                                                AppScreen.EncyclopediaDetailScreen.createRoute(
+                                                    species = it,
+                                                    imageUri = null
+                                                )
+                                            ) {
+                                                launchSingleTop = true
+                                            }
+                                        })
+
                                 }
-                            }}
+                            }
+
+                            // Xử lý trạng thái APPEND (tải thêm khi cuộn xuống)
+                            item {
+                                lazyPagingItems.loadState.append.let { appendState ->
+                                    when (appendState) {
+                                        is LoadState.Loading -> {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 8.dp),
+                                                horizontalArrangement = Arrangement.Center
+                                            ) {
+                                                ListItemPlaceholder()
+                                            }
+                                        }
+                                        is LoadState.Error -> {
+                                            val e = appendState
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                ItemErrorPlaceholder(onClick = {lazyPagingItems.retry()})
+                                            }
+                                        }
+                                        is LoadState.NotLoading -> {
+                                            if (appendState.endOfPaginationReached && lazyPagingItems.itemCount > 0) {
+                                                Spacer(modifier = Modifier.height(100.dp-innerPadding.calculateBottomPadding()*2))
+                                                //Text(
+                                                //    text = "end", // String resource
+                                                //    modifier = Modifier
+                                                //        .fillMaxWidth()
+                                                //        .padding(16.dp),
+                                                //    textAlign = TextAlign.Center,
+                                                //    style = MaterialTheme.typography.bodySmall
+                                                //)
+                                            }
+                                        }
+                                    }
+                                }}
+                        }
                     }
                 }
             }
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd) // Căn chỉnh FAB
+            ){
+
+                BottomNavigationBar(navController)
+            }
         }
+
     }
 }
 

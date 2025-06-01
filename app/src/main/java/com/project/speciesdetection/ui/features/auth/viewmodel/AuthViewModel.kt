@@ -30,7 +30,8 @@ data class AuthState(
     val currentUser: FirebaseUser? = null,
     val error: String? = null,
     val isGoogleSignInInProgress: Boolean = false,
-    val resendCooldownSeconds: Int = 0
+    val resendCooldownSeconds: Int = 0,
+    val forgotPasswordCooldownSeconds : Int = 0,
 )
 
 sealed class UiEvent {
@@ -50,8 +51,11 @@ class AuthViewModel @Inject constructor(
     private val _uiEvent = MutableSharedFlow<UiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
 
-    private val _resendEmailState = MutableStateFlow(false)
+    private val _resendEmailState = MutableStateFlow("none")
     val resendEmailState = _resendEmailState.asStateFlow()
+
+    private val _forgotPasswordState = MutableStateFlow("none")
+    val forgotPasswordState = _forgotPasswordState.asStateFlow()
 
     private var googleSignInApiRequest: GetCredentialRequest? = null
 
@@ -150,13 +154,14 @@ class AuthViewModel @Inject constructor(
         _authState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             repository.signUpWithEmailPassword(email, pass, name).fold(
-                onSuccess = { firebaseUser ->
+                onSuccess = {
+                    signOut()
                     startCooldown()
-                    _authState.update { it.copy(isLoading = false, currentUser = firebaseUser, error = null) }
-                    _resendEmailState.value = true
-                    _uiEvent.emit(
+                    _authState.update { it.copy(isLoading = false, error = null) }
+                    _resendEmailState.value = "success"
+                    /*_uiEvent.emit(
                         UiEvent.ShowSnackbar("Sign up successful! A verification email has been sent.")
-                    )
+                    )*/
                 },
                 onFailure = { exception ->
                     handleAuthError(exception, errorMessage)
@@ -176,7 +181,7 @@ class AuthViewModel @Inject constructor(
                 onSuccess = { firebaseUser ->
                     if (!firebaseUser.isEmailVerified) {
                         _authState.update { it.copy(isLoading = false, error = "Email not verified.") }
-                        _uiEvent.emit(UiEvent.ShowSnackbar("Please verify your email before signing in."))
+                        //_uiEvent.emit(UiEvent.ShowSnackbar("Please verify your email before signing in."))
                         return@launch
                     }
 
@@ -218,9 +223,18 @@ class AuthViewModel @Inject constructor(
             result.fold(
                 onSuccess = {
                     _authState.update { it.copy(isLoading = false) }
-                    _uiEvent.emit(UiEvent.ShowSnackbar("Password reset email sent. Please check your inbox."))
+                    _forgotPasswordState.value = "success"
+                    //_uiEvent.emit(UiEvent.ShowSnackbar("Password reset email sent. Please check your inbox."))
+                    val cooldown = 60
+                    viewModelScope.launch {
+                        for (i in cooldown downTo 0) {
+                            _authState.update { it.copy(forgotPasswordCooldownSeconds = i) }
+                            kotlinx.coroutines.delay(1000L)
+                        }
+                    }
                 },
                 onFailure = { error ->
+                    if (!error.message!!.contains("formatted")) _forgotPasswordState.value = "error"
                     handleAuthError(error,"Error")
                     _uiEvent.emit(UiEvent.ShowSnackbar(error.message ?: "Failed to send reset email."))
                 }
@@ -238,13 +252,14 @@ class AuthViewModel @Inject constructor(
             result.fold(
                 onSuccess = {
                     _authState.update { it.copy(isLoading = false) }
-                    _resendEmailState.value = true
+                    _resendEmailState.value = "success"
                     _uiEvent.emit(UiEvent.ShowSnackbar("Verification email has been resent. Please check your inbox."))
 
                     startCooldown()
                 },
                 onFailure = { e ->
                     _authState.update { it.copy(isLoading = false) }
+                    _resendEmailState.value = "error"
                     _uiEvent.emit(UiEvent.ShowSnackbar(e.message ?: "Failed to resend verification email."))
                 }
             )
@@ -269,11 +284,12 @@ class AuthViewModel @Inject constructor(
             else -> exception.localizedMessage ?: "An unknown error occurred"
         }*/
         _authState.update { it.copy(isLoading = false, error = exception.message) }
-        _uiEvent.emit(UiEvent.ShowSnackbar(exception.message!!))
+        //_uiEvent.emit(UiEvent.ShowSnackbar(exception.message!!))
     }
 
     fun clearError() {
+        _forgotPasswordState.value = "none"
         _authState.update { it.copy(error = null) }
-        _resendEmailState.value = false
+        _resendEmailState.value = "none"
     }
 }

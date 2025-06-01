@@ -19,9 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.project.speciesdetection.R
 import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.ui.composable.common.CustomTextField
 import com.project.speciesdetection.ui.composable.common.ErrorText
@@ -32,29 +34,24 @@ fun AuthTextField(
     value: String,
     onValueChange: (String) -> Unit,
     error: String?,
+    leadingIcon: @Composable() (() -> Unit)? = null,
 ) {
     CustomTextField(
 
         value = value,
-        leadingIcon = {
-            if (label.equals("email",true))
-                Icon(
-                    Icons.Default.Email, null,
-                    modifier = Modifier.padding(start = 20.dp)
-                )
-        },
+        leadingIcon = leadingIcon,
 
         onValueChange = onValueChange,
         placeholder = {
             Text(label) },
         supportingText = {
             if (error?.contains("empty") == true && value.isEmpty())
-                ErrorText("$label cannot be empty")
+                ErrorText("$label "+ stringResource(R.string.empty_label_message))
             if (label == "Email" && error?.contains("formatted") == true)
-                ErrorText("Email is badly formatted")
+                ErrorText(stringResource(R.string.bad_formated))
             if (label == "Email" && (error=="Email_already_registered_with_password"
                         || error=="Email_already_registered_with_google_or_password")) {
-                ErrorText("This email is already in use. Please use another.")
+                ErrorText(stringResource(R.string.email_in_use))
             }
         },
         modifier = Modifier.fillMaxWidth().padding(),
@@ -66,7 +63,7 @@ fun AuthTextField(
                 || label == "Email" &&
                 (error=="Email_already_registered_with_password"
                         || error=="Email_already_registered_with_google_or_password"),
-        paddingValues = 20.dp,
+        paddingValues = 15.dp,
 
     )
 

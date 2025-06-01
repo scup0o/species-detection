@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -44,11 +45,11 @@ fun SpeciesListItem(
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(
+            /*.shadow(
                 elevation = MaterialTheme.spacing.m,
                 shape = RoundedCornerShape(percent = 10),
-                spotColor = MaterialTheme.colorScheme.outlineVariant,
-                ambientColor = MaterialTheme.colorScheme.surfaceContainer)
+                spotColor = Color.Transparent,
+                ambientColor = MaterialTheme.colorScheme.surface)*/
             .clickable(
                 onClick = onClick
             ),
@@ -59,7 +60,7 @@ fun SpeciesListItem(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
         ) {
             GlideImage(
-                model = species.imageURL?.get(0),
+                model = species.imageURL?.firstOrNull(),
                 contentDescription = species.localizedName,
                 loading = placeholder(R.drawable.error_image),
                 failure = placeholder(R.drawable.error_image),

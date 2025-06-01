@@ -2,6 +2,8 @@
     <string name="app_name">SpeciesDetection</string>
     <string name="encyclopedia_title">"ENCYCLOPEDIA"</string>
     <string name="all">All</string>
+    <string name="try_again">Try again</string>
+
     <string name="error_screen_headline">Error!</string>
     <string name="error_screen_title">Something went wrong</string>
     <string name="error_screen_description_1">We encountered an error</string>
@@ -17,11 +19,52 @@
     <string name="image_not_found">Image not found</string>
     <string name="error">Error! Please try again later</string>
     <string name="save_image_successfuly">Image saved successfully!</string>
-    <string name="try_again">Try again</string>
 
     <string name="gallery_source_for_identification">Choose Image</string>
     <string name="camera_source_for_identification">Take Photo</string>
 
     <string name="setting">Settings</string>
     <string name="log_out">Logout</string>
+
+    <string name="no_network_connection">No network connection</string>
+
+    <string name="login_title">Login</string>
+    <string name="login_text">Welcome back to the app</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="login_with_email">Login with Email</string>
+    <string name="login_with_google">Login with Google</string>
+    <string name="need_an_account">"Need an account? </string>
+    <string name="login_divider">Or</string>
+    <string name="password_label">Password</string>
+
+    <string name="login_success">Login successful</string>
+    <string name="login_error">Login failed</string>
+    <string name="empty_password_message">Password cannot be empty</string>
+    <string name="invalid_email_password_message">Invalid email or password</string>
+    <string name="invalid_password_message">Invalid password (Password should be at least 6 characters)</string>
+    <string name="empty_label_message">cannot be empty</string>
+    <string name="bad_formated">Email is badly formatted</string>
+    <string name="email_in_use">This email is already in use. Please use another.</string>
+
+    <string name="forgot_password_title">Password Recovery</string>
+    <string name="send_reset_password_email_successful">An email has been sent</string>
+    <string name="send_recovery_password">Send Recovery Email</string>
+
+    <string name="signup_title">Sign Up</string>
+    <string name="signup_text">Welcome! Sign up to explore the app</string>
+    <string name="signup_with_email">Sign Up with Email</string>
+    <string name="have_account">"Already have an account? </string>
+    <string name="name_label">Name</string>
+    <string name="send_verification_email_success">A verification email has been sent to your inbox!</string>
+    <string name="signup_success">Sign Up successful</string>
+    <string name="signup_error">Sign Up failed</string>
+
+
+    <string name="unverified_account">Unverified account</string>
+    <string name="unverified_account_text">Please verify your email before login in</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="is_resend_verification_email_state">Resend in</string>
+    <string name="resend_verification_email">Resend verification email</string>
+
+
 </resources>

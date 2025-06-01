@@ -22,10 +22,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.project.speciesdetection.R
 import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.ui.composable.common.CustomTextField
 import com.project.speciesdetection.ui.composable.common.ErrorText
@@ -45,15 +48,15 @@ fun PasswordField(
         onValueChange = onPasswordChange,
         placeholder = {
             Text(
-                "Password",
+                stringResource(R.string.password_label),
             ) },
         supportingText = {
             if (error?.contains("empty") == true && password.isEmpty())
-                ErrorText("Password cannot be empty")
+                ErrorText(stringResource(R.string.empty_password_message))
             if (error?.contains("incorrect") == true)
-                ErrorText("Invalid email or password")
+                ErrorText(stringResource(R.string.invalid_email_password_message))
             if (error?.contains("invalid")==true)
-                ErrorText(error)
+                ErrorText(stringResource(R.string.invalid_password_message))
         },
         visualTransformation =
             if (passwordVisible)
@@ -63,7 +66,7 @@ fun PasswordField(
             Icon(
                 Icons.Default.Lock, null,
 
-                modifier = Modifier.padding(start = 20.dp),
+                modifier = Modifier.padding(horizontal = 15.dp),
             )
         },
 
@@ -71,10 +74,10 @@ fun PasswordField(
             IconButton(onClick = onToggleVisibility) {
                 Icon(
                     modifier = Modifier.padding(end = 20.dp),
-                    imageVector =
+                    painter =
                         if (passwordVisible)
-                            Icons.Default.PlayArrow
-                        else Icons.Default.Build,
+                            painterResource(R.drawable.eye_open)
+                        else painterResource(R.drawable.eye_closed),
                     contentDescription = if (passwordVisible) "Hide password" else "Show password"
                 )
             }
@@ -85,7 +88,7 @@ fun PasswordField(
         isError = error?.contains("empty") == true && password.isEmpty()
                 || error?.contains("incorrect") == true
                 || error?.contains("invalid")==true,
-        paddingValues = 20.dp,
+        paddingValues = 15.dp,
 
     )
 }

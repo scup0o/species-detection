@@ -31,7 +31,7 @@ fun CommunityFeed(
     val open by viewModel.searchQuery.collectAsState()
     val authState by authViewModel.authState.collectAsState()
 
-    if (authState.currentUser==null || !authState.currentUser!!.isEmailVerified){
+    if (authState.currentUser==null){
         Scaffold(
             bottomBar = {BottomNavigationBar(navController)}
         ) { innerPadding ->

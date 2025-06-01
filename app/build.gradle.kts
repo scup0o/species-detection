@@ -126,6 +126,13 @@ dependencies {
     implementation("androidx.credentials:credentials-play-services-auth:1.6.0-alpha02")
     implementation ("com.google.android.gms:play-services-auth:21.3.0")
 
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
+
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
     configurations.all {
         exclude(group = "com.google.ai.edge.litert", module = "litert-api")
     }

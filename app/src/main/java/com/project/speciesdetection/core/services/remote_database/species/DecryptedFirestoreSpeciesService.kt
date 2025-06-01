@@ -12,16 +12,14 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.firestore
 import com.project.speciesdetection.core.services.remote_database.SpeciesDatabaseService
 import com.project.speciesdetection.data.model.species.Species
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "FirestoreSpeciesService"
 private const val FIRESTORE_SPECIES_SERVICE_TAG = "FirestoreSpeciesService"
-const val DEFAULT_SPECIES_PAGE_SIZE = 15
+const val DEFAULT_SPECIES_PAGE_SIZE = 6
 
 @Singleton
 class FirestoreSpeciesService @Inject constructor(
@@ -66,7 +64,7 @@ class FirestoreSpeciesService @Inject constructor(
                 enablePlaceholders = false,
             ),
             pagingSourceFactory = {
-                SpeciesPagingSource(
+                DecryptedSpeciesPagingSource(
                     baseQuery = baseQuery,
                     pageSize = pageSize,
                     searchQuery = remainingItems,
@@ -118,7 +116,7 @@ class FirestoreSpeciesService @Inject constructor(
                 enablePlaceholders = false,
             ),
             pagingSourceFactory = {
-                SpeciesPagingSource(
+                DecryptedSpeciesPagingSource(
                     baseQuery = baseQuery,
                     pageSize = pageSize,
                     searchQuery = remainingItems,

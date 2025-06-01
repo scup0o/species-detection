@@ -14,18 +14,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.project.speciesdetection.R
 
 @Composable
 fun Divider(
     modifier: Modifier = Modifier,
-    text: String = "Hoặc",
-    lineColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), // Màu đường kẻ
+    text: String = stringResource(R.string.login_divider),
+    lineColor: Color = MaterialTheme.colorScheme.outlineVariant, // Màu đường kẻ
     lineThickness: Dp = 1.dp, // Độ dày đường kẻ
-    textColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f) // Màu chữ
+    textColor: Color = MaterialTheme.colorScheme.outline // Màu chữ
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),

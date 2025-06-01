@@ -35,14 +35,14 @@ fun SpeciesClassChip(
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.tertiary
-                            else transparentColor!!,
+                            else MaterialTheme.colorScheme.surface,
             contentColor = if (isSelected) MaterialTheme.colorScheme.onTertiary
                             else MaterialTheme.colorScheme.tertiary
 
         ),
-        border = if (!isSelected) BorderStroke(
+        /*border = if (!isSelected) BorderStroke(
             MaterialTheme.strokes.xs,
-            MaterialTheme.colorScheme.tertiary) else null,
+            MaterialTheme.colorScheme.tertiary) else null,*/
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (isSelected) MaterialTheme.strokes.l
                                 else MaterialTheme.strokes.xs)
@@ -61,6 +61,7 @@ fun SpeciesClassChip(
 
             Text(
                 text = speciesClass.localizedName,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             )
         }

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon // Material 3
 import androidx.compose.material3.IconButton // Material 3
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme // Material 3
 import androidx.compose.material3.Text // Material 3
 import androidx.compose.material3.TextField
@@ -25,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
@@ -46,30 +49,35 @@ fun AppSearchBar(
     cornerRadiusPercent: Int = 50, // 50% để tạo hình viên thuốc,
     elevation: Dp = 5.dp
 ) {
+    val scaledHeight = LocalConfiguration.current.screenHeightDp.dp
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
     TextField(
+        textStyle = MaterialTheme.typography.bodyMedium,
         value = query,
         onValueChange = onQueryChanged,
         modifier = modifier
             .fillMaxWidth()
-            .shadow( // << THÊM MODIFIER SHADOW Ở ĐÂY
+            .shadow(
                 elevation = elevation,
-                shape = RoundedCornerShape(percent = cornerRadiusPercent), // Shadow sẽ theo hình dạng này
-                clip = false, // Để shadow không bị cắt bởi clip của TextField bên dưới
-                ambientColor = MaterialTheme.colorScheme.surfaceVariant,
-                spotColor = MaterialTheme.colorScheme.outlineVariant
-            )
-            .heightIn(min = 52.dp) // Đặt chiều cao tối thiểu, Figma thường dùng 56dp hoặc tương tự
-            .clip(RoundedCornerShape(percent = cornerRadiusPercent)) // Bo tròn góc
+                shape = RoundedCornerShape(percent =90),
+                spotColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f),
+                ambientColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
+            .heightIn(max = 50.dp) // Đặt chiều cao tối thiểu, Figma thường dùng 56dp hoặc tương tự
+            .clip(RoundedCornerShape(percent = 90)) // Bo tròn góc
             .background(backgroundColor), // Đặt màu nền cho vùng TextField
         placeholder = {
-            Text(hint, color = contentColor.copy(alpha = 0.7f), fontStyle = FontStyle.Italic)
+            Text(
+                hint,
+                color = contentColor.copy(alpha = 0.7f),
+                fontStyle = FontStyle.Italic,
+                style = MaterialTheme.typography.bodyMedium)
                       }, // Placeholder text
         leadingIcon = {
             Box(
                 modifier = Modifier
                     .clickable(onClick = onSearchAction)
-                    .padding(MaterialTheme.spacing.m)
+                    .padding(MaterialTheme.spacing.xs)
             ){
                 Icon(
                     Icons.Filled.Search,

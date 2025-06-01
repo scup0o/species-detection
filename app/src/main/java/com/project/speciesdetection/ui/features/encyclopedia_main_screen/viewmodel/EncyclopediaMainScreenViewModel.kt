@@ -11,6 +11,7 @@ import com.project.speciesdetection.R
 import com.project.speciesdetection.core.services.remote_database.DataResult
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
+import com.project.speciesdetection.domain.provider.network.ConnectivityObserver
 import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesClassUseCase
 import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,94 +35,79 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
 
-@OptIn(ExperimentalCoroutinesApi::class)
-@HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class) // Cho flatMapLatest và debounce
+@HiltViewModel // Đánh dấu để Hilt có thể inject ViewModel này
 class EncyclopediaMainScreenViewModel @Inject constructor(
     private val getLocalizedSpeciesUseCase: GetLocalizedSpeciesUseCase,
     private val getLocalizedSpeciesClassUseCase: GetLocalizedSpeciesClassUseCase,
 ) : ViewModel() {
 
+    companion object {
+        private const val TAG = "EncyclopediaVM" // Tag cho Log
+        private const val SEARCH_DEBOUNCE_MS = 700L // Thời gian chờ trước khi thực hiện search
+    }
+
+    // StateFlow cho query tìm kiếm từ người dùng
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _speciesClassList = MutableStateFlow(emptyList<DisplayableSpeciesClass>())
+    // StateFlow cho danh sách các species class (dùng cho filter chips)
+    private val _speciesClassList = MutableStateFlow<List<DisplayableSpeciesClass>>(emptyList())
     val speciesClassList: StateFlow<List<DisplayableSpeciesClass>> = _speciesClassList.asStateFlow()
-    private val speciesClassMapFlow: StateFlow<Map<String, String>> =
-        _speciesClassList
-            .map { list ->
-                list.associateBy({ it.id }, { it.localizedName })
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000L), // Giữ map tồn tại
-                initialValue = emptyMap()
-            )
 
+    // StateFlow cho classId đang được chọn (mặc định là "0" - Tất cả)
     private val _selectedClassId = MutableStateFlow<String?>("0")
     val selectedClassId: StateFlow<String?> = _selectedClassId.asStateFlow()
 
-    @OptIn(FlowPreview::class)
+    // Flow chính cung cấp PagingData cho UI
     val speciesPagingDataFlow: Flow<PagingData<DisplayableSpecies>> =
-        combine(
+        combine( // Kết hợp các Flow đầu vào
             _selectedClassId,
-            speciesClassMapFlow,
-            _searchQuery // Lắng nghe thay đổi searchQuery
-                .debounce(1000L) // Chờ 500ms sau khi người dùng ngừng gõ
-                .distinctUntilChanged() // Chỉ phát ra nếu giá trị thực sự thay đổi
-        ) { classId, classMap, query ->
-            Triple(classId, classMap, query) // Kết hợp thành một Triple
-        }.flatMapLatest { (classId, classMap, query) ->
-            Log.d("ViewModel", "flatMapLatest triggered. ClassId: $classId, Query: '$query'")
-            if (classId == null) {
-                Log.d("ViewModel", "No classId selected, returning empty PagingData flow")
-                kotlinx.coroutines.flow.flowOf(PagingData.empty())
-            } else {
-                if (classId == "0") { // "Tất cả"
-                    Log.d("ViewModel", "Fetching ALL paged species with query: '$query'")
-                    getLocalizedSpeciesUseCase.getAll(searchQuery = query) // Truyền searchQuery
-                        .map { pagingData ->
-                            pagingData.map { species ->
-                                val scientificList =
-                                    species.scientific + mapOf(
-                                        "class" to species.localizedClass.replaceFirstChar {
-                                            if (it.isLowerCase()) it.titlecase() else it.toString()
-                                                })
-                                val className = classMap[species.localizedClass] ?: ""
-                                species.copy(
-                                    localizedClass = className,
-                                    scientific = scientificList)
-                            }
-                        }
-                } else {
-                    Log.d("ViewModel", "Fetching paged species for classId: $classId, query: '$query'")
-                    getLocalizedSpeciesUseCase.getByClassPaged(
-                        classIdValue = classId,
-                        searchQuery = query // Truyền searchQuery
-                    )
-                        .map { pagingData ->
-                            pagingData.map { species ->
-                                val scientificList =
-                                    species.scientific + mapOf(
-                                        "class" to species.localizedClass.replaceFirstChar {
-                                            if (it.isLowerCase()) it.titlecase() else it.toString()
-                                        })
-                                val className = classMap[species.localizedClass] ?: ""
-                                species.copy(
-                                    localizedClass = className,
-                                    scientific = scientificList)
-                            }
-                        }
+            _searchQuery.debounce(SEARCH_DEBOUNCE_MS).distinctUntilChanged(), // Debounce và chỉ emit khi query thay đổi
+        ) { classId, query ->
+            // Tạo một Triple hoặc Pair để chứa các giá trị đã kết hợp
+            Pair(classId, query)
+        }.flatMapLatest { (classId, query) -> // flatMapLatest để hủy request cũ khi có giá trị mới
+            Log.d(TAG, "flatMapLatest triggered. ClassId: $classId, Query: '$query'")
 
-                }
+            // Nếu không có mạng và chúng ta đang cố gắng load dữ liệu (classId không null),
+            // trả về PagingData rỗng để UI có thể xử lý (hiển thị thông báo, không loading vô hạn).
+            /*if (netStatus != ConnectivityObserver.Status.Available && classId != null) {
+                Log.w(TAG, "Network unavailable, returning empty PagingData for species list.")
+                return@flatMapLatest flowOf(PagingData.empty<DisplayableSpecies>())
+            }*/
+
+            if (classId == null) { // Trường hợp classId là null (không nên xảy ra nếu có giá trị mặc định "0")
+                Log.w(TAG, "ClassId is null, returning empty PagingData.")
+                return@flatMapLatest flowOf(PagingData.empty<DisplayableSpecies>())
             }
-        }.cachedIn(viewModelScope)
+
+            // Dựa vào classId để gọi UseCase tương ứng
+            if (classId == "0") { // "0" đại diện cho "Tất cả các class"
+                Log.d(TAG, "Fetching ALL paged species with query: '$query'")
+                getLocalizedSpeciesUseCase.getAll(searchQuery = query)
+            } else { // Lọc theo một classId cụ thể
+                Log.d(TAG, "Fetching paged species for ClassId: $classId, query: '$query'")
+                getLocalizedSpeciesUseCase.getByClassPaged(
+                    classIdValue = classId,
+                    searchQuery = query
+                )
+            }
+        }.cachedIn(viewModelScope) // cachedIn rất quan trọng để Paging 3 hoạt động đúng và giữ dữ liệu khi xoay màn hình
 
     init {
-        loadInitialSpeciesClasses()
+        viewModelScope.launch {
+            loadInitialSpeciesClasses()
+        }
     }
 
+
+
+    // Load danh sách các species class (ví dụ cho filter chips)
     private fun loadInitialSpeciesClasses() {
-        viewModelScope.launch(Dispatchers.IO) {
+        // Kiểm tra lại mạng trước khi gọi API
+        viewModelScope.launch(Dispatchers.IO) { // Sử dụng Dispatchers.IO cho các tác vụ mạng/DB
+            Log.d(TAG, "Loading initial species classes...")
             getLocalizedSpeciesClassUseCase.getAll()
                 .catch { e ->
                     Log.e("ViewModel", "Error loading species classes", e)
@@ -145,15 +131,30 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
         }
     }
 
+    // Xử lý sự kiện khi người dùng chọn một class khác
     fun selectSpeciesClass(classId: String) {
-        Log.d("ViewModel", "selectSpeciesClass called with ID: $classId")
+        Log.d(TAG, "selectSpeciesClass called with ID: $classId")
         if (_selectedClassId.value != classId) {
             _selectedClassId.value = classId
-            // speciesPagingDataFlow tự động cập nhật nhờ flatMapLatest
+            // PagingDataFlow sẽ tự động cập nhật nhờ `combine` và `flatMapLatest`
         }
     }
 
+    // Xử lý sự kiện khi query tìm kiếm thay đổi
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
+        // PagingDataFlow sẽ tự động cập nhật nhờ `combine`, `debounce` và `flatMapLatest`
     }
+
+    // Hàm để retry load PagingData (có thể gọi từ UI)
+    // Tuy nhiên, Paging 3.x thường dùng lazyPagingItems.retry() hoặc .refresh() từ UI.
+    // Nếu bạn muốn một hàm cụ thể trong ViewModel:
+    // fun retryLoadSpecies() {
+    //     // Để trigger lại flatMapLatest, bạn có thể thay đổi một trong các StateFlow đầu vào của nó một chút
+    //     // Ví dụ, nếu bạn muốn refresh dựa trên selectedClassId hiện tại:
+    //     val currentClassId = _selectedClassId.value
+    //     _selectedClassId.value = null // Tạm thời set null
+    //     _selectedClassId.value = currentClassId // Set lại giá trị cũ để trigger
+    //     Log.d(TAG, "Retry load species triggered.")
+    // }
 }

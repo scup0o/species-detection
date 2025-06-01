@@ -5,11 +5,9 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.google.firebase.firestore.DocumentSnapshot // THAY ĐỔI QUAN TRỌNG
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.QuerySnapshot
 // import com.google.firebase.firestore.QuerySnapshot // Không cần trực tiếp làm kiểu Key nữa
 import com.project.speciesdetection.data.model.species.Species // Đảm bảo import đúng model
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.delay
 import kotlin.coroutines.cancellation.CancellationException
 
 // Hằng số cho class PagingSource
@@ -98,7 +96,7 @@ private const val PAGING_SOURCE_TAG = "SpeciesPagingSource"
 }*/
 
 
-class SpeciesPagingSource(
+class DecryptedSpeciesPagingSource(
     private val baseQuery: Query,
     private val pageSize: Int,
     private val searchQuery: List<String>? = null,
@@ -149,8 +147,12 @@ class SpeciesPagingSource(
 
             while (finalSpeciesList.size < desiredSize) {
                 val currentQuery = currentKey?.let {
-                    baseQuery.startAfter(it).limit((pageSize * fetchMultiplier).toLong())
-                } ?: baseQuery.limit((pageSize * fetchMultiplier).toLong())
+                    baseQuery.startAfter(it).limit((
+                            if (!searchQuery.isNullOrEmpty() || lastQuery.isNotEmpty()) pageSize * fetchMultiplier
+                            else pageSize).toLong())
+                } ?: baseQuery.limit((
+                        if (!searchQuery.isNullOrEmpty() || lastQuery.isNotEmpty()) pageSize * fetchMultiplier
+                        else pageSize).toLong())
 
                 val querySnapshot = currentQuery.get().await()
                 val documents = querySnapshot.documents
@@ -170,18 +172,19 @@ class SpeciesPagingSource(
                         null
                     }
                 }
+                var filteredSpecies = if (!searchQuery.isNullOrEmpty() || lastQuery.isNotEmpty()){
+                    mappedSpecies.filter { species ->
+                        val nameTokens = species.nameTokens?.get(languageCode) ?: emptyList()
+                        val sciTokens = species.scientificNameToken ?: emptyList()
+                        val combined = nameTokens + sciTokens
 
-                val filteredSpecies = mappedSpecies.filter { species ->
-                    val nameTokens = species.nameTokens?.get(languageCode) ?: emptyList()
-                    val sciTokens = species.scientificNameToken ?: emptyList()
-                    val combined = nameTokens + sciTokens
+                        val matchesToken = searchQuery?.all { combined.contains(it) } ?: true
+                        val matchesText = species.name[languageCode]?.contains(lastQuery, ignoreCase = true) == true ||
+                                species.scientificName.contains(lastQuery, ignoreCase = true)
 
-                    val matchesToken = searchQuery?.all { combined.contains(it) } ?: true
-                    val matchesText = species.name[languageCode]?.contains(lastQuery, ignoreCase = true) == true ||
-                            species.scientificName.contains(lastQuery, ignoreCase = true)
-
-                    matchesToken && matchesText
-                }
+                        matchesToken && matchesText
+                    }
+                } else mappedSpecies
 
                 val remaining = desiredSize - finalSpeciesList.size
                 finalSpeciesList.addAll(filteredSpecies.take(remaining))

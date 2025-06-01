@@ -26,4 +26,43 @@
     <string name="setting">Cài đặt</string>
     <string name="log_out">Đăng xuất</string>
 
+    <string name="no_network_connection">Không có kết nối mạng</string>
+
+    <string name="login_title">Đăng nhập</string>
+    <string name="login_text">Chào mừng bạn quay trở lại</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="login_with_email">Đăng nhập với Email</string>
+    <string name="login_with_google">Đăng nhập với Google</string>
+    <string name="need_an_account">"Chưa có tài khoản? </string>
+    <string name="login_divider">Or</string>
+    <string name="password_label">Mật khẩu</string>
+
+    <string name="login_success">Đăng nhập thành công</string>
+    <string name="login_error">Đăng nhập thất bại</string>
+    <string name="empty_password_message">Mật khẩu không được để trống</string>
+    <string name="invalid_email_password_message">Email hoặc mật khẩu không đúng</string>
+    <string name="invalid_password_message">Mật khẩu không hợp lệ (Phải có ít nhất 6 kí tự)</string>
+    <string name="empty_label_message">không được để trống</string>
+    <string name="bad_formated">Email không hợp lệ</string>
+    <string name="email_in_use">Email này đã được sử dụng. Xin vui lòng dùng email khác.</string>
+
+    <string name="forgot_password_title">Đặt lại mật khẩu</string>
+    <string name="send_reset_password_email_successful">Email đã được gửi thành công</string>
+    <string name="send_recovery_password">Gửi email đặt lại mật khẩu</string>
+
+    <string name="signup_title">Đăng ký</string>
+    <string name="signup_text">	Chào mừng! Đăng ký để khám phá ứng dụng</string>
+    <string name="signup_with_email">Đăng ký bằng Email</string>
+    <string name="have_account">"Đã có tài khoản? </string>
+    <string name="name_label">Tên</string>
+    <string name="send_verification_email_success">Email xác thực tài khoản đã được gửi vào hộp thư của bạn!</string>
+    <string name="signup_success">Đăng ký thành công</string>
+    <string name="signup_error">Đăng ký thất bại</string>
+
+    <string name="unverified_account">Tài khoản chưa xác thực</string>
+    <string name="unverified_account_text">Xin vui lòng xác thực tài khoản email trước khi đăng nhập</string>
+    <string name="dismiss">Quay về</string>
+    <string name="is_resend_verification_email_state">Gửi lại trong</string>
+    <string name="resend_verification_email">Gửi lại email xác thực</string>
+
 </resources>
