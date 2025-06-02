@@ -18,13 +18,21 @@ object LocaleHelper {
             context.getSystemService(LocaleManager::class.java)
                 .applicationLocales = LocaleList.forLanguageTags(languageCode)
         }else{
-            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(languageCode))
-        }
+            val config = context.resources.configuration
+            val locale = Locale(languageCode)
+            Locale.setDefault(locale)
+            config.setLocale(locale)
+            context.resources.updateConfiguration(config, context.resources.displayMetrics)        }
         saveLanguagePreference(context, languageCode)
     }
 
     fun saveLanguagePreference(context: Context, languageCode: String) {
         val pref = context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
         pref.edit().putString("selected_language", languageCode).apply()
+    }
+
+    fun getLanguagePreference(context: Context): String {
+        val pref = context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
+        return pref.getString("selected_language", Locale.getDefault().language) ?: Locale.getDefault().language
     }
 }

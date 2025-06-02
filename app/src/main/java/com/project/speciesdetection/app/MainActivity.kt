@@ -1,5 +1,6 @@
 package com.project.speciesdetection.app
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,6 +11,7 @@ import com.project.speciesdetection.core.navigation.AppNavigation
 import com.project.speciesdetection.core.theme.SpeciesDetectionTheme
 import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -19,12 +21,13 @@ class MainActivity : ComponentActivity() {
     @Named("language_provider") lateinit var languageProvider: LanguageProvider // Hilt sẽ inject cái này
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        installSplashScreen()
 
-        val languageCode = languageProvider.getCurrentLanguageCode()
+
+        val languageCode = getLanguagePreference(this)
         setLanguage(this, languageCode)
 
-        installSplashScreen()
+        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             SpeciesDetectionTheme {
@@ -34,5 +37,10 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun getLanguagePreference(context: Context): String {
+        val pref = context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
+        return pref.getString("selected_language", Locale.getDefault().language) ?: Locale.getDefault().language
     }
 }

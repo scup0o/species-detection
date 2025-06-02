@@ -38,17 +38,16 @@ import java.util.Locale
 @Composable
 fun LanguagePickerDialog(
     viewModel: SettingViewModel,
-    onDismissRequest : () -> Unit,
 ){
     val currentLanguageCode by viewModel.currentLanguageCode.collectAsState()
     val supportedLanguages = viewModel.supportedLanguages
     val context = LocalContext.current
 
     AlertDialog(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {viewModel.onCloseLanguagePicker()},
         confirmButton = {
             TextButton(
-                onClick = onDismissRequest,
+                onClick = {viewModel.onCloseLanguagePicker()},
 
                 ){
                 Text(stringResource(R.string.dismiss).uppercase(Locale.getDefault()))

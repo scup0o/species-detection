@@ -22,6 +22,9 @@ class SettingViewModel @Inject constructor(
 
     val supportedLanguages: List<LanguageItem> = languageProvider.getSupportedLanguages()
 
+    private val _showLanguagePicker = MutableStateFlow(false)
+    val showLanguagePicker : StateFlow<Boolean> = _showLanguagePicker.asStateFlow()
+
     init {
         viewModelScope.launch {
             _currentLanguageCode.value = languageProvider.getCurrentLanguageCode()
@@ -31,5 +34,13 @@ class SettingViewModel @Inject constructor(
     fun onLanguageSelected(languageCode: String) {
         //languageProvider.setUserSelectedLanguage(languageCode)
         _currentLanguageCode.value = languageCode
+    }
+
+    fun onOpenLanguagePicker(){
+        _showLanguagePicker.value = true
+    }
+
+    fun onCloseLanguagePicker(){
+        _showLanguagePicker.value = false
     }
 }

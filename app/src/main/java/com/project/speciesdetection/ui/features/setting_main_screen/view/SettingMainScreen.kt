@@ -47,11 +47,10 @@ fun SettingMainScreen(
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    var showLanguagePicker by remember { mutableStateOf(false) }
+    val showLanguagePicker by settingViewModel.showLanguagePicker.collectAsStateWithLifecycle()
 
     if (showLanguagePicker)
         LanguagePickerDialog(
-            onDismissRequest = {showLanguagePicker = false},
             viewModel = settingViewModel
         )
 
@@ -83,7 +82,7 @@ fun SettingMainScreen(
             modifier = Modifier.padding(innerPadding)
         ) {
             SettingItem(
-                onClickAction = {showLanguagePicker = true},
+                onClickAction = {settingViewModel.onOpenLanguagePicker()},
                 title = R.string.language,
                 painterIcon = R.drawable.globe_solid
             )

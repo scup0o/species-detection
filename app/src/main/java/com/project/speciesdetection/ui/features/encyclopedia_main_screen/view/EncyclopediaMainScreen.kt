@@ -101,6 +101,7 @@ fun EncyclopediaMainScreen(
 
     LaunchedEffect(languageState) {
         Log.i("check check", languageState)
+        viewModel.loadInitialSpeciesClasses()
         lazyPagingItems.refresh()
     }
 
