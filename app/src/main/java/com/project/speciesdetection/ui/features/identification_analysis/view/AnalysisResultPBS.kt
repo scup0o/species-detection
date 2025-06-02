@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.project.speciesdetection.R
 import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.domain.provider.image_classifier.Recognition // Đảm bảo import đúng
@@ -80,7 +82,7 @@ fun AnalysisResultPBS(
                 is AnalysisUiState.Success -> {
                     if (state.recognitions.isNotEmpty()) {
                         Text(
-                            "Top suggestions:",
+                            stringResource(R.string.top_suggestion),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(bottom = 8.dp))
                         LazyColumn(

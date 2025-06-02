@@ -75,7 +75,7 @@ fun SpeciesListItem(
             ) {
                 Text(
                     text = species.localizedName,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.tertiary
                 )

@@ -66,5 +66,9 @@
     <string name="is_resend_verification_email_state">Resend in</string>
     <string name="resend_verification_email">Resend verification email</string>
 
+    <string name="identify_button">Identify Image</string>
+    <string name="is_identifying_button">Identifying…</string>
+    <string name="top_suggestion">Top suggestions:</string>
+
 
 </resources>

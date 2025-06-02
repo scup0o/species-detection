@@ -88,7 +88,7 @@ fun BottomNavigationBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp)
+                .height(75.dp)
         ) {
             FloatingActionButton(
                 onClick = {
@@ -105,8 +105,8 @@ fun BottomNavigationBar(
                 )
             }
             Surface(
-                shadowElevation = 30.dp, // ✅ Đây là bóng thực sự
-                tonalElevation = 0.dp,  // ❌ Không dùng tonalElevation nếu không cần đổi màu
+                shadowElevation = 30.dp,
+                tonalElevation = 0.dp,
                 color = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(
                     topStart = 25.dp,

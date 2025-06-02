@@ -21,8 +21,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -100,7 +102,23 @@ fun EditImageForIdentificationScreen(
                         IconButton(onClick = { // Crop Button
                             val uriToCrop = editImageUiState.currentImageUri
                                 uriToCrop?.let {
-                                    val cropOptions = CropImageContractOptions(it, CropImageOptions(guidelines = CropImageView.Guidelines.ON_TOUCH, fixAspectRatio = false, outputCompressFormat = Bitmap.CompressFormat.JPEG, outputCompressQuality = 90))
+                                    val cropOptions = CropImageContractOptions(
+                                        it,
+                                        CropImageOptions(
+                                            guidelines = CropImageView.Guidelines.ON_TOUCH,
+                                            fixAspectRatio = false,
+                                            outputCompressFormat = Bitmap.CompressFormat.JPEG,
+                                            outputCompressQuality = 90,
+                                            backgroundColor = Color.Black.toArgb(),
+                                            toolbarColor = Color.Black.toArgb(),
+                                            toolbarBackButtonColor = Color.White.toArgb(),
+                                            toolbarTintColor = Color.White.toArgb(),
+                                            //cropperLabelTextColor = Color.White.toArgb(),
+                                            activityBackgroundColor = Color.Black.toArgb(),
+                                            //toolbarTitleColor = Color.White.toArgb(),
+                                            activityMenuTextColor = Color.White.toArgb()
+                                        )
+                                    )
                                     cropImageLauncher.launch(cropOptions)
 
                             }
@@ -112,7 +130,7 @@ fun EditImageForIdentificationScreen(
                                     else -> requestStoragePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                                 }
                             } else { viewModel.saveCurrentImageToGallery() }
-                        }) { Icon(Icons.Default.Add, "Save") }
+                        }) { Icon(painterResource(R.drawable.download), "Save") }
                     }
                 )
             },

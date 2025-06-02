@@ -16,8 +16,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.project.speciesdetection.R
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.domain.provider.image_classifier.Recognition
 import com.project.speciesdetection.ui.features.identification_analysis.viewmodel.AnalysisUiState
@@ -49,22 +51,22 @@ fun AnalysisButton(
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = if (isButtonClickable) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     strokeWidth = 2.dp
                 )
             } else {
-                Icon(Icons.Filled.PlayArrow, contentDescription = "Start Analysis")
+                Icon(Icons.Filled.PlayArrow, contentDescription = "Start Analysis", tint = MaterialTheme.colorScheme.onTertiary)
             }
         },
         text = {
             if (isLoading) {
-                Text("Analyzing...")
+                Text(stringResource(R.string.is_identifying_button))
             } else {
-                Text("Analyze Image")
+                Text(stringResource(R.string.identify_button), color = MaterialTheme.colorScheme.onTertiary)
             }
         },
         containerColor = if (isButtonClickable) {
-            MaterialTheme.colorScheme.secondaryContainer
+            MaterialTheme.colorScheme.tertiary
         } else {
             MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.12f)
                 .compositeOver(MaterialTheme.colorScheme.surface)
@@ -76,6 +78,4 @@ fun AnalysisButton(
         },
         elevation = FloatingActionButtonDefaults.elevation(defaultElevation = if (isButtonClickable) 6.dp else 0.dp)
     )
-    // LaunchedEffect để gọi callbacks onAnalysisFinished, onError, onNoResults đã bị xóa
-    // vì AnalysisResultPBS sẽ tự lấy state.
 }
