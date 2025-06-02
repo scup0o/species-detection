@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.features.encyclopedia_main_screen.view
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,7 @@ import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
 import com.project.speciesdetection.ui.composable.common.ItemErrorPlaceholder
 import com.project.speciesdetection.ui.composable.common.ListItemPlaceholder
 import com.project.speciesdetection.ui.composable.common.species.SpeciesListItem
+import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalGlideComposeApi::class, ExperimentalMaterial3Api::class)
@@ -66,6 +69,7 @@ fun EncyclopediaMainScreen(
     containerColor: Color? = MaterialTheme.colorScheme.background,
     navController: NavHostController,
     viewModel: EncyclopediaMainScreenViewModel = hiltViewModel(),
+    settingViewModel: SettingViewModel
 ) {
     //val scaledHeight = LocalConfiguration.current.screenHeightDp.dp
     //val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -83,6 +87,7 @@ fun EncyclopediaMainScreen(
 
     //ui management state
     val loadState = lazyPagingItems.loadState
+    val languageState by settingViewModel.currentLanguageCode.collectAsStateWithLifecycle()
     /*var showEmptyState by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = searchQuery, key2 = loadState.refresh) {
@@ -93,6 +98,11 @@ fun EncyclopediaMainScreen(
             showEmptyState = false
         }
     }*/
+
+    LaunchedEffect(languageState) {
+        Log.i("check check", languageState)
+        lazyPagingItems.refresh()
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -106,7 +116,8 @@ fun EncyclopediaMainScreen(
                     Text(
                         text = stringResource(R.string.encyclopedia_title),
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        //fontFamily = FontFamily.Default
                     )
                 },
                 scrollBehavior = scrollBehavior
@@ -188,7 +199,7 @@ fun EncyclopediaMainScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            ErrorScreenPlaceholder(onClick = { lazyPagingItems.retry() })
+                            ErrorScreenPlaceholder(onClick = { lazyPagingItems.refresh() })
                         }
                     }
 
@@ -220,7 +231,7 @@ fun EncyclopediaMainScreen(
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.padding(bottom = MaterialTheme.spacing.m)
                                 )
-                                Button(onClick = { lazyPagingItems.retry() }) {
+                                Button(onClick = { lazyPagingItems.refresh() }) {
                                     Text("retry")
                                 }
                             } else {
@@ -231,7 +242,7 @@ fun EncyclopediaMainScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center
                                 ) {
-                                    ErrorScreenPlaceholder(onClick = { lazyPagingItems.retry() })
+                                    ErrorScreenPlaceholder(onClick = { lazyPagingItems.refresh() })
                                 }
                             }
                         }
@@ -300,7 +311,7 @@ fun EncyclopediaMainScreen(
                                                     .padding(16.dp),
                                                 horizontalAlignment = Alignment.CenterHorizontally
                                             ) {
-                                                ItemErrorPlaceholder(onClick = { lazyPagingItems.retry() })
+                                                ItemErrorPlaceholder(onClick = { lazyPagingItems.refresh() })
                                             }
                                         }
 

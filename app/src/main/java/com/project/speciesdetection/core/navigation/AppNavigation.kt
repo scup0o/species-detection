@@ -30,14 +30,16 @@ import com.project.speciesdetection.ui.features.auth.view.LoginScreen
 import com.project.speciesdetection.ui.features.auth.view.SignupScreen
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view.EncyclopediaDetailScreen
+import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
 
 @Composable
 fun AppNavigation(
-    activity : Activity
+    activity : Activity,
 ){
     val json = Json { ignoreUnknownKeys = true }
     val navController = rememberNavController()
     val authViewModel : AuthViewModel = hiltViewModel()
+    val settingViewModel : SettingViewModel = hiltViewModel()
 
     // Danh sách các route là tab gốc
     val rootDestinations = listOf(
@@ -116,7 +118,8 @@ fun AppNavigation(
         ) {
             EncyclopediaMainScreen(
                 navController = navController,
-                containerColor = containerColor
+                containerColor = containerColor,
+                settingViewModel = settingViewModel
             )
         }
 
@@ -137,7 +140,9 @@ fun AppNavigation(
         ){
             SettingMainScreen(
                 navController = navController,
-                authViewModel = authViewModel)
+                authViewModel = authViewModel,
+                settingViewModel = settingViewModel
+                )
         }
 
         /*composable(

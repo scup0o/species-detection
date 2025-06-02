@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.googleid)
     implementation(libs.play.services.auth)
+    implementation(libs.androidx.appcompat)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
