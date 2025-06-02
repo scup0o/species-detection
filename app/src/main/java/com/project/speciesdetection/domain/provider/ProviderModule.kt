@@ -1,6 +1,7 @@
 package com.project.speciesdetection.domain.provider
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import androidx.credentials.CredentialManager
 import com.google.firebase.auth.FirebaseAuth
@@ -111,6 +112,12 @@ object NetworkModule {
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
+        return context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    }
 
     @Provides
     @Singleton

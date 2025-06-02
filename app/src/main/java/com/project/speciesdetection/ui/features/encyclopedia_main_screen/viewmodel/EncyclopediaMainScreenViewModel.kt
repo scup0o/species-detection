@@ -104,7 +104,7 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
 
 
     // Load danh sách các species class (ví dụ cho filter chips)
-    private fun loadInitialSpeciesClasses() {
+    fun loadInitialSpeciesClasses() {
         // Kiểm tra lại mạng trước khi gọi API
         viewModelScope.launch(Dispatchers.IO) { // Sử dụng Dispatchers.IO cho các tác vụ mạng/DB
             Log.d(TAG, "Loading initial species classes...")

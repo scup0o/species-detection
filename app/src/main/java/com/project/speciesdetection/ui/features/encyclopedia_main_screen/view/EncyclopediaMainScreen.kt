@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.features.encyclopedia_main_screen.view
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,7 @@ import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
 import com.project.speciesdetection.ui.composable.common.ItemErrorPlaceholder
 import com.project.speciesdetection.ui.composable.common.ListItemPlaceholder
 import com.project.speciesdetection.ui.composable.common.species.SpeciesListItem
+import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalGlideComposeApi::class, ExperimentalMaterial3Api::class)
@@ -66,9 +69,10 @@ fun EncyclopediaMainScreen(
     containerColor: Color? = MaterialTheme.colorScheme.background,
     navController: NavHostController,
     viewModel: EncyclopediaMainScreenViewModel = hiltViewModel(),
+    settingViewModel: SettingViewModel
 ) {
-    val scaledHeight = LocalConfiguration.current.screenHeightDp.dp
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    //val scaledHeight = LocalConfiguration.current.screenHeightDp.dp
+    //val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
     val speciesClassList by viewModel.speciesClassList.collectAsStateWithLifecycle()
     val lazyPagingItems: LazyPagingItems<DisplayableSpecies> =
@@ -83,7 +87,8 @@ fun EncyclopediaMainScreen(
 
     //ui management state
     val loadState = lazyPagingItems.loadState
-    var showEmptyState by remember { mutableStateOf(false) }
+    val languageState by settingViewModel.currentLanguageCode.collectAsStateWithLifecycle()
+    /*var showEmptyState by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = searchQuery, key2 = loadState.refresh) {
         if (loadState.refresh is LoadState.NotLoading && lazyPagingItems.itemCount == 0) {
@@ -92,6 +97,12 @@ fun EncyclopediaMainScreen(
         } else {
             showEmptyState = false
         }
+    }*/
+
+    LaunchedEffect(languageState) {
+        Log.i("check check", languageState)
+        viewModel.loadInitialSpeciesClasses()
+        lazyPagingItems.refresh()
     }
 
     Scaffold(
@@ -106,7 +117,8 @@ fun EncyclopediaMainScreen(
                     Text(
                         text = stringResource(R.string.encyclopedia_title),
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleMedium,
+                        //fontFamily = FontFamily.Default
                     )
                 },
                 scrollBehavior = scrollBehavior
@@ -114,10 +126,12 @@ fun EncyclopediaMainScreen(
         },
         containerColor = containerColor!!,
     ) { innerPadding ->
-        Box(){
-            Column(modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()) {
+        Box() {
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+            ) {
                 AppSearchBar(
                     query = searchQuery,
                     onQueryChanged = { viewModel.onSearchQueryChanged(it) },
@@ -151,7 +165,10 @@ fun EncyclopediaMainScreen(
                     if (speciesClassList.isNotEmpty() || selectedClassId == "0") { // Hiển thị "Tất cả" ngay cả khi class list chưa load xong
                         item {
                             SpeciesClassChip(
-                                speciesClass = DisplayableSpeciesClass("0", stringResource(R.string.all)),
+                                speciesClass = DisplayableSpeciesClass(
+                                    "0",
+                                    stringResource(R.string.all)
+                                ),
                                 transparentColor = containerColor,
                                 isSelected = selectedClassId == "0",
                                 onClick = { viewModel.selectSpeciesClass("0") })
@@ -183,7 +200,7 @@ fun EncyclopediaMainScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            ErrorScreenPlaceholder(onClick = { lazyPagingItems.retry() })
+                            ErrorScreenPlaceholder(onClick = { lazyPagingItems.refresh() })
                         }
                     }
 
@@ -191,7 +208,8 @@ fun EncyclopediaMainScreen(
                         LazyColumn(
                             contentPadding = PaddingValues(
                                 horizontal = MaterialTheme.spacing.m,
-                                vertical = MaterialTheme.spacing.xs),
+                                vertical = MaterialTheme.spacing.xs
+                            ),
                             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
                         ) {
                             items(3) { ListItemPlaceholder() }
@@ -200,46 +218,45 @@ fun EncyclopediaMainScreen(
 
                     // 3. HIỂN THỊ MÀN HÌNH RỖNG KHI TẢI XONG, KHÔNG LỖI, VÀ KHÔNG CÓ ITEM
                     loadState.refresh is LoadState.NotLoading && lazyPagingItems.itemCount == 0 -> {
-                        if (showEmptyState){
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = MaterialTheme.spacing.m),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                if (searchQuery.isNotEmpty()) {
-                                    Text(
-                                        text = "no item", // String resource
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(bottom = MaterialTheme.spacing.m)
-                                    )
-                                    Button(onClick = {lazyPagingItems.retry()}){
-                                        Text("retry")
-                                    }
-                                } else {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(horizontal = MaterialTheme.spacing.m),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        ErrorScreenPlaceholder(onClick = { lazyPagingItems.retry() })
-                                    }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = MaterialTheme.spacing.m),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            if (searchQuery.isNotEmpty()) {
+                                Text(
+                                    text = "no item", // String resource
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(bottom = MaterialTheme.spacing.m)
+                                )
+                                Button(onClick = { lazyPagingItems.refresh() }) {
+                                    Text("retry")
+                                }
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = MaterialTheme.spacing.m),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    ErrorScreenPlaceholder(onClick = { lazyPagingItems.refresh() })
                                 }
                             }
                         }
-
                     }
+
                     else -> {
                         LazyColumn(
                             modifier = Modifier,
                             contentPadding =
                                 PaddingValues(
                                     horizontal = MaterialTheme.spacing.m,
-                                    vertical = MaterialTheme.spacing.xs),
+                                    vertical = MaterialTheme.spacing.xs
+                                ),
                             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
                         ) {
                             items(
@@ -257,7 +274,8 @@ fun EncyclopediaMainScreen(
                                                     imageUri = null
                                                 ),
                                                 inclusive = true,
-                                                saveState = false)
+                                                saveState = false
+                                            )
                                             navController.navigate(
                                                 AppScreen.EncyclopediaDetailScreen.createRoute(
                                                     species = it,
@@ -285,6 +303,7 @@ fun EncyclopediaMainScreen(
                                                 ListItemPlaceholder()
                                             }
                                         }
+
                                         is LoadState.Error -> {
                                             val e = appendState
                                             Column(
@@ -293,12 +312,13 @@ fun EncyclopediaMainScreen(
                                                     .padding(16.dp),
                                                 horizontalAlignment = Alignment.CenterHorizontally
                                             ) {
-                                                ItemErrorPlaceholder(onClick = {lazyPagingItems.retry()})
+                                                ItemErrorPlaceholder(onClick = { lazyPagingItems.refresh() })
                                             }
                                         }
+
                                         is LoadState.NotLoading -> {
                                             if (appendState.endOfPaginationReached && lazyPagingItems.itemCount > 0) {
-                                                Spacer(modifier = Modifier.height(100.dp-innerPadding.calculateBottomPadding()*2))
+                                                Spacer(modifier = Modifier.height(100.dp - innerPadding.calculateBottomPadding() * 2))
                                                 //Text(
                                                 //    text = "end", // String resource
                                                 //    modifier = Modifier
@@ -310,7 +330,8 @@ fun EncyclopediaMainScreen(
                                             }
                                         }
                                     }
-                                }}
+                                }
+                            }
                         }
                     }
                 }
@@ -318,7 +339,7 @@ fun EncyclopediaMainScreen(
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd) // Căn chỉnh FAB
-            ){
+            ) {
 
                 BottomNavigationBar(navController)
             }

@@ -228,7 +228,7 @@ private fun OptionDisplayItem(
             Icon(
                 painter = icon,
                 contentDescription = null,
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))

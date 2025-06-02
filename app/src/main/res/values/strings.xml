@@ -24,6 +24,7 @@
     <string name="camera_source_for_identification">Take Photo</string>
 
     <string name="setting">Settings</string>
+    <string name="language">Language</string>
     <string name="log_out">Logout</string>
 
     <string name="no_network_connection">No network connection</string>
@@ -62,9 +63,14 @@
 
     <string name="unverified_account">Unverified account</string>
     <string name="unverified_account_text">Please verify your email before login in</string>
-    <string name="dismiss">Dismiss</string>
+    <string name="dismiss">Close</string>
     <string name="is_resend_verification_email_state">Resend in</string>
     <string name="resend_verification_email">Resend verification email</string>
+
+    <string name="identify_button">Identify Image</string>
+    <string name="is_identifying_button">Identifying…</string>
+    <string name="top_suggestion">Top suggestions:</string>
+
 
 
 </resources>

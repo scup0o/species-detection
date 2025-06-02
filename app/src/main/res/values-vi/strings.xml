@@ -24,6 +24,7 @@
     <string name="camera_source_for_identification">Chụp Ảnh</string>
 
     <string name="setting">Cài đặt</string>
+    <string name="language">Ngôn ngữ</string>
     <string name="log_out">Đăng xuất</string>
 
     <string name="no_network_connection">Không có kết nối mạng</string>
@@ -34,7 +35,7 @@
     <string name="login_with_email">Đăng nhập với Email</string>
     <string name="login_with_google">Đăng nhập với Google</string>
     <string name="need_an_account">"Chưa có tài khoản? </string>
-    <string name="login_divider">Or</string>
+    <string name="login_divider">Hoặc</string>
     <string name="password_label">Mật khẩu</string>
 
     <string name="login_success">Đăng nhập thành công</string>
@@ -61,8 +62,12 @@
 
     <string name="unverified_account">Tài khoản chưa xác thực</string>
     <string name="unverified_account_text">Xin vui lòng xác thực tài khoản email trước khi đăng nhập</string>
-    <string name="dismiss">Quay về</string>
+    <string name="dismiss">Đóng</string>
     <string name="is_resend_verification_email_state">Gửi lại trong</string>
     <string name="resend_verification_email">Gửi lại email xác thực</string>
+
+    <string name="identify_button">Nhận diện ảnh</string>
+    <string name="is_identifying_button">Đang nhận diện…</string>
+    <string name="top_suggestion">Kết quả đề xuất:</string>
 
 </resources>
