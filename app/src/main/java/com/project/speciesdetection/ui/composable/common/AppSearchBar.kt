@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -58,11 +59,13 @@ fun AppSearchBar(
         onValueChange = onQueryChanged,
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = elevation,
-                shape = RoundedCornerShape(percent =90),
-                spotColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f),
-                ambientColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f))
+            .graphicsLayer {
+                shadowElevation = 5.dp.toPx()
+                shape = RoundedCornerShape(100.dp)
+                clip = true
+                ambientShadowColor = Color.Gray // Màu của bóng (phát sáng)
+                spotShadowColor = Color.Gray
+            }
             .heightIn(max = 50.dp) // Đặt chiều cao tối thiểu, Figma thường dùng 56dp hoặc tương tự
             .clip(RoundedCornerShape(percent = 90)) // Bo tròn góc
             .background(backgroundColor), // Đặt màu nền cho vùng TextField

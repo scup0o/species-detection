@@ -106,4 +106,27 @@ class RemoteSpeciesRepository @Inject constructor(
             emptyList()
         }
     }
+
+    override suspend fun getSpeciesDetails(
+        speciesDocId: String,
+        languageCode: String
+    ): DisplayableSpecies? {
+        Log.d(TAG, "getSpeciesDetails called for ID: $speciesDocId, lang: $languageCode")
+        return try {
+            val response = apiService.getSingleSpeciesById(
+                speciesDocId = speciesDocId,
+                languageCode = languageCode
+            )
+            if (response.success) {
+                Log.d(TAG, "Successfully fetched details for species ID: $speciesDocId. Name: ${response.data.localizedName}")
+                response.data // API trả về ApiSingleResponse<DisplayableSpecies>, lấy data từ đó
+            } else {
+                Log.e(TAG, "API Error fetching details for species ID $speciesDocId: ${response.message}")
+                null // Trả về null nếu API báo lỗi không thành công
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception fetching details for species ID $speciesDocId", e)
+            null // Trả về null nếu có exception
+        }
+    }
 }

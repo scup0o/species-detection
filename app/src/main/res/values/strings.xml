@@ -29,6 +29,10 @@
 
     <string name="no_network_connection">No network connection</string>
 
+    <string name="get_started">Get started</string>
+    <string name="get_started_title">Let\'s get started</string>
+    <string name="get_started_text">Share your journey with the community</string>
+
     <string name="login_title">Login</string>
     <string name="login_text">Welcome back to the app</string>
     <string name="forgot_password">Forgot Password?</string>
@@ -70,6 +74,56 @@
     <string name="identify_button">Identify Image</string>
     <string name="is_identifying_button">Identifying…</string>
     <string name="top_suggestion">Top suggestions:</string>
+
+    <!-- IUCN Conservation Status Full Names -->
+    <string name="iucn_status_ex">Extinct</string>
+    <string name="iucn_status_ew">Extinct in the Wild</string>
+    <string name="iucn_status_cr">Critically Endangered</string>
+    <string name="iucn_status_en">Endangered</string>
+    <string name="iucn_status_vu">Vulnerable</string>
+    <string name="iucn_status_nt">Near Threatened</string>
+    <string name="iucn_status_lc">Least Concern</string>
+    <string name="iucn_status_dd">Data Deficient</string> <!-- Thêm nếu cần -->
+    <string name="iucn_status_ne">Not Evaluated</string> <!-- Thêm nếu cần -->
+    <string name="iucn_status_unknown">Unknown Information</string>
+
+    <!-- Labels for groups (tùy chọn, nếu bạn muốn đa ngôn ngữ cho cả các nhãn nhóm)-->
+    <string name="iucn_group_extinct">Extinct</string>
+    <string name="iucn_group_threatened">Threatened</string>
+    <string name="iucn_group_least_concern">Least Concern</string>
+
+    <!-- Other general strings -->
+    <string name="iucn_reference_text">(IUCN 3.1)</string>
+    <string name="iucn_reference_link_text">[1]</string>
+    <string name="iucn_reference_url">https://www.iucnredlist.org/resources/categories-and-criteria</string> <!-- URL cho link [1] -->
+
+    <string name="species_classification_domain">Domain</string>
+    <string name="species_classification_kingdom">Kingdom</string>
+    <string name="species_classification_phylum">Phylum</string>
+    <string name="species_classification_class">Class</string>
+    <string name="species_classification_order">Order</string>
+    <string name="species_classification_family">Family</string>
+    <string name="species_classification_genus">Genus</string>
+    <string name="species_classification_species">Species</string>
+
+    <string name="species_detail_conservation_status">Conservation Status</string>
+    <string name="species_detail_summary">Summary</string>
+    <string name="species_detail_classification">Classification</string>
+    <string name="species_detail_physical">Physical</string>
+    <string name="species_detail_distribution">Distribution</string>
+    <string name="species_detail_habitat">Habitat</string>
+    <string name="species_detail_behavior">Behavior</string>
+    <string name="species_detail_source">Source</string>
+    <string name="species_detail_more_info">More Info</string>
+    <string name="species_detail_scientific_name">Scientific name</string>
+    <string name="species_detail_login_to_record">Login to record observation</string>
+    <string name="species_detail_login_to_add">Login to add new observation</string>
+    <string name="species_detail_add">Add new Observation</string>
+    <string name="species_detail_record">Record Observation</string>
+    <string name="species_detail_view_observation">View Observations</string>
+
+
+
 
 
 

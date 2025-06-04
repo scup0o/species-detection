@@ -17,8 +17,6 @@ import javax.inject.Named
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    @Named("language_provider") lateinit var languageProvider: LanguageProvider // Hilt sẽ inject cái này
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -40,7 +38,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun getLanguagePreference(context: Context): String {
-        val pref = context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
+        val pref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         return pref.getString("selected_language", Locale.getDefault().language) ?: Locale.getDefault().language
     }
 }

@@ -60,5 +60,13 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
         val currentLanguageCode = languageProvider.getCurrentLanguageCode()
         return speciesRepository.getSpeciesById(idList, currentLanguageCode)
     }
+
+    suspend fun getDetailsByDocId(speciesDocId: String): DisplayableSpecies? {
+        val currentLanguageCode = languageProvider.getCurrentLanguageCode()
+        return speciesRepository.getSpeciesDetails(
+            speciesDocId = speciesDocId,
+            languageCode = currentLanguageCode
+        )
+    }
 }
 

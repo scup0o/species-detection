@@ -39,7 +39,7 @@ sealed class AppScreen(
         icon = R.drawable.book_open)
 
     object EncyclopediaDetailScreen : AppScreen(
-        route = "encyclopedia_detail_screen/{speciesJson}?imageURi={imageUri}",
+        route = "encyclopedia_detail_screen/{baseSpeciesJson}?imageURi={imageUri}",
         icon = null
     ){
         fun createRoute(species: DisplayableSpecies, imageUri: Uri?) : String{
