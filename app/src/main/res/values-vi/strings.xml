@@ -29,6 +29,10 @@
 
     <string name="no_network_connection">Không có kết nối mạng</string>
 
+    <string name="get_started">Bắt đầu ngay</string>
+    <string name="get_started_title">Hãy cùng bắt đầu nào</string>
+    <string name="get_started_text">Chia sẻ hành trình của bạn với cộng đồng</string>
+
     <string name="login_title">Đăng nhập</string>
     <string name="login_text">Chào mừng bạn quay trở lại</string>
     <string name="forgot_password">Quên mật khẩu?</string>
@@ -69,5 +73,52 @@
     <string name="identify_button">Nhận diện ảnh</string>
     <string name="is_identifying_button">Đang nhận diện…</string>
     <string name="top_suggestion">Kết quả đề xuất:</string>
+
+    <!-- IUCN Conservation Status Full Names -->
+    <string name="iucn_status_ex">Tuyệt chủng</string>
+    <string name="iucn_status_ew">Tuyệt chủng trong tự nhiên</string>
+    <string name="iucn_status_cr">Cực kỳ nguy cấp</string>
+    <string name="iucn_status_en">Nguy cấp</string>
+    <string name="iucn_status_vu">Sắp nguy cấp</string>
+    <string name="iucn_status_nt">Sắp bị đe dọa</string>
+    <string name="iucn_status_lc">Ít quan tâm</string>
+    <string name="iucn_status_dd">Thiếu dữ liệu</string> <!-- Thêm nếu cần -->
+    <string name="iucn_status_ne">Không được đánh giá</string> <!-- Thêm nếu cần -->
+    <string name="iucn_status_unknown">Không có thông tin</string>
+
+    <!-- Labels for groups (tùy chọn, nếu bạn muốn đa ngôn ngữ cho cả các nhãn nhóm)-->
+    <string name="iucn_group_extinct">Tuyệt chủng</string>
+    <string name="iucn_group_threatened">Bị đe dọa</string>
+    <string name="iucn_group_least_concern">Nguy cơ thấp</string>
+
+    <!-- Other general strings -->
+    <string name="iucn_reference_text">(IUCN 3.1)</string>
+    <string name="iucn_reference_link_text">[1]</string>
+    <string name="iucn_reference_url">https://www.iucnredlist.org/resources/categories-and-criteria</string> <!-- URL cho link [1] -->
+
+    <string name="species_classification_domain">Vực</string>
+    <string name="species_classification_kingdom">Giới</string>
+    <string name="species_classification_phylum">Ngành</string>
+    <string name="species_classification_class">Lớp</string>
+    <string name="species_classification_order">Bộ</string>
+    <string name="species_classification_family">Họ</string>
+    <string name="species_classification_genus">Chi</string>
+    <string name="species_classification_species">Loài</string>
+
+    <string name="species_detail_conservation_status">Tình trạng bảo tồn</string>
+    <string name="species_detail_summary">Mô tả</string>
+    <string name="species_detail_classification">Phân loại</string>
+    <string name="species_detail_physical">Hình thái</string>
+    <string name="species_detail_distribution">Phân bố</string>
+    <string name="species_detail_habitat">Môi trường sống</string>
+    <string name="species_detail_behavior">Tập tính</string>
+    <string name="species_detail_source">Nguồn</string>
+    <string name="species_detail_more_info">Thông tin thêm</string>
+    <string name="species_detail_scientific_name">Tên khoa học</string>
+    <string name="species_detail_login_to_record">Đăng nhập để tạo Bản ghi</string>
+    <string name="species_detail_login_to_add">Đăng nhập để thêm Bản ghi mới</string>
+    <string name="species_detail_add">Thêm Bản ghi mới</string>
+    <string name="species_detail_record">Tạo Bản ghi</string>
+    <string name="species_detail_view_observation">Xem các Bản ghi</string>
 
 </resources>

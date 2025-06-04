@@ -25,4 +25,9 @@ interface SpeciesRepository {
         idList: List<String>,
         languageCode: String
     ): List<DisplayableSpecies>
+
+    suspend fun getSpeciesDetails(
+        speciesDocId: String,
+        languageCode: String
+    ): DisplayableSpecies?
 }

@@ -34,12 +34,12 @@ import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.Se
 
 @Composable
 fun AppNavigation(
-    activity : Activity,
-){
+    activity: Activity,
+) {
     val json = Json { ignoreUnknownKeys = true }
     val navController = rememberNavController()
-    val authViewModel : AuthViewModel = hiltViewModel()
-    val settingViewModel : SettingViewModel = hiltViewModel()
+    val authViewModel: AuthViewModel = hiltViewModel()
+    val settingViewModel: SettingViewModel = hiltViewModel()
 
     // Danh sách các route là tab gốc
     val rootDestinations = listOf(
@@ -65,23 +65,24 @@ fun AppNavigation(
     NavHost(
         navController = navController,
         startDestination = AppScreen.CommunityScreen.route
-    ){
+    ) {
         composable(
             route = AppScreen.CommunityScreen.route,
-            enterTransition = {EnterTransition.None},
-            exitTransition = {ExitTransition.None}
-        ){
-                CommunityFeed(
-                    navController = navController,
-                    containerColor = containerColor,
-                    authViewModel = authViewModel)
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None }
+        ) {
+            CommunityFeed(
+                navController = navController,
+                containerColor = containerColor,
+                authViewModel = authViewModel
+            )
 
         }
         composable(
             route = AppScreen.LoginScreen.route,
-            enterTransition = {EnterTransition.None},
-            exitTransition = {ExitTransition.None}
-        ){
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None }
+        ) {
 
             LoginScreen(
                 navController = navController,
@@ -91,9 +92,9 @@ fun AppNavigation(
 
         composable(
             route = AppScreen.SignUpScreen.route,
-            enterTransition = {EnterTransition.None},
-            exitTransition = {ExitTransition.None}
-        ){
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None }
+        ) {
             SignupScreen(
                 navController = navController,
                 authViewModel = authViewModel
@@ -102,9 +103,9 @@ fun AppNavigation(
 
         composable(
             route = AppScreen.ForgotPasswordScreen.route,
-            enterTransition = {EnterTransition.None},
-            exitTransition = {ExitTransition.None}
-        ){
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None }
+        ) {
             ForgotPasswordScreen(
                 navController = navController,
                 authViewModel = authViewModel
@@ -113,8 +114,8 @@ fun AppNavigation(
 
         composable(
             route = AppScreen.EncyclopediaMainScreen.route,
-            enterTransition = {EnterTransition.None},
-            exitTransition = {ExitTransition.None}
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None }
         ) {
             EncyclopediaMainScreen(
                 navController = navController,
@@ -125,24 +126,25 @@ fun AppNavigation(
 
         composable(
             route = AppScreen.ProfileMainScreen.route,
-            enterTransition = {EnterTransition.None},
-            exitTransition = {ExitTransition.None}
-        ){
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None }
+        ) {
             ProfileMainScreen(
                 navController = navController,
-                containerColor = containerColor)
+                containerColor = containerColor
+            )
         }
 
         composable(
             route = AppScreen.SettingMainScreen.route,
-            enterTransition = {EnterTransition.None},
-            exitTransition = {ExitTransition.None}
-        ){
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None }
+        ) {
             SettingMainScreen(
                 navController = navController,
                 authViewModel = authViewModel,
                 settingViewModel = settingViewModel
-                )
+            )
         }
 
         /*composable(
@@ -176,15 +178,15 @@ fun AppNavigation(
         composable(
             route = AppScreen.EncyclopediaDetailScreen.route,
             arguments = listOf(
-                navArgument("speciesJson") { type = NavType.StringType },
+                navArgument("baseSpeciesJson") { type = NavType.StringType },
                 navArgument("imageUri") {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
                 }
             )
-        ) {backStackEntry ->
-            val speciesJsonEncoded = backStackEntry.arguments?.getString("speciesJson")
+        ) { backStackEntry ->
+            /*val speciesJsonEncoded = backStackEntry.arguments?.getString("speciesJson")
             val speciesJson = speciesJsonEncoded?.let { Uri.decode(it) }
             val species = speciesJson?.let {
                 try {
@@ -193,21 +195,17 @@ fun AppNavigation(
                     e.printStackTrace()
                     null
                 }
-            }
+            }*/
 
             val imageUriEncoded = backStackEntry.arguments?.getString("imageUri")
             val imageUri = imageUriEncoded?.let { Uri.decode(it).toUri() }
 
-            if (species != null) {
-                EncyclopediaDetailScreen(
-                    species = species,
-                    observationImage = imageUri,
-                    navController = navController
-                )
-            } else {
-                // Text("Error: Could not load species data.")
-                navController.popBackStack()
-            }
+            EncyclopediaDetailScreen(
+                observationImage = imageUri,
+                navController = navController,
+                authViewModel = authViewModel
+            )
+
         }
     }
 

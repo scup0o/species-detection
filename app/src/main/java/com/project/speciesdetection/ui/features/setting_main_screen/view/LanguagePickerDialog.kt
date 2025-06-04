@@ -105,9 +105,7 @@ fun LanguageRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = languageItem.displayName,
-            style = MaterialTheme.typography.bodyMedium,
-            fontFamily = FontFamily.Default)
+        Text(text = languageItem.displayName)
         if (isSelected) {
             Icon(
                 imageVector = Icons.Filled.Check,

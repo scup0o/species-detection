@@ -34,7 +34,8 @@ data class Species(
                         if (this.family[languageCode].isNullOrEmpty()) ""
                         else this.family[languageCode]!!,
             /*localizedDescription = this.getLocalizedDescription(languageCode),*/
-            imageURL = this.imageURL,
+            imageURL = this.imageURL!!,
+            thumbnailImageURL = "",
             scientific = mapOf(
                 "name" to this.scientificName,
                 "family" to

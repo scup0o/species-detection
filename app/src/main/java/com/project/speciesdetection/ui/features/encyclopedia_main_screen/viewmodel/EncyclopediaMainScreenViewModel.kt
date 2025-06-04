@@ -47,6 +47,8 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
         private const val SEARCH_DEBOUNCE_MS = 700L // Thời gian chờ trước khi thực hiện search
     }
 
+    val currentLanguageState = MutableStateFlow("none")
+
     // StateFlow cho query tìm kiếm từ người dùng
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -102,7 +104,6 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
     }
 
 
-
     // Load danh sách các species class (ví dụ cho filter chips)
     fun loadInitialSpeciesClasses() {
         // Kiểm tra lại mạng trước khi gọi API
@@ -144,6 +145,10 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
         // PagingDataFlow sẽ tự động cập nhật nhờ `combine`, `debounce` và `flatMapLatest`
+    }
+
+    fun setLanguage(language : String){
+        currentLanguageState.value = language
     }
 
     // Hàm để retry load PagingData (có thể gọi từ UI)

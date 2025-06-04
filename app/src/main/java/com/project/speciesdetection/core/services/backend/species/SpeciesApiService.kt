@@ -2,7 +2,9 @@ package com.project.speciesdetection.core.services.backend.species
 
 import com.project.speciesdetection.core.services.backend.dto.ApiPagedResponse
 import com.project.speciesdetection.core.services.backend.dto.ApiSingleResponse
+import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface SpeciesApiService {
@@ -20,6 +22,12 @@ interface SpeciesApiService {
         @Query("ids") ids: String,
         @Query("languageCode") languageCode: String
     ): ApiPagedResponse
+
+    @GET("api/v1/species/{speciesDocId}") // {speciesDocId} là path parameter
+    suspend fun getSingleSpeciesById(
+        @Path("speciesDocId") speciesDocId: String, // Giá trị này sẽ thay thế {speciesDocId} trong URL
+        @Query("languageCode") languageCode: String
+    ): ApiSingleResponse<DisplayableSpecies>
 
     /*@GET("api/v1/species/classes")
     suspend fun getSpeciesClasses(): ApiSingleResponse<List<ApiSpeciesClassDto>>*/

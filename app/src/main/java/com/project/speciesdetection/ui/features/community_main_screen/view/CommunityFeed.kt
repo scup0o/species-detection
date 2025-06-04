@@ -32,28 +32,7 @@ fun CommunityFeed(
     val authState by authViewModel.authState.collectAsState()
 
     if (authState.currentUser==null){
-        Scaffold(
-            bottomBar = {BottomNavigationBar(navController)}
-        ) { innerPadding ->
-            Column(modifier = Modifier.padding(innerPadding)){
-                Button(
-                    onClick = {
-                        navController.popBackStack(AppScreen.LoginScreen.route, inclusive = true, saveState = false)
-                        navController.navigate(AppScreen.LoginScreen.route) {
-                            launchSingleTop = true
-                        }
-                    }
-                ) { Text("Login")}
-                Button(
-                    onClick = {
-                        navController.popBackStack(AppScreen.SignUpScreen.route, inclusive = true, saveState = false)
-                        navController.navigate(AppScreen.SignUpScreen.route) {
-                            launchSingleTop = true
-                        }
-                    }
-                ) { Text("SignUp")}
-            }
-        }
+        AuthScreen(navController)
     }
     else{
         Scaffold(

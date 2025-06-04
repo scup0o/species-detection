@@ -29,8 +29,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -38,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +51,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.navigation.BottomNavigationBar
@@ -88,6 +93,7 @@ fun EncyclopediaMainScreen(
     //ui management state
     val loadState = lazyPagingItems.loadState
     val languageState by settingViewModel.currentLanguageCode.collectAsStateWithLifecycle()
+    val currentLanguage by viewModel.currentLanguageState.collectAsStateWithLifecycle()
     /*var showEmptyState by remember { mutableStateOf(false) }
 
     LaunchedEffect(key1 = searchQuery, key2 = loadState.refresh) {
@@ -101,8 +107,12 @@ fun EncyclopediaMainScreen(
 
     LaunchedEffect(languageState) {
         Log.i("check check", languageState)
-        viewModel.loadInitialSpeciesClasses()
-        lazyPagingItems.refresh()
+        if (languageState!=currentLanguage){
+            viewModel.setLanguage(languageState)
+            if (currentLanguage!="none"){
+                viewModel.loadInitialSpeciesClasses()
+                lazyPagingItems.refresh()}
+        }
     }
 
     Scaffold(
@@ -154,11 +164,21 @@ fun EncyclopediaMainScreen(
                     hint = stringResource(R.string.species_search_hint)
                 )
 
+                val isSelectedColor = MaterialTheme.colorScheme.tertiary.copy(0.8f)
+
                 // Thanh chọn Species Class
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = MaterialTheme.spacing.xs),
+                        .padding(top = MaterialTheme.spacing.xs)
+                        .drawBehind {
+                            val strokeWidth = 0.dp.toPx()
+                            drawLine(
+                                color = isSelectedColor,
+                                start = Offset(50f, size.height),
+                                end = Offset(size.width-50f, size.height),
+                                strokeWidth = strokeWidth
+                            )},
                     contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
                     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
                 ) {
@@ -189,7 +209,7 @@ fun EncyclopediaMainScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 when {
                     loadState.refresh is LoadState.Error -> {
@@ -268,6 +288,7 @@ fun EncyclopediaMainScreen(
                                     SpeciesListItem(
                                         species = it,
                                         onClick = {
+
                                             navController.popBackStack(
                                                 AppScreen.EncyclopediaDetailScreen.createRoute(
                                                     species = it,
@@ -338,7 +359,7 @@ fun EncyclopediaMainScreen(
             }
             Row(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd) // Căn chỉnh FAB
+                    .align(Alignment.BottomEnd)
             ) {
 
                 BottomNavigationBar(navController)

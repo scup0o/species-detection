@@ -27,12 +27,12 @@ object LocaleHelper {
     }
 
     fun saveLanguagePreference(context: Context, languageCode: String) {
-        val pref = context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
+        val pref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         pref.edit().putString("selected_language", languageCode).apply()
     }
 
     fun getLanguagePreference(context: Context): String {
-        val pref = context.getSharedPreferences("language_prefs", Context.MODE_PRIVATE)
+        val pref = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         return pref.getString("selected_language", Locale.getDefault().language) ?: Locale.getDefault().language
     }
 }
