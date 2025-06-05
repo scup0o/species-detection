@@ -117,6 +117,13 @@ fun SpeciesClassChip(
         onClick = onClick,
         title = speciesClass.localizedName,
         isSelected = isSelected,
-        painterIcon = speciesClass.getIcon()
+        painterIcon = speciesClass.getIcon(),
+        unSelectedContainerColor = MaterialTheme.colorScheme.tertiary,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.tertiary,
+        unSelectedContentColor = MaterialTheme.colorScheme.onTertiary
+        //borderTopStart = 0,
+        //borderTopEnd = 0,
+        //contentColor = MaterialTheme.colorScheme.onTertiary
     )
 }

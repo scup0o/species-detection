@@ -28,7 +28,14 @@ fun CustomChip(
     vectorIcon : ImageVector? = null,
     painterIcon : Int? = null,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    contentColor: Color = MaterialTheme.colorScheme.onTertiary,
+    unSelectedContentColor: Color = MaterialTheme.colorScheme.tertiary,
+    unSelectedContainerColor : Color = Color.Transparent,
+    containerColor : Color = MaterialTheme.colorScheme.tertiary,
+    borderTopStart: Int = 50,
+    borderTopEnd : Int = 50,
+
 ){
     Card(
         modifier =
@@ -40,15 +47,15 @@ fun CustomChip(
             bottomEndPercent = 65
         )customCardShape()*/
             RoundedCornerShape(
-                topStartPercent = 50,
-                topEndPercent = 50,
+                topStartPercent = borderTopStart,
+                topEndPercent = borderTopEnd,
                 bottomStartPercent = 0,
                 bottomEndPercent = 0),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.tertiary
-            else Color.Transparent,
-            contentColor = if (isSelected) MaterialTheme.colorScheme.onTertiary
-            else MaterialTheme.colorScheme.tertiary
+            containerColor = if (isSelected) containerColor
+            else unSelectedContainerColor,
+            contentColor = if (isSelected) contentColor
+            else unSelectedContentColor
 
         ),
         /*border = if (!isSelected) BorderStroke(

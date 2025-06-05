@@ -1,6 +1,8 @@
 package com.project.speciesdetection.ui.features.encyclopedia_main_screen.view
 
 import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -37,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -50,8 +55,10 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.bumptech.glide.Glide
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.navigation.BottomNavigationBar
@@ -116,7 +123,8 @@ fun EncyclopediaMainScreen(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             CenterAlignedTopAppBar(
                 expandedHeight = MaterialTheme.spacing.xxl,
@@ -124,24 +132,38 @@ fun EncyclopediaMainScreen(
                     containerColor = Color.Transparent,
                 ),
                 title = {
-                    Text(
+                    /*Text(
                         text = stringResource(R.string.encyclopedia_title),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
                         //fontFamily = FontFamily.Default
-                    )
+                    )*/
                 },
                 scrollBehavior = scrollBehavior
             )
         },
-        containerColor = containerColor!!,
+        bottomBar = {Row(){} },
+        containerColor = MaterialTheme.colorScheme.primary.copy(0.5f),
     ) { innerPadding ->
-        Box() {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            /*GlideImage(
+                model = R.drawable.banner_8,
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                loading = placeholder(R.drawable.image_not_available),
+                failure = placeholder(R.drawable.image_not_available)
+            )*/
+
+            Image(
+                painterResource(R.drawable.banner_9), null,
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth
+
+            )
+
             Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-            ) {
+                modifier = Modifier.padding(innerPadding),
+            ){
                 AppSearchBar(
                     query = searchQuery,
                     onQueryChanged = { viewModel.onSearchQueryChanged(it) },
@@ -164,22 +186,19 @@ fun EncyclopediaMainScreen(
                     hint = stringResource(R.string.species_search_hint)
                 )
 
-                val isSelectedColor = MaterialTheme.colorScheme.tertiary.copy(0.8f)
-
                 // Thanh chọn Species Class
                 LazyRow(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = MaterialTheme.spacing.xs)
-                        .drawBehind {
-                            val strokeWidth = 0.dp.toPx()
-                            drawLine(
-                                color = isSelectedColor,
-                                start = Offset(50f, size.height),
-                                end = Offset(size.width-50f, size.height),
-                                strokeWidth = strokeWidth
-                            )},
-                    contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
+                        /*.background(
+                            MaterialTheme.colorScheme.surface,
+                            RoundedCornerShape(
+                                topEndPercent = 50,
+                                topStartPercent = 50
+                            )
+                        )*/
+                     .padding(top = MaterialTheme.spacing.xs)
+                    ,
+                    //contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
                     horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
                 ) {
                     if (speciesClassList.isNotEmpty() || selectedClassId == "0") { // Hiển thị "Tất cả" ngay cả khi class list chưa load xong
@@ -209,6 +228,24 @@ fun EncyclopediaMainScreen(
                     }
                 }
 
+            Column(
+                modifier = Modifier
+                    //.padding(innerPadding)
+                    .fillMaxSize()
+                    .background(
+                        MaterialTheme.colorScheme.surfaceContainer,
+                        RoundedCornerShape(
+                            //topStartPercent = 2,
+                            topEndPercent = 2,
+                            bottomEndPercent = 0,
+                            bottomStartPercent = 0
+                        )
+                    )
+
+            ) {
+
+
+
                 Spacer(modifier = Modifier.height(2.dp))
 
                 when {
@@ -228,7 +265,7 @@ fun EncyclopediaMainScreen(
                         LazyColumn(
                             contentPadding = PaddingValues(
                                 horizontal = MaterialTheme.spacing.m,
-                                vertical = MaterialTheme.spacing.xs
+                                vertical = MaterialTheme.spacing.l
                             ),
                             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
                         ) {
@@ -356,13 +393,16 @@ fun EncyclopediaMainScreen(
                         }
                     }
                 }
-            }
+            }}
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
+                    .padding(bottom = 10.dp)
             ) {
+                BottomNavigationBar(
+                    navController,
 
-                BottomNavigationBar(navController)
+                    )
             }
         }
 

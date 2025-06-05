@@ -1,6 +1,8 @@
 package com.project.speciesdetection.core.navigation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,8 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
@@ -39,7 +44,8 @@ import com.project.speciesdetection.ui.features.identification_image_source.view
 
 @Composable
 fun BottomNavigationBar(
-    navController: NavHostController
+    navController: NavHostController,
+    containerColor : Color = Color.Transparent
 ) {
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
@@ -89,13 +95,15 @@ fun BottomNavigationBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(75.dp)
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             FloatingActionButton(
                 onClick = {
                     showImageSourcePicker = true
                 },
                 shape = FloatingActionButtonDefaults.largeShape,
-                modifier = Modifier.padding(10.dp),
+                //modifier = Modifier.padding(10.dp),
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
                 Icon(
@@ -111,9 +119,10 @@ fun BottomNavigationBar(
                 shape = RoundedCornerShape(
                     topStart = 25.dp,
                     topEnd = 25.dp,
-                    bottomStart = 0.dp,
-                    bottomEnd = 0.dp
-                )
+                    bottomStart = 25.dp,
+                    bottomEnd = 25.dp
+                ),
+                modifier = Modifier.padding(start = 10.dp)
             ) {
                 NavigationBar(
                     modifier = Modifier
@@ -124,8 +133,10 @@ fun BottomNavigationBar(
                                 bottomStart = 0.dp,
                                 bottomEnd = 0.dp
                             )
-                        ),
-                    containerColor = Color.Transparent,
+                        )
+                        //
+                    ,
+                    containerColor = containerColor,
                 )
                 {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -134,8 +145,23 @@ fun BottomNavigationBar(
                     screens.forEach { screen ->
                         val selected =
                             currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                        val isSelectedColor = MaterialTheme.colorScheme.primary
+
                         NavigationBarItem(
-                            modifier = Modifier,
+                            modifier = Modifier
+                                .drawBehind {
+                                    if (selected) {
+                                        // Vẽ hình tròn dưới item khi được chọn
+                                        val radius = 3.dp.toPx() // Đường kính của hình tròn
+                                        val xPosition = size.width / 2f // Vị trí trung tâm của item
+                                        val yPosition = size.height/2+size.height/3  // Vị trí dưới item
+                                        drawCircle(
+                                            color = isSelectedColor,
+                                            radius = radius,
+                                            center = Offset(xPosition, yPosition)
+                                        )
+                                    }
+                                },
                             icon = {
                                 Icon(
                                     painter = painterResource(screen.icon!!),
