@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.features.community_main_screen.view
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -35,6 +36,7 @@ fun CommunityFeed(
         AuthScreen(navController)
     }
     else{
+        Log.i("check check", authState.currentUserInformation.toString())
         Scaffold(
             containerColor = containerColor!!,
             bottomBar = {BottomNavigationBar(navController)}

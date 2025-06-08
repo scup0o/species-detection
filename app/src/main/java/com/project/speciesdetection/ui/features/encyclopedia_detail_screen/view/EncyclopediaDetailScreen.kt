@@ -30,6 +30,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,6 +41,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
@@ -47,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Updater
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -80,6 +84,7 @@ import com.project.speciesdetection.ui.composable.common.species.IUCNConservatio
 import com.project.speciesdetection.ui.composable.common.species.SpeciesClassification
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.viewmodel.EncyclopediaDetailViewModel
+import com.project.speciesdetection.ui.features.observation.view.UpdateObservation
 import kotlinx.coroutines.launch
 
 @OptIn(
@@ -117,6 +122,7 @@ fun EncyclopediaDetailScreen(
     val detailedDescriptionContainer: Color = MaterialTheme.colorScheme.surfaceContainer
 
 
+
     LaunchedEffect(listCurrentState) {
         Log.i("check chekc", listCurrentState.toString())
         if (listCurrentState == 3 || listCurrentState == 6)
@@ -151,10 +157,13 @@ fun EncyclopediaDetailScreen(
                     ) {
                         if (authState.currentUser != null) {
                             CustomActionButton(
-                                onClick = {},
+                                onClick = {
+                                    navController.navigate(AppScreen.UpdateObservationScreen.buildRouteForCreate(species, observationImage))
+                                },
                                 text =
                                     if (observationImage != null) stringResource(R.string.species_detail_record)
                                     else stringResource(R.string.species_detail_add),
+                                vectorLeadingIcon = Icons.Default.Add
                             )
 
                         } else {
@@ -172,15 +181,18 @@ fun EncyclopediaDetailScreen(
                                 text =
                                     if (observationImage != null) stringResource(R.string.species_detail_login_to_record)
                                     else stringResource(R.string.species_detail_login_to_add),
+
                             )
                         }
-                        CustomActionButton(
-                            onClick = {},
+                        /*CustomActionButton(
+                            onClick = {
+                                navController.navigate(AppScreen.UpdateObservationScreen.buildRouteForCreate(species, observationImage))
+                            },
                             text = stringResource(R.string.species_detail_view_observation),
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             borderColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.primary
-                        )
+                        )*/
                     }
 
                 }
@@ -199,21 +211,35 @@ fun EncyclopediaDetailScreen(
                                     contentScale = ContentScale.FillWidth,
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .clip(RoundedCornerShape(0,0,60,0))
                                 )
 
                             }
 
-                            Button(
+                            IconButton(
                                 onClick = { navController.popBackStack() },
-                                contentPadding = PaddingValues(0.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.White.copy(0.3f)
-                                ),
-                                modifier = Modifier.padding(5.dp)
+                                modifier = Modifier.padding(5.dp),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                )
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                                     contentDescription = "Back",
+                                )
+                            }
+
+                            IconButton(
+                                onClick = {
+                                },
+                                modifier = Modifier.padding(5.dp).align(Alignment.BottomEnd).size(48.dp),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.tertiary,
+                                    contentColor = MaterialTheme.colorScheme.onTertiary
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Star,null,
                                 )
                             }
 

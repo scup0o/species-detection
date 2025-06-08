@@ -2,6 +2,7 @@ package com.project.speciesdetection.core.services.remote_database
 
 import androidx.paging.PagingData
 import com.google.firebase.firestore.Query
+import com.project.speciesdetection.data.model.observation.Observation
 import kotlinx.coroutines.flow.Flow
 
 sealed class DataResult<out T> {
@@ -43,4 +44,9 @@ interface SpeciesClassDatabaseService<T : Any, ID> {
 }
 
 interface UserDatabaseService<T : Any, ID> {
+}
+
+interface ObservationDatabaseService {
+    suspend fun createObservation(observation: Observation): Result<String>
+    suspend fun updateObservation(observation: Observation): Result<Unit>
 }

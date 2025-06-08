@@ -15,7 +15,9 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.google.firebase.auth.FirebaseUser
+import com.project.speciesdetection.data.model.user.User
 import com.project.speciesdetection.data.model.user.repository.RemoteUserRepository
+import com.project.speciesdetection.data.model.user.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,7 @@ data class AuthState(
     val isGoogleSignInInProgress: Boolean = false,
     val resendCooldownSeconds: Int = 0,
     val forgotPasswordCooldownSeconds : Int = 0,
+    val currentUserInformation : User? = null
 )
 
 sealed class UiEvent {
@@ -41,7 +44,7 @@ sealed class UiEvent {
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     application: Application,
-    private val repository: RemoteUserRepository,
+    private val repository: UserRepository,
     private val credentialManager: CredentialManager
 ) : AndroidViewModel(application) {
 
@@ -65,7 +68,11 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun checkCurrentUser() {
-        _authState.update { it.copy(currentUser = repository.getCurrentUser()) }
+        viewModelScope.launch {
+        val currentUser = repository.getCurrentUser()
+        if (currentUser != null) {
+            _authState.update { it.copy(currentUser = currentUser, currentUserInformation = repository.getUserInformation(currentUser.uid)) }
+        }}
     }
 
     private fun prepareGoogleSignInRequestObject() {
@@ -115,8 +122,9 @@ class AuthViewModel @Inject constructor(
                 if (idToken != null) {
                     repository.signInWithGoogleIdToken(idToken).fold(
                         onSuccess = { firebaseUser ->
-                            _authState.update { it.copy(isLoading = false, currentUser = firebaseUser, error = null) }
+                            _authState.update { it.copy(isLoading = false, currentUser = firebaseUser, error = null, currentUserInformation = repository.getUserInformation(firebaseUser.uid)) }
                             _uiEvent.emit(UiEvent.ShowSnackbar(successMessage))
+                            Log.i("check", _authState.value.currentUser!!.uid +","+ _authState.value.currentUserInformation!!.uid)
                         },
                         onFailure = { exception ->
                             handleAuthError(exception, errorMessage)
@@ -185,7 +193,7 @@ class AuthViewModel @Inject constructor(
                         return@launch
                     }
 
-                    _authState.update { it.copy(isLoading = false, currentUser = firebaseUser, error = null) }
+                    _authState.update { it.copy(isLoading = false, currentUser = firebaseUser, error = null, currentUserInformation = repository.getUserInformation(firebaseUser.uid)) }
                     _uiEvent.emit(UiEvent.ShowSnackbar(successMessage))
                 },
                 onFailure = { exception ->

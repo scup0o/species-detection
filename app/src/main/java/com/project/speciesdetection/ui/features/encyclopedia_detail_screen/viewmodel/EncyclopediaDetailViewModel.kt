@@ -144,4 +144,18 @@ class EncyclopediaDetailViewModel @Inject constructor(
             }
         }
     }
+
+    fun updateSaveStated(imageUri : Uri?){
+        val currentState = _uiState.value
+        if (currentState is UiState.Success)
+        {
+            savedStateHandle["speciesId"] = currentState.species.id
+            savedStateHandle["speciesName"] = currentState.species.localizedName
+            savedStateHandle["speciesSN"] = currentState.species.getScientificName()
+            savedStateHandle["imageUri"] = imageUri
+        }
+
+    }
+
+
 }

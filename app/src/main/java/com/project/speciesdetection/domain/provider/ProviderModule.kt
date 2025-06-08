@@ -1,5 +1,6 @@
 package com.project.speciesdetection.domain.provider
 
+import com.project.speciesdetection.BuildConfig
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
@@ -29,6 +30,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import retrofit2.Retrofit
 import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaType
@@ -67,7 +69,7 @@ object NetworkModule {
 
     private const val BASE_URL = "https://species-detection-web-server-git-master-scup0os-projects.vercel.app"
 
-    @Provides
+    /*@Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         return OkHttpClient.Builder()
@@ -77,6 +79,31 @@ object NetworkModule {
             // .connectTimeout(30, TimeUnit.SECONDS) // Tùy chỉnh timeout nếu cần
             // .readTimeout(30, TimeUnit.SECONDS)
             // .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }*/
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        // Tạo một interceptor để thêm User-Agent vào mỗi request
+        val userAgentInterceptor = Interceptor { chain ->
+            val originalRequest = chain.request()
+            val requestWithUserAgent = originalRequest.newBuilder()
+                // Đặt User-Agent là Application ID, theo đúng yêu cầu của OSM
+                .header("User-Agent", BuildConfig.APPLICATION_ID)
+                .build()
+            chain.proceed(requestWithUserAgent)
+        }
+
+        return OkHttpClient.Builder()
+            // Thêm interceptor log để debug (nên đặt trước)
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+                }
+            )
+            // THÊM INTERCEPTOR USER-AGENT
+            .addInterceptor(userAgentInterceptor)
             .build()
     }
 
@@ -106,6 +133,17 @@ object NetworkModule {
     fun provideSpeciesApiService(retrofit: Retrofit): SpeciesApiService {
         return retrofit.create(SpeciesApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    @Named("CloudinaryCloudName")
+    fun provideCloudinaryCloudName(): String = BuildConfig.CLOUDINARY_CLOUD_NAME
+
+    @Provides
+    @Singleton
+    @Named("CloudinaryUploadPreset")
+    fun provideCloudinaryUploadPreset(): String = BuildConfig.CLOUDINARY_UPLOAD_PRESET
+
 }
 
 

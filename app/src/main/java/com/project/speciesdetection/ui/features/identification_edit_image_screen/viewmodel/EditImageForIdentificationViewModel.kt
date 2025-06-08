@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 data class EditImageUiState(
     val originalImageUri: Uri? = null,
@@ -43,7 +44,7 @@ class EditImageForIdentificationViewModel @Inject constructor(
         Log.d(TAG, "Received encodedImageUriString: $encodedImageUriString")
         if (encodedImageUriString != null) {
             try {
-                val receivedUri = Uri.parse(Uri.decode(encodedImageUriString)) // Đảm bảo parse đúng
+                val receivedUri = Uri.decode(encodedImageUriString).toUri() // Đảm bảo parse đúng
                 _uiState.value = EditImageUiState(
                     originalImageUri = receivedUri,
                     currentImageUri = receivedUri,
