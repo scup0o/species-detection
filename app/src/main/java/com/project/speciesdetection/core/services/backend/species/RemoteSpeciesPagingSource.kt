@@ -12,7 +12,8 @@ class RemoteSpeciesPagingSource(
     private val apiService: SpeciesApiService,
     private val languageProvider: LanguageProvider,
     private val searchQuery: String?,
-    private val classId: String?
+    private val classId: String?,
+    //private val uid : String?,
 ) : PagingSource<String, DisplayableSpecies>() { // Key là String (lastVisibleDocId), Value là DisplayableSpecies
 
     companion object {
@@ -35,7 +36,9 @@ class RemoteSpeciesPagingSource(
                 languageCode = currentLanguageCode,
                 searchQuery = if (searchQuery.isNullOrBlank()) null else searchQuery,
                 classId = if (classId == "0" || classId.isNullOrBlank()) null else classId, // "0" hoặc rỗng nghĩa là lấy tất cả
-                lastVisibleDocId = lastDocId
+                lastVisibleDocId = lastDocId,
+                //uid = uid?:"",
+
             )
 
             // Kiểm tra response từ API

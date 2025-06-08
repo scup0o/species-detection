@@ -127,7 +127,9 @@ class ObservationViewModel @Inject constructor(
                     speciesId = speciesId ?: "",
                     speciesName = speciesName ?: "",
                     speciesScientificName = speciesScientificName ?: "",
-                    images = initialImages
+                    images = initialImages,
+                    dateFound = Timestamp.now(),
+                    dateFoundText = formatDate(Date())
                 )
             }
         }

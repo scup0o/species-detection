@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.GeoPoint
+import com.google.firebase.firestore.ListenerRegistration
 import com.project.speciesdetection.core.services.remote_database.ObservationDatabaseService
 import com.project.speciesdetection.core.services.storage.StorageService
 import com.project.speciesdetection.data.model.observation.Observation
@@ -91,5 +92,13 @@ class RemoteObservationRepository @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override suspend fun checkUserObservationState(
+        uid: String,
+        speciesId: String,
+        onDataChanged: (Timestamp?) -> Unit
+    ): ListenerRegistration {
+        return databaseService.checkUserObservationState(uid,speciesId,onDataChanged)
     }
 }

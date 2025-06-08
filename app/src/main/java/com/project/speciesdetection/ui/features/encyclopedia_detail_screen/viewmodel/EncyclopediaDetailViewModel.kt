@@ -5,8 +5,11 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
+import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
 // import androidx.lifecycle.viewmodel.compose.viewModel // Không cần import này trong ViewModel
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
+import com.project.speciesdetection.data.model.user.repository.UserRepository
 import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,8 +30,10 @@ data class SourceInfoItem(
 
 @HiltViewModel
 class EncyclopediaDetailViewModel @Inject constructor(
+    private val observationRepository : ObservationRepository,
     private val savedStateHandle: SavedStateHandle,
     private val getLocalizedSpeciesUseCase: GetLocalizedSpeciesUseCase,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     sealed class UiState {
@@ -39,6 +44,10 @@ class EncyclopediaDetailViewModel @Inject constructor(
 
     // Biến Json nên là private hoặc internal nếu không cần truy cập từ bên ngoài
     private val json = Json { ignoreUnknownKeys = true }
+
+    private val _speciesDateFound = MutableStateFlow<Timestamp?>(null) // Map để lưu trữ dateFound theo speciesId
+    val speciesDateFound: StateFlow<Timestamp?> = _speciesDateFound.asStateFlow()
+
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -78,10 +87,19 @@ class EncyclopediaDetailViewModel @Inject constructor(
                 if (detailedSpecies != null) {
                     _uiState.value = UiState.Success(
                         detailedSpecies.copy(
-                            localizedClass = baseSpecies.localizedClass
+                            localizedClass = baseSpecies.localizedClass,
+                            //haveObservation = baseSpecies.haveObservation,
+                            //firstFound = baseSpecies.firstFound
                             // Bạn có thể muốn copy thêm các trường khác từ baseSpecies nếu cần
                         )
                     )
+
+                    val currentUser = userRepository.getCurrentUser()
+                    if (currentUser!=null){
+                        observeDateFoundForUidAndSpecies(detailedSpecies.id, currentUser.uid)
+                    }
+
+
                     // Reset bộ đếm và sourceList trước khi thêm mới (nếu hàm này có thể được gọi lại)
                     sourceOrderCounter = 0
                     _sourceList.value = emptyList() // Xóa danh sách cũ
@@ -94,6 +112,17 @@ class EncyclopediaDetailViewModel @Inject constructor(
                 _uiState.value = UiState.Error("An error occurred while fetching species details.")
             }
         }
+    }
+
+    fun observeDateFoundForUidAndSpecies(speciesId: String, uid : String) {
+        if (uid.isNotEmpty())
+            viewModelScope.launch {
+                observationRepository.checkUserObservationState(uid,speciesId) { dateFound ->
+                    if (dateFound != null) {
+                        _speciesDateFound.value = dateFound}
+                }
+            }
+
     }
 
     fun addInfoPairsToSourceList() {
@@ -155,6 +184,10 @@ class EncyclopediaDetailViewModel @Inject constructor(
             savedStateHandle["imageUri"] = imageUri
         }
 
+    }
+
+    fun clearObservationState(){
+        _speciesDateFound.value = null
     }
 
 

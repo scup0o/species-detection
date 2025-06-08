@@ -64,7 +64,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -86,6 +88,8 @@ import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.viewmodel.EncyclopediaDetailViewModel
 import com.project.speciesdetection.ui.features.observation.view.UpdateObservation
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(
     ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class,
@@ -103,6 +107,7 @@ fun EncyclopediaDetailScreen(
     val uiState by speciesDetailViewModel.uiState.collectAsStateWithLifecycle()
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
     val sourceList by speciesDetailViewModel.sourceList.collectAsStateWithLifecycle()
+    val observationState by speciesDetailViewModel.speciesDateFound.collectAsStateWithLifecycle()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -121,6 +126,11 @@ fun EncyclopediaDetailScreen(
 
     val detailedDescriptionContainer: Color = MaterialTheme.colorScheme.surfaceContainer
 
+    LaunchedEffect(authState.currentUser){
+        if (authState.currentUser==null){
+            speciesDetailViewModel.clearObservationState()
+        }
+    }
 
 
     LaunchedEffect(listCurrentState) {
@@ -211,6 +221,9 @@ fun EncyclopediaDetailScreen(
                                     contentScale = ContentScale.FillWidth,
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .clickable {
+                                            navController.navigate(AppScreen.FullScreenImageViewer.createRoute(species.imageURL[page]))
+                                        }
                                         .clip(RoundedCornerShape(0,0,60,0))
                                 )
 
@@ -231,6 +244,9 @@ fun EncyclopediaDetailScreen(
 
                             IconButton(
                                 onClick = {
+                                    navController.navigate(
+                                        AppScreen.SpeciesObservationMainScreen.createRoute(species)
+                                    )
                                 },
                                 modifier = Modifier.padding(5.dp).align(Alignment.BottomEnd).size(48.dp),
                                 colors = IconButtonDefaults.iconButtonColors(
@@ -309,6 +325,21 @@ fun EncyclopediaDetailScreen(
                         }
 
                         Column(modifier = Modifier.padding(MaterialTheme.spacing.m)) {
+
+                                Text(
+                                    if (observationState== null) ""
+                                            else
+                                        "You first observed it on " +
+                                                SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale.getDefault()).format(
+                                                    observationState?.toDate() ?: 0
+                                                ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                                    color = MaterialTheme.colorScheme.tertiary.copy(0.7f),
+                                    fontStyle = FontStyle.Italic,
+                                    textAlign = TextAlign.End
+                                )
+
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     species.localizedName,

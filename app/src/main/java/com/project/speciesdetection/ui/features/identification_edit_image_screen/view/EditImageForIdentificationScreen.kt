@@ -38,6 +38,7 @@ import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.canhub.cropper.CropImageView
 import com.project.speciesdetection.R
+import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.identification_analysis.view.AnalysisButton
 import com.project.speciesdetection.ui.features.identification_analysis.view.AnalysisResultPBS
 import com.project.speciesdetection.ui.features.identification_analysis.viewmodel.AnalysisViewModel
@@ -49,7 +50,8 @@ import com.project.speciesdetection.ui.features.identification_edit_image_screen
 fun EditImageForIdentificationScreen(
     viewModel: EditImageForIdentificationViewModel = hiltViewModel(),
 
-    navController: NavHostController
+    navController: NavHostController,
+    authViewModel: AuthViewModel
 ) {
     val editImageUiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -155,7 +157,8 @@ fun EditImageForIdentificationScreen(
                     onDismiss = {
                         viewModel.dismissAnalysisPopup()
                     },
-                    navController = navController
+                    navController = navController,
+                    authViewModel = authViewModel
                 )
             }
         }

@@ -10,14 +10,17 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.project.speciesdetection.R
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -25,29 +28,47 @@ fun FullScreenImageViewer(
     imageModel: Uri,
     onNavigateBack: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-        GlideImage(
-            model = imageModel,
-            contentDescription = "Full screen image",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Fit // Fit để xem toàn bộ ảnh
-        )
-
-        IconButton(
-            onClick = onNavigateBack,
+    Scaffold { innerPadding ->
+        Box(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
+                .padding(innerPadding)
+                .fillMaxSize()
+                .background(Color.Black)
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
+            GlideImage(
+                model = imageModel,
+                contentDescription = "Full screen image",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit // Fit để xem toàn bộ ảnh
             )
+
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+
+            IconButton(
+                onClick = {},
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.download),
+                    contentDescription = null,
+                    tint = Color.White
+                )
+            }
         }
+
     }
+
 }

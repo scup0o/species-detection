@@ -4,8 +4,9 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ServerTimestamp
+import com.project.speciesdetection.core.helpers.TimestampSerializer
+import kotlinx.serialization.Serializable
 
-// Dùng cho cả việc đọc và ghi lên Firestore
 data class Observation(
     @DocumentId
     var id: String? = null, // ID sẽ được Firestore tự gán hoặc ta tự gán khi update

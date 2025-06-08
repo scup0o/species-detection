@@ -58,6 +58,7 @@ import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
 import com.project.speciesdetection.ui.composable.common.ItemErrorPlaceholder
 import com.project.speciesdetection.ui.composable.common.ListItemPlaceholder
 import com.project.speciesdetection.ui.composable.common.species.SpeciesListItem
+import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_main_screen.viewmodel.EncyclopediaMainScreenViewModel
 import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
 
@@ -67,7 +68,8 @@ fun EncyclopediaMainScreen(
     containerColor: Color? = MaterialTheme.colorScheme.background,
     navController: NavHostController,
     viewModel: EncyclopediaMainScreenViewModel = hiltViewModel(),
-    settingViewModel: SettingViewModel
+    settingViewModel: SettingViewModel,
+    authViewModel : AuthViewModel
 ) {
     //val scaledHeight = LocalConfiguration.current.screenHeightDp.dp
     //val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -77,6 +79,8 @@ fun EncyclopediaMainScreen(
         viewModel.speciesPagingDataFlow.collectAsLazyPagingItems()
     val selectedClassId by viewModel.selectedClassId.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle() // Lấy searchQuery
+    val speciesObservationState by viewModel.speciesDateFound.collectAsStateWithLifecycle()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
     //config UI
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -98,6 +102,18 @@ fun EncyclopediaMainScreen(
         }
     }*/
 
+    LaunchedEffect(lazyPagingItems.itemSnapshotList) {
+        if (authState.currentUser!=null){
+            lazyPagingItems.itemSnapshotList.forEach { item ->
+                item?.let {
+                    viewModel.observeDateFoundForUidAndSpecies(authState.currentUser!!.uid, it.id)  // Truyền id của species vào
+                }
+            }
+        }
+
+    }
+
+
     LaunchedEffect(languageState) {
         Log.i("check check", languageState)
         if (languageState!=currentLanguage){
@@ -106,6 +122,12 @@ fun EncyclopediaMainScreen(
                 viewModel.loadInitialSpeciesClasses()
                 lazyPagingItems.refresh()}
         }
+    }
+
+    LaunchedEffect(
+        authState.currentUser
+    ) {
+        if (authState.currentUser==null) viewModel.clearObservationState()
     }
 
     Scaffold(
@@ -140,12 +162,12 @@ fun EncyclopediaMainScreen(
                 failure = placeholder(R.drawable.image_not_available)
             )*/
 
-            Image(
+            /*Image(
                 painterResource(R.drawable.banner_9), null,
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth
 
-            )
+            )*/
 
             Column(
                 modifier = Modifier.padding(innerPadding),
@@ -309,6 +331,7 @@ fun EncyclopediaMainScreen(
                                 val species = lazyPagingItems[index]
                                 species?.let {
                                     SpeciesListItem(
+                                        observationState = speciesObservationState[species.id]!=null,
                                         species = it,
                                         onClick = {
 

@@ -1,5 +1,8 @@
 package com.project.speciesdetection.data.model.species
 
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ServerTimestamp
+import com.project.speciesdetection.core.helpers.TimestampSerializer
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -22,7 +25,10 @@ data class DisplayableSpecies(
     var localizedDistribution: List<String> = emptyList(),
     var localizedBehavior: List<String> = emptyList(),
     var thumbnailImageURL : String = "",
-    var imageURL: List<String> = emptyList()
+    var imageURL: List<String> = emptyList(),
+    /*var haveObservation : Boolean = false,
+    @Serializable(with = TimestampSerializer::class)
+    var firstFound : Timestamp? = null*/
 ){
     fun getScientificName() = this.scientific["name"]
     fun getScientificGenus() = this.scientific["genus"]

@@ -1,6 +1,8 @@
 package com.project.speciesdetection.core.services.remote_database
 
 import androidx.paging.PagingData
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.project.speciesdetection.data.model.observation.Observation
 import kotlinx.coroutines.flow.Flow
@@ -49,4 +51,5 @@ interface UserDatabaseService<T : Any, ID> {
 interface ObservationDatabaseService {
     suspend fun createObservation(observation: Observation): Result<String>
     suspend fun updateObservation(observation: Observation): Result<Unit>
+    suspend fun checkUserObservationState(uid: String, speciesId: String, onDataChanged: (Timestamp?) -> Unit): ListenerRegistration
 }

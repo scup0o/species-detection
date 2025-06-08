@@ -4,6 +4,7 @@ import android.net.Uri
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.GeoPoint
+import com.google.firebase.firestore.ListenerRegistration
 import com.project.speciesdetection.data.model.user.User
 
 interface ObservationRepository {
@@ -26,4 +27,6 @@ interface ObservationRepository {
         location: GeoPoint?,
         dateFound: Timestamp?
     ): Result<Unit>
+
+    suspend fun checkUserObservationState(uid: String, speciesId: String, onDataChanged: (Timestamp?) -> Unit): ListenerRegistration
 }

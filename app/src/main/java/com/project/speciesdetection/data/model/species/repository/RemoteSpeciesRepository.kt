@@ -33,6 +33,7 @@ class RemoteSpeciesRepository @Inject constructor(
     }
 
     override fun getAll(
+        //uid : String?,
         searchQuery: List<String>?,
         languageCode: String // languageCode này có thể không cần thiết nếu PagingSource tự lấy từ LanguageProvider
     ): Flow<PagingData<DisplayableSpecies>> {
@@ -50,13 +51,15 @@ class RemoteSpeciesRepository @Inject constructor(
                     apiService = apiService,
                     languageProvider = languageProvider, // Truyền LanguageProvider cho PagingSource
                     searchQuery = queryStr,
-                    classId = null // Đối với getAll, classId là null (không lọc theo class)
+                    classId = null, // Đối với getAll, classId là null (không lọc theo class)
+                    //uid = uid?:"",
                 )
             }
         ).flow // Trả về Flow của PagingData
     }
 
     override fun getSpeciesByClassPaged(
+        //uid: String?,
         searchQuery: List<String>?,
         classIdValue: String,
         languageCode: String // languageCode này có thể không cần thiết nếu PagingSource tự lấy
@@ -71,6 +74,7 @@ class RemoteSpeciesRepository @Inject constructor(
             ),
             pagingSourceFactory = {
                 RemoteSpeciesPagingSource(
+                    //uid = uid?:"",
                     apiService = apiService,
                     languageProvider = languageProvider,
                     searchQuery = queryStr,
@@ -81,8 +85,9 @@ class RemoteSpeciesRepository @Inject constructor(
     }
 
     override suspend fun getSpeciesById(
+        //uid: String?,
         idList: List<String>,
-        languageCode: String
+        languageCode: String,
     ): List<DisplayableSpecies> {
         if (idList.isEmpty()) {
             Log.d(TAG, "getSpeciesById called with empty idList.")
@@ -92,7 +97,8 @@ class RemoteSpeciesRepository @Inject constructor(
         return try {
             val response = apiService.getSpeciesByIds(
                 ids = idList.joinToString(","), // API nhận chuỗi ID cách nhau bởi dấu phẩy
-                languageCode = languageCode
+                languageCode = languageCode,
+                //uid = uid?:"",
             )
             if (response.success) {
                 Log.d(TAG, "getSpeciesById successful, fetched ${response.data.size} items.")

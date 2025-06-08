@@ -35,6 +35,7 @@ import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view.EncyclopediaDetailScreen
 import com.project.speciesdetection.ui.features.observation.view.UpdateObservation
 import com.project.speciesdetection.ui.features.observation.view.map.MapPickerScreen
+import com.project.speciesdetection.ui.features.observation.view.species_observation.SpeciesObservationMainScreen
 import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationEvent
 import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationViewModel
 import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
@@ -127,7 +128,8 @@ fun AppNavigation(
             EncyclopediaMainScreen(
                 navController = navController,
                 containerColor = containerColor,
-                settingViewModel = settingViewModel
+                settingViewModel = settingViewModel,
+                authViewModel = authViewModel
             )
         }
 
@@ -178,7 +180,8 @@ fun AppNavigation(
             )
         ) { // backStackEntry -> không cần dùng trực tiếp ở đây vì ViewModel lấy từ SavedStateHandle
             EditImageForIdentificationScreen(
-                navController = navController
+                navController = navController,
+                authViewModel = authViewModel
             )
         }
 
@@ -230,6 +233,25 @@ fun AppNavigation(
             FullScreenImageViewer(
                 imageModel = imageUri!!,
                 onNavigateBack = {navController.popBackStack()}
+            )
+
+        }
+
+        composable(
+            route = AppScreen.SpeciesObservationMainScreen.route,
+            arguments = listOf(
+                navArgument("speciesId") {
+                    type = NavType.StringType
+                },
+                navArgument("speciesName") {
+                    type = NavType.StringType
+                }
+            )
+        ) {
+
+            SpeciesObservationMainScreen(
+                navController,
+                authViewModel
             )
 
         }

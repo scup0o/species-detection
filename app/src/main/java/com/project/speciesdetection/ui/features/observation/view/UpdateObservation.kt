@@ -180,24 +180,28 @@ fun UpdateObservation(
                     .padding(horizontal = 4.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                    CustomTextField(
-                        value = uiState.description,
-                        onValueChange = { viewModel.onEvent(ObservationEvent.OnDescriptionChange(it)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Nhập mô tả", fontStyle = FontStyle.Italic) },
-                        minLines = 1,
-                        unfocusedBorderColor =
-                            if (uiState.description.isNotEmpty()) MaterialTheme.colorScheme.outline.copy(0.2f)
-                            else Color.Transparent,
-                        focusedBorderColor = if (uiState.description.isNotEmpty()) MaterialTheme.colorScheme.outline.copy(0.2f)
+                CustomTextField(
+                    value = uiState.description,
+                    onValueChange = { viewModel.onEvent(ObservationEvent.OnDescriptionChange(it)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Nhập mô tả", fontStyle = FontStyle.Italic) },
+                    minLines = 1,
+                    unfocusedBorderColor =
+                        if (uiState.description.isNotEmpty()) MaterialTheme.colorScheme.outline.copy(
+                            0.2f
+                        )
                         else Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        focusedPlaceholderColor = Color.Transparent,
-                        paddingValues = if (uiState.description.isNotEmpty()) 15.dp else 0.dp,
-                        shape = RoundedCornerShape(10)
+                    focusedBorderColor = if (uiState.description.isNotEmpty()) MaterialTheme.colorScheme.outline.copy(
+                        0.2f
                     )
-                    Spacer(Modifier.height(16.dp))
+                    else Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                    focusedPlaceholderColor = Color.Transparent,
+                    paddingValues = if (uiState.description.isNotEmpty()) 15.dp else 0.dp,
+                    shape = RoundedCornerShape(10)
+                )
+                Spacer(Modifier.height(16.dp))
 
 
 
@@ -227,8 +231,9 @@ fun UpdateObservation(
                     value = uiState.dateFoundText,
                     hasValue = uiState.dateFound != null,
                     onValueClick = { showDateTimePicker = true },
+                    showClearIcon = false,
                     onClearClick = {
-                        viewModel.onEvent(ObservationEvent.OnDateClear)
+                        //viewModel.onEvent(ObservationEvent.OnDateClear)
                     }
                 )
                 Spacer(Modifier.height(16.dp))
@@ -279,7 +284,7 @@ private fun InfoRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        if (icon!=null){
+        if (icon != null) {
             Icon(
                 icon,
                 contentDescription = null,
@@ -306,10 +311,11 @@ private fun InfoRow(
                                 value,
                                 maxLines = 1,
                                 modifier = Modifier.padding(start = 10.dp, end = 5.dp),
-                                )}
+                            )
+                        }
                     }
 
-                    },
+                },
 
                 trailingIcon = {
                     if (showClearIcon) {
@@ -431,16 +437,16 @@ private fun PrivacySelector(
             ) {
                 if (currentPrivacy == "Public")
                     Icon(
-                         painterResource(R.drawable.globe_solid),
+                        painterResource(R.drawable.globe_solid),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
                 else
-                Icon(
-                    Icons.Default.Lock,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-                )
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
                 Spacer(Modifier.width(4.dp))
                 Text(currentPrivacy, style = MaterialTheme.typography.labelLarge)
                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)

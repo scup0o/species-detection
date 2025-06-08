@@ -2,13 +2,16 @@ package com.project.speciesdetection.ui.features.encyclopedia_main_screen.viewmo
 
 import android.util.Log
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.google.firebase.Timestamp
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.services.remote_database.DataResult
+import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
 import com.project.speciesdetection.domain.provider.network.ConnectivityObserver
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -40,12 +44,17 @@ import javax.inject.Named
 class EncyclopediaMainScreenViewModel @Inject constructor(
     private val getLocalizedSpeciesUseCase: GetLocalizedSpeciesUseCase,
     private val getLocalizedSpeciesClassUseCase: GetLocalizedSpeciesClassUseCase,
+    private val observationRepository : ObservationRepository,
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "EncyclopediaVM" // Tag cho Log
         private const val SEARCH_DEBOUNCE_MS = 700L // Thời gian chờ trước khi thực hiện search
     }
+
+    // State lưu trữ giá trị dateFound cho species
+    private val _speciesDateFound = MutableStateFlow<Map<String, Timestamp>>(emptyMap()) // Map để lưu trữ dateFound theo speciesId
+    val speciesDateFound: StateFlow<Map<String, Timestamp>> = _speciesDateFound.asStateFlow()
 
     val currentLanguageState = MutableStateFlow("none")
 
@@ -87,15 +96,17 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
             // Dựa vào classId để gọi UseCase tương ứng
             if (classId == "0") { // "0" đại diện cho "Tất cả các class"
                 Log.d(TAG, "Fetching ALL paged species with query: '$query'")
-                getLocalizedSpeciesUseCase.getAll(searchQuery = query)
+                getLocalizedSpeciesUseCase.getAll(searchQuery = query
+                    )
             } else { // Lọc theo một classId cụ thể
                 Log.d(TAG, "Fetching paged species for ClassId: $classId, query: '$query'")
                 getLocalizedSpeciesUseCase.getByClassPaged(
                     classIdValue = classId,
-                    searchQuery = query
+                    searchQuery = query,
                 )
             }
-        }.cachedIn(viewModelScope) // cachedIn rất quan trọng để Paging 3 hoạt động đúng và giữ dữ liệu khi xoay màn hình
+        }
+            .cachedIn(viewModelScope) // cachedIn rất quan trọng để Paging 3 hoạt động đúng và giữ dữ liệu khi xoay màn hình
 
     init {
         viewModelScope.launch {
@@ -149,6 +160,25 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
 
     fun setLanguage(language : String){
         currentLanguageState.value = language
+    }
+
+    fun observeDateFoundForUidAndSpecies(uid: String, speciesId: String,) {
+        if (uid.isNotEmpty())
+            viewModelScope.launch {
+                observationRepository.checkUserObservationState(uid,speciesId) { dateFound ->
+                    if (dateFound != null) {
+                        _speciesDateFound.value = _speciesDateFound.value.toMutableMap().apply {
+                            put(speciesId, dateFound)
+                        }
+                    } else {
+                    }
+                }
+            }
+
+    }
+
+    fun clearObservationState(){
+        _speciesDateFound.value = emptyMap()
     }
 
     // Hàm để retry load PagingData (có thể gọi từ UI)

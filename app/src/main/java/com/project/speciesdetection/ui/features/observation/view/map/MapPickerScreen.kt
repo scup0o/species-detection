@@ -56,7 +56,6 @@ import com.google.android.gms.location.LocationServices
 import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.ui.composable.common.AppSearchBar
 import com.project.speciesdetection.ui.composable.common.CustomTextField
-import com.project.speciesdetection.ui.features.observation.viewmodel.map.MapPickerViewModel
 import com.project.speciesdetection.ui.features.observation.viewmodel.map.NewMapPickerViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory

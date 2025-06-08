@@ -122,4 +122,12 @@ sealed class AppScreen(
     object MapPickerScreen : AppScreen(
         route = "map_picker"
     )
+
+    object SpeciesObservationMainScreen : AppScreen(
+        route = "species_observation_main_screen/{speciesId}&{speciesName}"
+    ){
+        fun createRoute(species : DisplayableSpecies): String{
+            return "species_observation_main_screen/${species.id}&${species.localizedName}"
+        }
+    }
 }
