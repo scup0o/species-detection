@@ -4,9 +4,11 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ServerTimestamp
+import com.project.speciesdetection.core.helpers.GeoPointSerializer
 import com.project.speciesdetection.core.helpers.TimestampSerializer
 import kotlinx.serialization.Serializable
 
+@Serializable
 data class Observation(
     @DocumentId
     var id: String? = null, // ID sẽ được Firestore tự gán hoặc ta tự gán khi update
@@ -22,14 +24,21 @@ data class Observation(
     var speciesScientificName: String = "",
 
     val point: Int = 0,
+    val commentCount: Int = 0,
     val content: String = "",
     val imageURL: List<String> = emptyList(),
     val privacy: String = "Public", // "Public" hoặc "Private"
+    @Serializable(with = GeoPointSerializer::class)
     val location: GeoPoint? = null,
+    val locationTempName : String ="",
     val locationName : String ="",
     val locationDisplayName : String ="",
+    val likeUserIds : List<String> = emptyList(),
+    val dislikeUserIds : List<String> = emptyList(),
 
     @ServerTimestamp
+    @Serializable(with = TimestampSerializer::class)
     val dateCreated: Timestamp? = null,
+    @Serializable(with = TimestampSerializer::class)
     val dateFound: Timestamp? = null
 )

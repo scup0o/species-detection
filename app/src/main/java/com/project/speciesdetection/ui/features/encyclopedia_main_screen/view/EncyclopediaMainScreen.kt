@@ -102,18 +102,6 @@ fun EncyclopediaMainScreen(
         }
     }*/
 
-    LaunchedEffect(lazyPagingItems.itemSnapshotList) {
-        if (authState.currentUser!=null){
-            lazyPagingItems.itemSnapshotList.forEach { item ->
-                item?.let {
-                    viewModel.observeDateFoundForUidAndSpecies(authState.currentUser!!.uid, it.id)  // Truyền id của species vào
-                }
-            }
-        }
-
-    }
-
-
     LaunchedEffect(languageState) {
         Log.i("check check", languageState)
         if (languageState!=currentLanguage){
@@ -124,11 +112,7 @@ fun EncyclopediaMainScreen(
         }
     }
 
-    LaunchedEffect(
-        authState.currentUser
-    ) {
-        if (authState.currentUser==null) viewModel.clearObservationState()
-    }
+
 
     Scaffold(
         modifier = Modifier
@@ -315,6 +299,19 @@ fun EncyclopediaMainScreen(
                     }
 
                     else -> {
+                        val userState by viewModel.currentUser.collectAsStateWithLifecycle()
+                        val initState by viewModel.init.collectAsStateWithLifecycle()
+
+                        LaunchedEffect(authState.currentUser) {
+                            val currentUser = authState.currentUser
+                            if (currentUser != null ) {
+                                if (currentUser!=userState || initState)
+                                    viewModel.observer(currentUser.uid,lazyPagingItems.itemSnapshotList.items)
+                            }
+                            else{
+                                viewModel.clearObservationState()
+                            }
+                        }
                         LazyColumn(
                             modifier = Modifier,
                             contentPadding =
@@ -329,9 +326,12 @@ fun EncyclopediaMainScreen(
                                 key = lazyPagingItems.itemKey { it.id }
                             ) { index ->
                                 val species = lazyPagingItems[index]
+
+
+
                                 species?.let {
                                     SpeciesListItem(
-                                        observationState = speciesObservationState[species.id]!=null,
+                                        observationState = if (initState) species.haveObservation else speciesObservationState[species.id]!=null,
                                         species = it,
                                         onClick = {
 

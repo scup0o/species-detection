@@ -31,6 +31,7 @@ class NewMapPickerViewModel @Inject constructor(
         val isSearching: Boolean = false,
         val ignoreNextMapMove: Boolean = false,
         val isLoading: Boolean = false,
+        val address: Map<String, String> = emptyMap()
     )
 
     private val _uiState = MutableStateFlow(MapPickerUiState())
@@ -47,15 +48,25 @@ class NewMapPickerViewModel @Inject constructor(
     fun reverseGeocode(geoPoint: GeoPoint){
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
+
+
             Log.i("a", geoPoint.toString())
             val selectedAddress = geocodingService.reverseSearch(geoPoint.latitude, geoPoint.longitude)
             val name = if (selectedAddress != null) {if (selectedAddress.name!="") selectedAddress.name else selectedAddress.displayName} else "Khong"
             val displayName = if (selectedAddress != null) {if (selectedAddress.name!="") selectedAddress.displayName else ""}else ""
+            val address = geocodingService.reverseSearch(geoPoint.latitude, geoPoint.longitude, "en")?.address?: emptyMap()
             val geoPoint : GeoPoint = GeoPoint(
                 selectedAddress?.lat?.toDouble() ?: 0.0,
                 selectedAddress?.lon?.toDouble() ?: 0.0
             )
-                _uiState.update { it.copy(isLoading = false, selectedAddress = name, selectedDisplayName = displayName, selectedGeoPoint = geoPoint) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        selectedAddress = name,
+                        selectedDisplayName = displayName,
+                        selectedGeoPoint = geoPoint,
+                        address = address
+                    ) }
 
         }
     }

@@ -1,6 +1,7 @@
 package com.project.speciesdetection.core.helpers
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.GeoPoint
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
@@ -26,4 +27,36 @@ object TimestampSerializer : KSerializer<Timestamp> {
 // Extension để convert Date thành ISO string
 fun Date.toISOString(): String {
     return this.toInstant().toString()  // Chuyển đổi thành ISO 8601 string
+}
+
+object GeoPointSerializer : KSerializer<GeoPoint> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("GeoPoint") {
+        element<Double>("latitude")
+        element<Double>("longitude")
+    }
+
+    override fun serialize(encoder: Encoder, value: GeoPoint) {
+        val composite = encoder.beginStructure(descriptor)
+        composite.encodeDoubleElement(descriptor, 0, value.latitude)
+        composite.encodeDoubleElement(descriptor, 1, value.longitude)
+        composite.endStructure(descriptor)
+    }
+
+    override fun deserialize(decoder: Decoder): GeoPoint {
+        val dec = decoder.beginStructure(descriptor)
+        var lat = 0.0
+        var lng = 0.0
+
+        loop@ while (true) {
+            when (val index = dec.decodeElementIndex(descriptor)) {
+                0 -> lat = dec.decodeDoubleElement(descriptor, 0)
+                1 -> lng = dec.decodeDoubleElement(descriptor, 1)
+                CompositeDecoder.DECODE_DONE -> break@loop
+                else -> throw SerializationException("Unexpected index $index")
+            }
+        }
+
+        dec.endStructure(descriptor)
+        return GeoPoint(lat, lng)
+    }
 }

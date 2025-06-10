@@ -26,9 +26,9 @@ data class DisplayableSpecies(
     var localizedBehavior: List<String> = emptyList(),
     var thumbnailImageURL : String = "",
     var imageURL: List<String> = emptyList(),
-    /*var haveObservation : Boolean = false,
+    var haveObservation : Boolean = false,
     @Serializable(with = TimestampSerializer::class)
-    var firstFound : Timestamp? = null*/
+    var firstFound : Timestamp? = null
 ){
     fun getScientificName() = this.scientific["name"]
     fun getScientificGenus() = this.scientific["genus"]

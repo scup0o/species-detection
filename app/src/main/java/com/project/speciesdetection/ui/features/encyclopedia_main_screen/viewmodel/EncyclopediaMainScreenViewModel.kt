@@ -14,6 +14,7 @@ import com.project.speciesdetection.core.services.remote_database.DataResult
 import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
+import com.project.speciesdetection.data.model.user.repository.UserRepository
 import com.project.speciesdetection.domain.provider.network.ConnectivityObserver
 import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesClassUseCase
 import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesUseCase
@@ -45,6 +46,7 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
     private val getLocalizedSpeciesUseCase: GetLocalizedSpeciesUseCase,
     private val getLocalizedSpeciesClassUseCase: GetLocalizedSpeciesClassUseCase,
     private val observationRepository : ObservationRepository,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     companion object {
@@ -70,6 +72,12 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
     private val _selectedClassId = MutableStateFlow<String?>("0")
     val selectedClassId: StateFlow<String?> = _selectedClassId.asStateFlow()
 
+    private val _currentUser = MutableStateFlow(userRepository.getCurrentUser())
+    val currentUser =_currentUser.asStateFlow()
+
+    val _init = MutableStateFlow(true)
+    val init = _init.asStateFlow()
+
     // Flow chính cung cấp PagingData cho UI
     val speciesPagingDataFlow: Flow<PagingData<DisplayableSpecies>> =
         combine( // Kết hợp các Flow đầu vào
@@ -93,16 +101,19 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
                 return@flatMapLatest flowOf(PagingData.empty<DisplayableSpecies>())
             }
 
+            val currentUser = userRepository.getCurrentUser()
+
             // Dựa vào classId để gọi UseCase tương ứng
             if (classId == "0") { // "0" đại diện cho "Tất cả các class"
                 Log.d(TAG, "Fetching ALL paged species with query: '$query'")
-                getLocalizedSpeciesUseCase.getAll(searchQuery = query
+                getLocalizedSpeciesUseCase.getAll(searchQuery = query, currentUser?.uid
                     )
             } else { // Lọc theo một classId cụ thể
                 Log.d(TAG, "Fetching paged species for ClassId: $classId, query: '$query'")
                 getLocalizedSpeciesUseCase.getByClassPaged(
                     classIdValue = classId,
                     searchQuery = query,
+                    uid = currentUser?.uid
                 )
             }
         }
@@ -110,7 +121,26 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+
             loadInitialSpeciesClasses()
+
+        }
+    }
+
+    fun getSpeciesListState(speciesList: List<DisplayableSpecies>, uid : String){
+        viewModelScope.launch {
+            clearObservationState()
+            observationRepository.getObservationsStateForSpeciesList(speciesList, uid)
+                .forEach{ pair ->
+                    Log.i("a",pair.toString())
+                    _speciesDateFound.value = _speciesDateFound.value.toMutableMap().apply {
+                        put(pair.key, pair.value)
+                    }
+                }
+
+            Log.i("a", _speciesDateFound.value.toString())
+
+
         }
     }
 
@@ -160,6 +190,20 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
 
     fun setLanguage(language : String){
         currentLanguageState.value = language
+    }
+
+    fun observer(userId: String, species : List<DisplayableSpecies>){
+        viewModelScope.launch {
+            observeAllUserObservationsChanges(userId).collect{
+                getSpeciesListState(species,userId)
+            }
+            _init.value = false
+        }
+    }
+    
+
+    fun observeAllUserObservationsChanges(userId: String): Flow<Unit> {
+        return observationRepository.getObservationChangesForUser(userId)
     }
 
     fun observeDateFoundForUidAndSpecies(uid: String, speciesId: String,) {

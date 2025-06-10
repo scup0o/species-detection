@@ -60,4 +60,19 @@ class FirestoreObservationService @Inject constructor(
             }
         }
     }
+
+    override fun listenToUserObservations(uid: String, onDataChanged: () -> Unit): ListenerRegistration {
+        val query: Query = observationCollection.whereEqualTo("uid", uid)
+
+        // addSnapshotListener sẽ được kích hoạt cho lần đầu tiên và mỗi khi có thay đổi.
+        // Chúng ta không cần dữ liệu (snapshot), chỉ cần biết là nó đã được kích hoạt.
+        return query.addSnapshotListener { _, error ->
+            if (error != null) {
+                // Bạn có thể log lỗi ở đây nếu muốn
+                return@addSnapshotListener
+            }
+            // Gọi callback để thông báo rằng đã có thay đổi.
+            onDataChanged()
+        }
+    }
 }

@@ -130,6 +130,10 @@ fun EncyclopediaDetailScreen(
         if (authState.currentUser==null){
             speciesDetailViewModel.clearObservationState()
         }
+        else{
+            if (uiState is EncyclopediaDetailViewModel.UiState.Success)
+                speciesDetailViewModel.observeDateFoundForUidAndSpecies((uiState as EncyclopediaDetailViewModel.UiState.Success).species.id, authState.currentUser?.uid?:"")
+        }
     }
 
 

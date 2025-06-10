@@ -49,6 +49,7 @@ interface UserDatabaseService<T : Any, ID> {
 }
 
 interface ObservationDatabaseService {
+    fun listenToUserObservations(uid: String, onDataChanged: () -> Unit): ListenerRegistration
     suspend fun createObservation(observation: Observation): Result<String>
     suspend fun updateObservation(observation: Observation): Result<Unit>
     suspend fun checkUserObservationState(uid: String, speciesId: String, onDataChanged: (Timestamp?) -> Unit): ListenerRegistration

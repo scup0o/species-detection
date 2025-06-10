@@ -27,7 +27,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
 
     @Named("language_provider") private val languageProvider: LanguageProvider
 ) {
-    fun getAll(searchQuery: String): Flow<PagingData<DisplayableSpecies>> {
+    fun getAll(searchQuery: String, uid : String?): Flow<PagingData<DisplayableSpecies>> {
         val currentLanguageCode = languageProvider.getCurrentLanguageCode()
         // Xử lý searchQuery: chuyển về chữ thường, bỏ khoảng trắng thừa, tách thành list token
         val processedSearchQuery = if (searchQuery.isNotBlank()) {
@@ -36,13 +36,14 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
             null // Nếu searchQuery rỗng, không gửi gì lên API
         }
         return speciesRepository.getAll(
+            uid = uid?:"",
             searchQuery = processedSearchQuery,
             languageCode = currentLanguageCode // Repository có thể dùng hoặc PagingSource tự lấy
         )
     }
 
     fun getByClassPaged(
-
+        uid : String?,
         searchQuery: String,
         classIdValue: String,
     ): Flow<PagingData<DisplayableSpecies>> {
@@ -56,13 +57,13 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
             searchQuery = processedSearchQuery,
             classIdValue = classIdValue,
             languageCode = currentLanguageCode,
-            //uid = uid?:"",
+            uid = uid?:"",
         )
     }
 
-    suspend fun getById(idList: List<String>): List<DisplayableSpecies> {
+    suspend fun getById(idList: List<String>, uid : String?): List<DisplayableSpecies> {
         val currentLanguageCode = languageProvider.getCurrentLanguageCode()
-        return speciesRepository.getSpeciesById(idList, currentLanguageCode, )
+        return speciesRepository.getSpeciesById(uid = uid?:"",idList, currentLanguageCode, )
     }
 
     suspend fun getDetailsByDocId(speciesDocId: String): DisplayableSpecies? {

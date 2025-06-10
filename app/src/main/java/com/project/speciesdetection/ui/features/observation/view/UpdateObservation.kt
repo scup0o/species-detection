@@ -156,7 +156,7 @@ fun UpdateObservation(
                             viewModel.onEvent(ObservationEvent.SaveObservation(user))
                         }
                     },
-                    enabled = !uiState.isLoading,
+                    enabled = !uiState.isLoading && (uiState.description.isNotEmpty() || uiState.images.isNotEmpty()),
                     colors = IconButtonDefaults.iconButtonColors(
                         contentColor = MaterialTheme.colorScheme.primary
                     )
@@ -375,7 +375,8 @@ private fun ImageSelector(
             }
         }
 
-        items(images, key = { it.hashCode() }) { image ->
+        items(images.size, key = { index -> "${images[index].hashCode()}_$index" }) { index ->
+            var image = images[index]
             Box(
                 modifier = Modifier.size(100.dp)
             ) {

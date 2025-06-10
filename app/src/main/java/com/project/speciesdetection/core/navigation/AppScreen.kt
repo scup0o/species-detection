@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import com.project.speciesdetection.R
+import com.project.speciesdetection.data.model.observation.Observation
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -114,8 +115,10 @@ sealed class AppScreen(
         }
 
         // Hàm helper để tạo route khi chỉnh sửa Observation đã có
-        fun buildRouteForEdit(observationJson: String): String {
-            return "update_observation_screen?observationJson=${Uri.encode(observationJson)}"
+        fun buildRouteForEdit(observation: Observation): String {
+            val observationJsonString = json.encodeToString(observation)
+            val observationJsonEncoded = Uri.encode(observationJsonString)
+            return "update_observation_screen?observationJson=${observationJsonEncoded}"
         }
     }
 

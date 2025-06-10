@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ListenerRegistration
 import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
 // import androidx.lifecycle.viewmodel.compose.viewModel // Không cần import này trong ViewModel
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
@@ -58,6 +59,7 @@ class EncyclopediaDetailViewModel @Inject constructor(
 
     // Biến đếm để theo dõi thứ tự thêm vào
     private var sourceOrderCounter = 0 // Bắt đầu từ 0 hoặc 1 tùy bạn muốn
+    private var observationListener: ListenerRegistration? = null
 
     init {
         getSpeciesDetailed()
@@ -117,6 +119,10 @@ class EncyclopediaDetailViewModel @Inject constructor(
     fun observeDateFoundForUidAndSpecies(speciesId: String, uid : String) {
         if (uid.isNotEmpty())
             viewModelScope.launch {
+                observationListener?.remove()
+
+                // Bắt đầu lắng nghe và lưu lại listener registration
+                observationListener =
                 observationRepository.checkUserObservationState(uid,speciesId) { dateFound ->
                     if (dateFound != null) {
                         _speciesDateFound.value = dateFound}
@@ -188,6 +194,17 @@ class EncyclopediaDetailViewModel @Inject constructor(
 
     fun clearObservationState(){
         _speciesDateFound.value = null
+    }
+
+    override fun onCleared() {
+        super.onCleared() // Luôn gọi super.onCleared()
+
+        // 3. Gỡ bỏ listener để tránh memory leak.
+        // Kiểm tra null để đảm bảo an toàn.
+        observationListener?.remove()
+
+        // Log để xác nhận việc dọn dẹp đã xảy ra
+        Log.d("ViewModelLifecycle", "SpeciesDetailViewModel cleared and listener removed.")
     }
 
 

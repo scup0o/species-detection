@@ -25,12 +25,14 @@ data class NominatimPlace(
     @SerialName("lat")
     val lat: String,
     @SerialName("lon")
-    val lon: String
+    val lon: String,
+    @SerialName("address")
+    val address:Map<String,String>,
 )
 
 interface GeocodingService {
     suspend fun search(query: String): List<NominatimPlace>
-    suspend fun reverseSearch(lat: Double, lon: Double): NominatimPlace?
+    suspend fun reverseSearch(lat: Double, lon: Double, lan: String = ""): NominatimPlace?
 }
 
 class NominatimGeocodingService @Inject constructor(
@@ -84,8 +86,9 @@ class NominatimGeocodingService @Inject constructor(
         }
     }
 
-    override suspend fun reverseSearch(lat: Double, lon: Double): NominatimPlace? {
+    override suspend fun reverseSearch(lat: Double, lon: Double, lan : String): NominatimPlace? {
         return withContext(Dispatchers.IO) {
+
             Log.i("b", "$lat , $lon")
             val url = baseUrl.toHttpUrl().newBuilder()
                 .addPathSegment("reverse")
@@ -96,7 +99,7 @@ class NominatimGeocodingService @Inject constructor(
 
             val request = Request.Builder()
                 .url(url)
-                .header("Accept-Language", "$currentLanguage,en,;q=0.9")
+                .header("Accept-Language", "${if (lan.isEmpty()) currentLanguage else lan},en,;q=0.9")
                 .build()
             val response = okHttpClient.newCall(request).execute()
 

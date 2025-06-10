@@ -247,11 +247,16 @@ fun AppNavigation(
                     type = NavType.StringType
                 }
             )
-        ) {
+        ) { backStackEntry ->
+
+            val speciesId = backStackEntry.arguments?.getString("speciesId")
+            val speciesName = backStackEntry.arguments?.getString("speciesName")
 
             SpeciesObservationMainScreen(
                 navController,
-                authViewModel
+                authViewModel,
+                speciesId!!,
+                speciesName!!
             )
 
         }
@@ -292,12 +297,13 @@ fun AppNavigation(
 
             MapPickerScreen(
                 navController = navController,
-                onLocationPicked = { lan, lon, name, displayName ->
+                onLocationPicked = { lan, lon, name, displayName, address ->
                         observationViewModel.onEvent(ObservationEvent.OnLocationSelected(
                             lan = lan,
                             lon = lon,
                             name = name,
-                            displayName = displayName
+                            displayName = displayName,
+                            address = address
                         ))
                 }
             )

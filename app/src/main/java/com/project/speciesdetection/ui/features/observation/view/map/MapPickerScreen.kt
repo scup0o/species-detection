@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -67,7 +68,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 @Composable
 fun MapPickerScreen(
     navController: NavController,
-    onLocationPicked: (Double, Double, String, String) -> Unit,
+    onLocationPicked: (Double, Double, String, String, String) -> Unit,
     viewModel: NewMapPickerViewModel = hiltViewModel()
 ) {
 
@@ -96,7 +97,7 @@ fun MapPickerScreen(
     var expanded by remember { mutableStateOf(false) }
 
 
-    /*val permissionLauncher = rememberLauncherForActivityResult(
+    val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasLocationPermission.value = granted
@@ -117,7 +118,7 @@ fun MapPickerScreen(
         } else {
             Toast.makeText(context, "Bạn cần cấp quyền vị trí để dùng bản đồ", Toast.LENGTH_LONG).show()
         }
-    }*/
+    }
 
     // Gọi khi mở màn
     LaunchedEffect(Unit) {
@@ -265,6 +266,39 @@ fun MapPickerScreen(
                     .align(Alignment.Center)
                     .size(48.dp)
             )
+
+            Row(modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp)){
+                IconButton(
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(0.8f),
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    onClick = {
+                        if (hasLocationPermission.value) {
+                            try {
+                                fusedLocationProviderClient.lastLocation.addOnSuccessListener { location ->
+                                    location?.let {
+                                        val currentPoint = GeoPoint(it.latitude, it.longitude)
+                                        Log.i("c", currentPoint.toString())
+                                        mapView.controller.setCenter(currentPoint)
+                                        mapView.controller.setZoom(15.0)
+                                    }
+                                }
+                            } catch (e: SecurityException) {
+                                Toast.makeText(context, "Không thể truy cập vị trí: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        else{
+                            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        }
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.Home, null,
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+            }
 
 
 
@@ -417,17 +451,24 @@ fun MapPickerScreen(
 
             Button(
                 onClick = {
+                    var tempAddress = "${if (uiState.address["city"]==null)
+                        removeLastWord(uiState.address["state"]?:"")
+                    else uiState.address["city"]
+                    }"+", ${uiState.address["country_code"]?.uppercase()?:""}"
+                    Log.i("sa", tempAddress)
                     onLocationPicked(
                         uiState.selectedGeoPoint?.latitude ?: 0.0,
                         uiState.selectedGeoPoint?.longitude ?: 0.0,
                         uiState.selectedAddress,
-                        uiState.selectedDisplayName
+                        uiState.selectedDisplayName,
+                        tempAddress
                     )
                     navController.popBackStack()
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp)
+                    .padding(16.dp),
+                enabled = uiState.selectedAddress!="Đang tìm vị trí của bạn..."
             ) {
                 Text("Xác nhận vị trí")
             }
@@ -435,4 +476,19 @@ fun MapPickerScreen(
     }
 
 
+}
+
+fun removeLastWord(input: String): String {
+    // 1. Dùng trim() để loại bỏ các khoảng trắng thừa ở đầu và cuối chuỗi
+    // 2. Tách chuỗi thành một danh sách các từ.
+    //    Dùng Regex("\\s+") để xử lý trường hợp có nhiều khoảng trắng liền nhau.
+    val words = input.trim().split(Regex("\\s+"))
+
+    // 3. Nếu chuỗi chỉ có 1 từ hoặc là chuỗi rỗng, trả về chuỗi gốc
+    if (words.size <= 1) {
+        return input.trim() // Trả về chuỗi đã được trim
+    }
+
+    // 4. Bỏ từ cuối cùng trong danh sách và nối các từ còn lại bằng một khoảng trắng
+    return words.dropLast(1).joinToString(" ")
 }

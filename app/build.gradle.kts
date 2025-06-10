@@ -166,6 +166,9 @@ dependencies {
 
     implementation ("com.google.android.gms:play-services-location:21.0.1")
 
+
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.34.0")
+
     configurations.all {
         exclude(group = "com.google.ai.edge.litert", module = "litert-api")
     }

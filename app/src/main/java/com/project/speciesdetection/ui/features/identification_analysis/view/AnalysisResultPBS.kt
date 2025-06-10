@@ -50,15 +50,6 @@ fun AnalysisResultPBS(
     val speciesObservationState by analysisViewModel.speciesDateFound.collectAsStateWithLifecycle()
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(
-        authState.currentUser
-    ) {
-        if (authState.currentUser==null) analysisViewModel.clearObservationState()
-        else
-        {
-        }
-    }
-
     ModalBottomSheet(
         sheetState = sheetState,
         onDismissRequest = {

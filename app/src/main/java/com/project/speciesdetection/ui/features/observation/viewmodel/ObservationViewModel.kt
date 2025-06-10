@@ -44,12 +44,19 @@ data class ObservationUiState(
     val images: List<Any> = emptyList(),
     val privacy: String = "Public",
     val isLoading: Boolean = false,
-    val saveSuccess: Boolean = false
+    val saveSuccess: Boolean = false,
+
+    val dateCreated: Timestamp? = null,
+    val commentCount : Int = 0,
+    val likeUserIds : List<String> = emptyList(),
+    val dislikeUserIds : List<String> = emptyList(),
+    val point: Int = 0,
+    val locationTempName: String =""
 )
 
 sealed interface ObservationEvent {
     data class OnDescriptionChange(val text: String) : ObservationEvent
-    data class OnLocationSelected(val lan: Double, val lon: Double, val name: String, val displayName: String) : ObservationEvent
+    data class OnLocationSelected(val lan: Double, val lon: Double, val name: String, val displayName: String, val address:String) : ObservationEvent
     object OnLocationClear : ObservationEvent
     data class OnDateSelected(val date: Date) : ObservationEvent
     object OnDateClear : ObservationEvent
@@ -109,7 +116,13 @@ class ObservationViewModel @Inject constructor(
                     dateFoundText = observationFromNav.dateFound?.toDate()?.let { d -> formatDate(d) } ?: "Chọn ngày giờ",
                     images = observationFromNav.imageURL,
                     privacy = observationFromNav.privacy,
-                    isFetchingInitialLocation = false // Đã có vị trí, không cần fetch
+                    isFetchingInitialLocation = false, // Đã có vị trí, không cần fetch
+                    dateCreated = observationFromNav.dateCreated,
+                    commentCount = observationFromNav.commentCount,
+                    point = observationFromNav.point,
+                    likeUserIds = observationFromNav.likeUserIds,
+                    dislikeUserIds = observationFromNav.dislikeUserIds,
+                    locationTempName = observationFromNav.locationTempName
                 )
             }
             //observationFromNav.location?.let { reverseGeocode(it) }
@@ -186,7 +199,8 @@ class ObservationViewModel @Inject constructor(
                         location = GeoPoint(event.lan,event.lon),
                         locationName = event.name,
                         locationDisplayName = event.displayName,
-                        isFetchingInitialLocation = false
+                        isFetchingInitialLocation = false,
+                        locationTempName = event.address
                     )
                 }
 
@@ -225,13 +239,21 @@ class ObservationViewModel @Inject constructor(
             val currentState = _uiState.value
             val result = if (currentState.isEditing) {
                 repository.updateObservation(
+                    user = user,
                     observationId = currentState.observationId!!,
                     content = currentState.description,
                     images = currentState.images,
                     privacy = currentState.privacy,
                     location = currentState.location,
                     dateFound = currentState.dateFound,
-                    speciesId = currentState.speciesId
+                    speciesId = currentState.speciesId,
+                    dateCreated = currentState.dateCreated,
+                    point = currentState.point,
+                    likeUserIds = currentState.likeUserIds,
+                    dislikeUserIds = currentState.dislikeUserIds,
+                    commentCount = currentState.commentCount,
+                    locationTempName = currentState.locationTempName
+
                 )
             } else {
                 if (currentState.speciesId.isEmpty() || user.uid.isEmpty()) {
@@ -246,7 +268,8 @@ class ObservationViewModel @Inject constructor(
                     imageUris = currentState.images.filterIsInstance<Uri>(),
                     privacy = currentState.privacy,
                     location = currentState.location,
-                    dateFound = currentState.dateFound
+                    dateFound = currentState.dateFound,
+                    locationTempName = currentState.locationTempName
                 )
             }
             result.onSuccess {
@@ -262,4 +285,5 @@ class ObservationViewModel @Inject constructor(
         val formatter = SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale.getDefault())
         return formatter.format(date)
     }
+
 }
