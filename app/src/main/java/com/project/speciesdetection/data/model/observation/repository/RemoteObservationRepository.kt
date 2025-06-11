@@ -161,12 +161,12 @@ class RemoteObservationRepository @Inject constructor(
 
     }
 
-    override fun getObservationChangesForUser(userId: String): Flow<Unit> = callbackFlow {
+    override fun getObservationChangesForUser(userId: String): Flow<ObservationChange> = callbackFlow {
         // Sử dụng service để đăng ký listener.
         // Callback `onDataChanged` của chúng ta sẽ gọi `trySend(Unit)` để
         // phát tín hiệu ra cho Flow.
-        val listener = databaseService.listenToUserObservations(userId) {
-            trySend(Unit)
+        val listener = databaseService.listenToUserObservations(userId) { it ->
+            trySend(it) // Phát tín hiệu ra Flow
         }
 
         // awaitClose rất quan trọng. Khối lệnh này sẽ được thực thi khi
@@ -180,7 +180,7 @@ class RemoteObservationRepository @Inject constructor(
     /**
      * Lấy một Flow của PagingData. Flow này sẽ phát ra dữ liệu phân trang.
      */
-    override fun getObservationPager(uid: String?, speciesId: String?, queryByDesc : Boolean?): Flow<PagingData<Observation>> {
+    override fun getObservationPager(uid: String?, speciesId: String?, queryByDesc : Boolean?, ): Flow<PagingData<Observation>> {
         return Pager(
             config = PagingConfig(
                 pageSize = PAGE_SIZE,

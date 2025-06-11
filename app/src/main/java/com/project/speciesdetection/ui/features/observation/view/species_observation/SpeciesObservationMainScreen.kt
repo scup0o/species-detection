@@ -1,5 +1,7 @@
 package com.project.speciesdetection.ui.features.observation.view.species_observation
 
+import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -61,6 +64,9 @@ import com.project.speciesdetection.ui.features.observation.viewmodel.species_ob
 
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
+import com.project.speciesdetection.core.helpers.MediaHelper
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,6 +78,7 @@ fun SpeciesObservationMainScreen(
     speciesName: String,
     viewModel: SpeciesObservationViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val tabs = listOf("Tất cả", "Của tôi")
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
     val selectedTabIndex by viewModel.selectedTab.collectAsStateWithLifecycle()
@@ -167,7 +174,7 @@ fun SpeciesObservationMainScreen(
                             lazyPagingItems = lazyPagingItems,
                             updatedObservations = updatedObservations,
                             navController = navController,
-                            isRefreshing = isRefreshing
+                            isRefreshing = isRefreshing,
                         )
                     }
 
@@ -198,7 +205,7 @@ fun SpeciesObservationMainScreen(
                                 lazyPagingItems = lazyPagingItems,
                                 updatedObservations = updatedObservations,
                                 navController = navController,
-                                isRefreshing = isRefreshing
+                                isRefreshing = isRefreshing,
                             )
                         }
                     }
@@ -415,7 +422,9 @@ fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation:
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
         ) {
             if (observation.imageURL.isNotEmpty()) {
+                //val mimeType = context.contentResolver.getType(Uri.decode(observation.imageURL.firstOrNull().toString()).toUri()) ?: ""
                 Box {
+                    if (MediaHelper.isImageFile(observation.imageURL.firstOrNull().toString())){
                     GlideImage(
                         model = observation.imageURL.firstOrNull(),
                         contentDescription = null,
@@ -426,7 +435,31 @@ fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation:
                             .size(100.dp)
                             .padding(MaterialTheme.spacing.xxxs)
                             .clip(MaterialTheme.shapes.small)
-                    )
+                    )}
+                    if (MediaHelper.isVideoFile(observation.imageURL.firstOrNull().toString())){
+                        Box{
+                            GlideImage(
+                                model = observation.imageURL.firstOrNull(),
+                                contentDescription = null,
+                                loading = placeholder(R.drawable.error_image),
+                                failure = placeholder(R.drawable.error_image),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .padding(MaterialTheme.spacing.xxxs)
+                                    .clip(MaterialTheme.shapes.small)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play",
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .align(Alignment.Center)
+                            )
+                        }
+
+                    }
                     if (observation.imageURL.size > 1) {
                         Row(
                             modifier = Modifier

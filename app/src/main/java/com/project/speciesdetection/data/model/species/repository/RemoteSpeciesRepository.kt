@@ -28,7 +28,7 @@ class RemoteSpeciesRepository @Inject constructor(
     companion object {
         private const val TAG = "RemoteSpeciesRepoImpl" // Tag cho Log
         const val DEFAULT_PAGE_SIZE = 10 // Số item PagingConfig sẽ yêu cầu PagingSource load ban đầu và các lần sau
-        const val PREFETCH_DISTANCE = 3    // Số lượng trang Paging 3 sẽ cố gắng load trước khi người dùng cuộn tới
+        const val PREFETCH_DISTANCE = 3   // Số lượng trang Paging 3 sẽ cố gắng load trước khi người dùng cuộn tới
         // Ví dụ: nếu pageSize=10, prefetchDistance=3, Paging 3 có thể load trước 30 items.
     }
 

@@ -11,6 +11,7 @@ import androidx.paging.map
 import com.google.firebase.Timestamp
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.services.remote_database.DataResult
+import com.project.speciesdetection.data.model.observation.repository.ObservationChange
 import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
@@ -55,8 +56,8 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
     }
 
     // State lưu trữ giá trị dateFound cho species
-    private val _speciesDateFound = MutableStateFlow<Map<String, Timestamp>>(emptyMap()) // Map để lưu trữ dateFound theo speciesId
-    val speciesDateFound: StateFlow<Map<String, Timestamp>> = _speciesDateFound.asStateFlow()
+    private val _speciesDateFound = MutableStateFlow<Map<String, Timestamp?>>(emptyMap()) // Map để lưu trữ dateFound theo speciesId
+    val speciesDateFound: StateFlow<Map<String, Timestamp?>> = _speciesDateFound.asStateFlow()
 
     val currentLanguageState = MutableStateFlow("none")
 
@@ -139,7 +140,8 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
                 }
 
             Log.i("a", _speciesDateFound.value.toString())
-
+            _init.value = false
+            observer(uid)
 
         }
     }
@@ -192,17 +194,52 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
         currentLanguageState.value = language
     }
 
-    fun observer(userId: String, species : List<DisplayableSpecies>){
+    fun observer(userId: String){
         viewModelScope.launch {
-            observeAllUserObservationsChanges(userId).collect{
-                getSpeciesListState(species,userId)
+            observeAllUserObservationsChanges(userId).collect{ change->
+                val currentMap = _speciesDateFound.value.toMutableMap()
+
+                when (change) {
+                    is ObservationChange.Added,
+                    is ObservationChange.Modified -> {
+                        val observation = when (change) {
+                            is ObservationChange.Added -> change.observation
+                            is ObservationChange.Modified -> change.observation
+                            else -> null
+                        }
+
+                        observation?.let {
+                            val id = it.speciesId
+                            val timestamp = it.dateFound
+                            val currentTimestamp = currentMap[id]
+
+                            // Chỉ cập nhật nếu chưa có hoặc timestamp khác
+                            if (currentTimestamp != timestamp) {
+                                currentMap[id] = timestamp
+                                _speciesDateFound.value = currentMap
+                                Log.i("ObserveChange", "Updated: $id -> $timestamp")
+                            }
+                        }
+                    }
+
+                    is ObservationChange.Removed -> {
+                        val id = change.observationId
+                        Log.i("checkObserve0,", currentMap.toString())
+                        if (currentMap.containsKey(id)) {
+                            currentMap.remove(id)
+                            _speciesDateFound.value = currentMap
+                            Log.i("ObserveChange", "Removed: $id")
+                        }
+                    }
+                }
+                Log.i("á", "${change}")
             }
-            _init.value = false
+
         }
     }
     
 
-    fun observeAllUserObservationsChanges(userId: String): Flow<Unit> {
+    fun observeAllUserObservationsChanges(userId: String): Flow<ObservationChange> {
         return observationRepository.getObservationChangesForUser(userId)
     }
 

@@ -119,13 +119,17 @@ class EncyclopediaDetailViewModel @Inject constructor(
     fun observeDateFoundForUidAndSpecies(speciesId: String, uid : String) {
         if (uid.isNotEmpty())
             viewModelScope.launch {
+            }
+            viewModelScope.launch {
                 observationListener?.remove()
 
                 // Bắt đầu lắng nghe và lưu lại listener registration
                 observationListener =
                 observationRepository.checkUserObservationState(uid,speciesId) { dateFound ->
-                    if (dateFound != null) {
-                        _speciesDateFound.value = dateFound}
+
+                        Log.i("obs", dateFound.toString())
+                        _speciesDateFound.value = dateFound
+
                 }
             }
 

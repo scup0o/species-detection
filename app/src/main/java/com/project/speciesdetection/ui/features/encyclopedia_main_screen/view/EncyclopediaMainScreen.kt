@@ -27,6 +27,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -299,18 +303,27 @@ fun EncyclopediaMainScreen(
                     }
 
                     else -> {
-                        val userState by viewModel.currentUser.collectAsStateWithLifecycle()
                         val initState by viewModel.init.collectAsStateWithLifecycle()
 
-                        LaunchedEffect(authState.currentUser) {
+                        var lastProcessedSize by rememberSaveable { mutableStateOf(0) }
+
+                        LaunchedEffect(lazyPagingItems.itemSnapshotList.items.size) {
                             val currentUser = authState.currentUser
-                            if (currentUser != null ) {
-                                if (currentUser!=userState || initState)
-                                    viewModel.observer(currentUser.uid,lazyPagingItems.itemSnapshotList.items)
+                            val currentItems = lazyPagingItems.itemSnapshotList.items
+                            Log.i("ss","$lastProcessedSize, $currentItems")
+
+                            if (currentUser != null && currentItems.size > lastProcessedSize) {
+                                // Xử lý phần mới (ví dụ: các item mới được load từ trang tiếp theo)
+                                val newItems = currentItems.subList(lastProcessedSize, currentItems.size)
+                                viewModel.getSpeciesListState(newItems, currentUser.uid)
+
+                                // Cập nhật lại số lượng đã xử lý
+                                lastProcessedSize = currentItems.size
                             }
-                            else{
-                                viewModel.clearObservationState()
-                            }
+                        }
+
+                        LaunchedEffect(authState.currentUser) {
+                            if (authState.currentUser==null) viewModel.clearObservationState()
                         }
                         LazyColumn(
                             modifier = Modifier,

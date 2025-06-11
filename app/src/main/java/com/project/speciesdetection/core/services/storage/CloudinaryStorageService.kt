@@ -2,6 +2,7 @@ package com.project.speciesdetection.core.services.storage
 
 import android.content.Context
 import android.net.Uri
+import com.project.speciesdetection.core.helpers.CloudinaryImageURLHelper
 import com.project.speciesdetection.domain.model.CloudinaryUploadResponse
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -29,38 +30,46 @@ class CloudinaryStorageService @Inject constructor(
 
     override suspend fun uploadImage(imageUri: Uri): Result<String> = withContext(Dispatchers.IO) {
         try {
-            // Lấy inputStream từ Uri
             val inputStream = context.contentResolver.openInputStream(imageUri)
-                ?: throw IOException("Cannot open InputStream for an Uri: $imageUri")
+                ?: throw IOException("Cannot open InputStream for Uri: $imageUri")
 
-            // Đọc dữ liệu ảnh thành byte array
-            val imageBytes = inputStream.use { it.readBytes() }
+            val fileBytes = inputStream.use { it.readBytes() }
 
-            // Lấy kiểu media (ví dụ: "image/jpeg")
-            val mediaType = context.contentResolver.getType(imageUri)
+            val mediaType = context.contentResolver.getType(imageUri) ?: "application/octet-stream"
 
-            // Tạo request body cho file
-            val fileRequestBody = imageBytes.toRequestBody(mediaType?.toMediaTypeOrNull())
+            // Chọn apiUrl dựa trên mediaType
+            val apiUrl = if (mediaType.startsWith("video/")) {
+                "https://api.cloudinary.com/v1_1/$cloudName/video/upload"
+            } else if (mediaType.startsWith("image/")) {
+                "https://api.cloudinary.com/v1_1/$cloudName/image/upload"
+            } else {
+                throw IOException("Unsupported media type: $mediaType")
+            }
 
-            // Tạo request body dạng multipart/form-data
+            // Đặt extension file phù hợp theo loại (ảnh hoặc video)
+            val extension = when {
+                mediaType.startsWith("video/") -> ".mp4"  // hoặc lấy extension thật nếu bạn cần
+                mediaType.startsWith("image/") -> ".jpg"
+                else -> ""
+            }
+
+            val fileRequestBody = fileBytes.toRequestBody(mediaType.toMediaTypeOrNull())
+
             val multipartBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("upload_preset", uploadPreset)
                 .addFormDataPart(
                     "file",
-                    // Đặt tên file ngẫu nhiên để tránh trùng lặp
-                    "${UUID.randomUUID()}.jpg",
+                    "${UUID.randomUUID()}$extension",
                     fileRequestBody
                 )
                 .build()
 
-            // Tạo request POST
             val request = Request.Builder()
                 .url(apiUrl)
                 .post(multipartBody)
                 .build()
 
-            // Thực thi request
             val response = okHttpClient.newCall(request).execute()
 
             if (!response.isSuccessful) {
@@ -70,10 +79,9 @@ class CloudinaryStorageService @Inject constructor(
             val responseBodyString = response.body?.string()
                 ?: throw IOException("Empty response body from Cloudinary")
 
-            // Parse JSON response để lấy secure_url
             val uploadResponse = json.decodeFromString<CloudinaryUploadResponse>(responseBodyString)
 
-            Result.success(uploadResponse.secureUrl)
+            Result.success(CloudinaryImageURLHelper.resizeCloudinaryUrl(uploadResponse.secureUrl, "w_100,ar_1:1,c_fill,g_auto").replace(".mp4", ".jpg"))
 
         } catch (e: Exception) {
             // Ghi log lỗi ở đây nếu cần

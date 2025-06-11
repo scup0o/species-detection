@@ -77,7 +77,7 @@ class EditImageForIdentificationViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isSaving = true, saveSuccess = null, error = null)
         viewModelScope.launch {
             try {
-                val savedUri = mediaFileUseCase.saveImageToGallery(imageUriToSave)
+                val savedUri = mediaFileUseCase.saveMediaToGallery(imageUriToSave)
                 _uiState.value = _uiState.value.copy(isSaving = false, saveSuccess = true)
                 Log.i(TAG, "Image saved via UseCase. Output URI: $savedUri")
             } catch (e: Exception) {

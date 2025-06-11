@@ -2,7 +2,6 @@ package com.project.speciesdetection.core.navigation
 
 import android.app.Activity
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -16,7 +15,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.ui.features.community_main_screen.view.CommunityFeed
 import com.project.speciesdetection.ui.features.encyclopedia_main_screen.view.EncyclopediaMainScreen
 import com.project.speciesdetection.ui.features.profile_main_screen.view.ProfileMainScreen
@@ -25,9 +23,7 @@ import com.project.speciesdetection.ui.features.identification_edit_image_screen
 import kotlinx.serialization.json.Json
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.project.speciesdetection.ui.composable.screen.FullScreenImageViewer
-import com.project.speciesdetection.ui.features.auth.view.AuthScreen
+import com.project.speciesdetection.ui.features.media_screen.view.FullScreenImageViewer
 import com.project.speciesdetection.ui.features.auth.view.ForgotPasswordScreen
 import com.project.speciesdetection.ui.features.auth.view.LoginScreen
 import com.project.speciesdetection.ui.features.auth.view.SignupScreen
@@ -231,7 +227,7 @@ fun AppNavigation(
             val imageUri = imageUriEncoded?.let { Uri.decode(it).toUri() }
 
             FullScreenImageViewer(
-                imageModel = imageUri!!,
+                image = imageUri!!,
                 onNavigateBack = {navController.popBackStack()}
             )
 

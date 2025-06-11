@@ -46,7 +46,7 @@ interface ObservationRepository {
         locationTempName : String
     ): Result<Unit>
 
-    fun getObservationChangesForUser(userId: String): Flow<Unit>
+    fun getObservationChangesForUser(userId: String): Flow<ObservationChange>
     suspend fun checkUserObservationState(uid: String, speciesId: String, onDataChanged: (Timestamp?) -> Unit): ListenerRegistration
     fun getObservationChanges(uid: String?, speciesId: String?, queryByDesc : Boolean? = true): Flow<Unit>
     fun getObservationPager(uid: String?, speciesId: String?, queryByDesc : Boolean? = true): Flow<PagingData<Observation>>

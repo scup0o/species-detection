@@ -1,6 +1,7 @@
 package com.project.speciesdetection.ui.features.observation.view
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
@@ -32,12 +33,14 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.google.android.gms.location.LocationServices
 import com.project.speciesdetection.R
+import com.project.speciesdetection.core.helpers.MediaHelper
 import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.ui.composable.common.CustomTextField
 import com.project.speciesdetection.ui.composable.common.DateTimePicker
@@ -239,6 +242,8 @@ fun UpdateObservation(
                 Spacer(Modifier.height(16.dp))
 
                 ImageSelector(
+                    isEditing = uiState.isEditing,
+                    context = context,
                     images = uiState.images,
                     onAddClick = { showImagePicker = true },
                     onRemoveClick = { viewModel.onEvent(ObservationEvent.OnRemoveImage(it)) },
@@ -262,7 +267,8 @@ fun UpdateObservation(
             onImageSelected = { uri ->
                 viewModel.onEvent(ObservationEvent.OnAddImage(uri))
                 showImagePicker = false
-            }
+            },
+            chooseVideo = true
         )
     }
 }
@@ -351,13 +357,19 @@ private fun ImageSelector(
     images: List<Any>,
     onAddClick: () -> Unit,
     onRemoveClick: (Any) -> Unit,
-    onImageClick: (Any) -> Unit
+    onImageClick: (Any) -> Unit,
+    context : Context,
+    isEditing : Boolean = false,
 ) {
+    Log.i("image", images.toString())
+
+
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
         item {
+
             Box(
                 modifier = Modifier
                     .size(100.dp)
@@ -377,18 +389,47 @@ private fun ImageSelector(
 
         items(images.size, key = { index -> "${images[index].hashCode()}_$index" }) { index ->
             var image = images[index]
+            val mimeType =
+                if (!isEditing) context.contentResolver.getType(Uri.decode(image.toString()).toUri()) ?: ""
+                else ""
             Box(
                 modifier = Modifier.size(100.dp)
             ) {
-                GlideImage(
-                    model = image,
-                    contentDescription = "Ảnh quan sát",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onImageClick(image) },
-                    contentScale = ContentScale.Crop
-                )
+                if (mimeType.startsWith("image/") || MediaHelper.isImageFile(image.toString())){
+                    GlideImage(
+                        model = image,
+                        contentDescription = "Ảnh quan sát",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onImageClick(image) },
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                if (mimeType.startsWith("video/") || MediaHelper.isVideoFile(image.toString())){
+                    Box{
+                        GlideImage(
+                            model = image,
+                            contentDescription = "Ảnh quan sát",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onImageClick(image) },
+                            contentScale = ContentScale.Crop
+                        )
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Play",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .align(Alignment.Center)
+                        )
+                    }
+
+                }
+
+
                 IconButton(
                     onClick = { onRemoveClick(image) },
                     modifier = Modifier

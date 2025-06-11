@@ -5,6 +5,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.project.speciesdetection.data.model.observation.Observation
+import com.project.speciesdetection.data.model.observation.repository.ObservationChange
 import kotlinx.coroutines.flow.Flow
 
 sealed class DataResult<out T> {
@@ -49,7 +50,7 @@ interface UserDatabaseService<T : Any, ID> {
 }
 
 interface ObservationDatabaseService {
-    fun listenToUserObservations(uid: String, onDataChanged: () -> Unit): ListenerRegistration
+    fun listenToUserObservations(uid: String, onDataChanged: (ObservationChange) -> Unit): ListenerRegistration
     suspend fun createObservation(observation: Observation): Result<String>
     suspend fun updateObservation(observation: Observation): Result<Unit>
     suspend fun checkUserObservationState(uid: String, speciesId: String, onDataChanged: (Timestamp?) -> Unit): ListenerRegistration
