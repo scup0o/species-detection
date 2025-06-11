@@ -3,6 +3,7 @@ package com.project.speciesdetection.ui.features.observation.view.species_observ
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,13 +67,18 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
+import androidx.navigation.NavHostController
 import com.project.speciesdetection.core.helpers.MediaHelper
+import com.project.speciesdetection.core.navigation.BottomNavigationBar
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpeciesObservationMainScreen(
-    navController: NavController,
+    navController: NavHostController,
     authViewModel: AuthViewModel,
     speciesId: String,
     speciesName: String,
@@ -150,15 +156,15 @@ fun SpeciesObservationMainScreen(
                         onClick = {
                             viewModel.selectTab(index)
                             //lazyPagingItems.refresh()
-                                  },
+                        },
                         text = { Text(title, style = MaterialTheme.typography.bodyLarge) },
                         enabled = !(index == 1 && authState.currentUser == null)
                     )
                 }
             }
 
-            // Giao diện không cần khối `when` nữa.
-            // Nó chỉ cần hiển thị ObservationList với dữ liệu đã được cung cấp.
+            BottomNavigationBar(navController, showNavBar = false)
+
             val shouldShowList = !isRefreshing || lazyPagingItems.itemCount > 0
 
             Box(
@@ -220,29 +226,63 @@ fun SpeciesObservationMainScreen(
                                 top = if (viewMode == SpeciesObservationViewModel.ViewMode.MAP) 70.dp else 0.dp
                             )
                     ) {
-                        Column(
+                        Row(
                             modifier = Modifier
-                                .align(Alignment.TopEnd
+                                .align(
+                                    Alignment.BottomCenter
                                 )
-                                .background(
-                                    MaterialTheme.colorScheme.primary.copy(0.3f),
-                                    RoundedCornerShape(30)
-                                )
+
                         ) {
 
-                            IconButton(onClick = { viewModel.setViewMode(SpeciesObservationViewModel.ViewMode.LIST) }) {
-                                Icon(
-                                    imageVector = Icons.Default.List, // Ví dụ
-                                    contentDescription = "List View",
-                                    tint = if (viewMode == SpeciesObservationViewModel.ViewMode.LIST) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
-                                )
+                            Surface(
+                                color =
+                                    if (viewMode == SpeciesObservationViewModel.ViewMode.LIST)
+                                        MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surface,
+                                contentColor =
+                                    if (viewMode == SpeciesObservationViewModel.ViewMode.LIST)
+                                        MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(20, 0, 0, 20)
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.setViewMode(SpeciesObservationViewModel.ViewMode.LIST)
+                                    },
+                                ) {
+
+                                    Icon(
+                                        imageVector = Icons.Default.List, // Ví dụ
+                                        contentDescription = "List View",
+                                    )
+                                }
                             }
-                            IconButton(onClick = { viewModel.setViewMode(SpeciesObservationViewModel.ViewMode.MAP) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Place, // Ví dụ
-                                    contentDescription = "Map View",
-                                    tint = if (viewMode == SpeciesObservationViewModel.ViewMode.MAP) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
-                                )
+                            Surface(
+                                color =
+                                    if (viewMode == SpeciesObservationViewModel.ViewMode.MAP)
+                                        MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.surface,
+                                contentColor =
+                                    if (viewMode == SpeciesObservationViewModel.ViewMode.MAP)
+                                        MaterialTheme.colorScheme.onPrimary
+                                    else MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(0, 20, 20, 0),
+                                border =
+                                    BorderStroke(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                            ) {
+                                IconButton(onClick = {
+                                    viewModel.setViewMode(
+                                        SpeciesObservationViewModel.ViewMode.MAP
+                                    )
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Place, // Ví dụ
+                                        contentDescription = "Map View",
+                                    )
+                                }
                             }
 
 
@@ -293,7 +333,10 @@ fun ObservationList(
     navController: NavController
 ) {
     // Lấy các item được THÊM MỚI (chưa có trong Paging) để hiển thị ở trên cùng
-    val addedItems = remember(updatedObservations, lazyPagingItems.itemSnapshotList) { // <-- THAY ĐỔI: Dùng itemSnapshotList
+    val addedItems = remember(
+        updatedObservations,
+        lazyPagingItems.itemSnapshotList
+    ) { // <-- THAY ĐỔI: Dùng itemSnapshotList
         // Lấy danh sách ID đã được tải bởi Paging một cách ổn định hơn
         val pagedItemIds = lazyPagingItems.itemSnapshotList.items
             .mapNotNull { it.id }
@@ -422,9 +465,10 @@ fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation:
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
         ) {
             if (observation.imageURL.isNotEmpty()) {
-                //val mimeType = context.contentResolver.getType(Uri.decode(observation.imageURL.firstOrNull().toString()).toUri()) ?: ""
+                val mimeType = if (observation.imageURL.first()
+                        .contains("/video/upload/")
+                ) "video" else "image"
                 Box {
-                    if (MediaHelper.isImageFile(observation.imageURL.firstOrNull().toString())){
                     GlideImage(
                         model = observation.imageURL.firstOrNull(),
                         contentDescription = null,
@@ -435,31 +479,18 @@ fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation:
                             .size(100.dp)
                             .padding(MaterialTheme.spacing.xxxs)
                             .clip(MaterialTheme.shapes.small)
-                    )}
-                    if (MediaHelper.isVideoFile(observation.imageURL.firstOrNull().toString())){
-                        Box{
-                            GlideImage(
-                                model = observation.imageURL.firstOrNull(),
-                                contentDescription = null,
-                                loading = placeholder(R.drawable.error_image),
-                                failure = placeholder(R.drawable.error_image),
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .padding(MaterialTheme.spacing.xxxs)
-                                    .clip(MaterialTheme.shapes.small)
-                            )
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "Play",
-                                tint = Color.White,
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .align(Alignment.Center)
-                            )
-                        }
-
+                    )
+                    if (mimeType == "video") {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Play",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .align(Alignment.Center)
+                        )
                     }
+
                     if (observation.imageURL.size > 1) {
                         Row(
                             modifier = Modifier
@@ -479,9 +510,10 @@ fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation:
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.padding(start=10.dp)
-                )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(start = 10.dp)
+            )
             {
                 Text(
                     observation.content,
@@ -490,52 +522,78 @@ fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation:
                     fontStyle = FontStyle.Italic,
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                Row(verticalAlignment = Alignment.CenterVertically){
-                    Icon(
-                        Icons.Default.LocationOn,null,
-                        tint = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.size(24.dp).padding(end=5.dp)
-                    )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (observation.locationTempName.isNotEmpty())
+                        Icon(
+                            Icons.Default.LocationOn, null,
+                            tint = MaterialTheme.colorScheme.outlineVariant,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(end = 5.dp)
+                        )
                     Text(
                         observation.locationTempName,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically,
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp)
-                    ){
-                    Row(verticalAlignment = Alignment.CenterVertically){
-                        Icon(
-                            Icons.Default.Favorite,null,
-                            tint = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.size(24.dp).padding(end=5.dp)
-                        )
-                        Text(
-                            observation.point.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Favorite, null,
+                                tint = MaterialTheme.colorScheme.outlineVariant,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(end = 5.dp)
+                            )
+                            Text(
+                                observation.point.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
 
-                    Row(verticalAlignment = Alignment.CenterVertically){
-                        Icon(
-                            painterResource(R.drawable.message_circle), null,
-                            tint = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.size(24.dp).padding(end=5.dp)
-                        )
-                        Text(
-                            observation.commentCount.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                painterResource(R.drawable.message_circle), null,
+                                tint = MaterialTheme.colorScheme.outlineVariant,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(end = 5.dp)
+                            )
+                            Text(
+                                observation.commentCount.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
 
+                    }
+                    Text(
+                        if (observation.dateCreated != null) {
+                            SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+                                .format(observation.dateCreated.toDate())
+                        } else "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
                 }
+
+
             }
 
 
         }
     }
+
 }

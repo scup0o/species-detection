@@ -218,7 +218,7 @@ fun UpdateObservation(
                 InfoRow(
                     icon = Icons.Default.LocationOn,
                     label = "tại",
-                    value = uiState.locationName,
+                    value = uiState.locationDisplayName.ifBlank { uiState.locationName },
                     hasValue = uiState.location != null,
                     onValueClick = {
 
@@ -358,10 +358,9 @@ private fun ImageSelector(
     onAddClick: () -> Unit,
     onRemoveClick: (Any) -> Unit,
     onImageClick: (Any) -> Unit,
-    context : Context,
-    isEditing : Boolean = false,
+    context: Context,
+    isEditing: Boolean,
 ) {
-    Log.i("image", images.toString())
 
 
     LazyRow(
@@ -390,42 +389,36 @@ private fun ImageSelector(
         items(images.size, key = { index -> "${images[index].hashCode()}_$index" }) { index ->
             var image = images[index]
             val mimeType =
-                if (!isEditing) context.contentResolver.getType(Uri.decode(image.toString()).toUri()) ?: ""
-                else ""
+                if (!isEditing) context.contentResolver.getType(
+                    Uri.decode(image.toString()).toUri()
+                ) ?: ""
+                else {
+                    if(image.toString().contains("/video/upload/")) "video"
+                    else "image"
+                }
             Box(
                 modifier = Modifier.size(100.dp)
             ) {
-                if (mimeType.startsWith("image/") || MediaHelper.isImageFile(image.toString())){
-                    GlideImage(
-                        model = image,
-                        contentDescription = "Ảnh quan sát",
+                GlideImage(
+                    model = image,
+                    contentDescription = "Ảnh quan sát",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onImageClick(image) },
+                    contentScale = ContentScale.Crop
+                )
+
+                if (mimeType.startsWith("video/") || mimeType=="video") {
+
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play",
+                        tint = Color.White,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onImageClick(image) },
-                        contentScale = ContentScale.Crop
+                            .size(48.dp)
+                            .align(Alignment.Center)
                     )
-                }
-                if (mimeType.startsWith("video/") || MediaHelper.isVideoFile(image.toString())){
-                    Box{
-                        GlideImage(
-                            model = image,
-                            contentDescription = "Ảnh quan sát",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { onImageClick(image) },
-                            contentScale = ContentScale.Crop
-                        )
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Play",
-                            tint = Color.White,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .align(Alignment.Center)
-                        )
-                    }
 
                 }
 

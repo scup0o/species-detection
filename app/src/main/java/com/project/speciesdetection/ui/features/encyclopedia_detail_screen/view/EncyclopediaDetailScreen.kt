@@ -612,12 +612,35 @@ fun EncyclopediaDetailScreen(
             }
         }
 
+
         is EncyclopediaDetailViewModel.UiState.Error -> {
-            ErrorScreenPlaceholder(
-                onClick = {
-                    speciesDetailViewModel.getSpeciesDetailed()
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {},
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.AutoMirrored.Default.ArrowBack, null)
+                            }
+                        }
+                    )
                 }
-            )
+            ) {
+                innerPadding ->
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(containerColor)
+                    .padding(innerPadding)) {
+                    Row(modifier = Modifier.align(Alignment.Center)) {
+                        ErrorScreenPlaceholder(
+                            onClick = {
+                                speciesDetailViewModel.getSpeciesDetailed()
+                            }
+                        )
+                    }
+                }
+            }
+
         }
     }
 }

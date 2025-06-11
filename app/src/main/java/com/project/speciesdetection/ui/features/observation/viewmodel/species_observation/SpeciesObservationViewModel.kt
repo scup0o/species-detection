@@ -28,6 +28,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -207,6 +210,11 @@ class SpeciesObservationViewModel @Inject constructor(
     // <-- THAY ĐỔI: Hàm chọn chế độ xem
     fun setViewMode(mode: ViewMode) {
         _viewMode.value = mode
+    }
+
+    private fun formatDate(date: Date): String {
+        val formatter = SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale.getDefault())
+        return formatter.format(date)
     }
 
 
