@@ -36,9 +36,14 @@ data class Observation(
     val likeUserIds : List<String> = emptyList(),
     val dislikeUserIds : List<String> = emptyList(),
 
+    val state: String = "normal",
+
     @ServerTimestamp
     @Serializable(with = TimestampSerializer::class)
     val dateCreated: Timestamp? = null,
+    @ServerTimestamp
+    @Serializable(with = TimestampSerializer::class)
+    val dateUpdated: Timestamp? = null,
     @Serializable(with = TimestampSerializer::class)
     val dateFound: Timestamp? = null
 )

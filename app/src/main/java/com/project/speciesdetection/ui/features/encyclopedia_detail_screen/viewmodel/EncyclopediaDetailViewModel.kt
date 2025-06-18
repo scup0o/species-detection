@@ -140,44 +140,43 @@ class EncyclopediaDetailViewModel @Inject constructor(
 
         if (currentState is UiState.Success) {
             val species = currentState.species
-            // Không cần newPairsToAdd tạm thời nữa, chúng ta sẽ cập nhật _sourceList trực tiếp
-            // hoặc tạo danh sách mới mỗi lần processList để giữ thứ tự.
-            // Cách an toàn hơn là tạo một list tạm thời rồi update _sourceList một lần.
             val newSourceItems = mutableListOf<SourceInfoItem>()
 
-            // Hàm processList giờ sẽ tạo SourceInfoItem
             fun processList(list: List<String>, listNameForLog: Int) {
                 if (list.size >= 2) {
-                    val secondLastItem = list[list.size - 2]
-                    val lastItem = list[list.size - 1]
-                    sourceOrderCounter++ // Tăng bộ đếm thứ tự
-                    val newItem = SourceInfoItem(
-                        firstValue = secondLastItem,
-                        secondValue = lastItem,
-                        listIndex = listNameForLog,
-                        orderAdded = sourceOrderCounter // Gán số thứ tự hiện tại
-                    )
-                    newSourceItems.add(newItem)
-                    Log.d("AddInfoPairs", "Prepared item for $listNameForLog: $newItem")
+                    // Duyệt ngược từ phần tử gần cuối (list.size - 2) đến index = 1
+                    for (i in list.size - 2 downTo 1 step 2) {
+                        val first = list.getOrNull(i)
+                        val second = list.getOrNull(i + 1)
+
+                        if (first != null && second != null) {
+                            sourceOrderCounter++
+                            val newItem = SourceInfoItem(
+                                firstValue = first,
+                                secondValue = second,
+                                listIndex = listNameForLog,
+                                orderAdded = sourceOrderCounter
+                            )
+                            newSourceItems.add(newItem)
+                            Log.d("AddInfoPairs", "Prepared item for $listNameForLog: $newItem")
+                        }
+                    }
                 } else {
-                    Log.w("AddInfoPairs", "$listNameForLog does not have at least 2 elements. Size: ${list.size}")
+                    Log.w("AddInfoPairs", "$listNameForLog does not have enough elements. Size: ${list.size}")
                 }
             }
 
-            // Thứ tự gọi processList sẽ quyết định `orderAdded`
             processList(species.localizedSummary, 0)
             processList(species.localizedPhysical, 2)
             processList(species.localizedDistribution, 3)
             processList(species.localizedHabitat, 4)
             processList(species.localizedBehavior, 5)
-            // Thêm các danh sách khác nếu cần
 
             if (newSourceItems.isNotEmpty()) {
-                // Cập nhật _sourceList với tất cả các item mới đã thu thập
                 _sourceList.update { currentList ->
-                    currentList + newSourceItems // Nối danh sách item mới vào danh sách hiện tại
+                    currentList + newSourceItems
                 }
-                Log.i("AddInfoPairs", "Updated _sourceList with ${newSourceItems.size} new items. Total size: ${(_sourceList.value).size}")
+                Log.i("AddInfoPairs", "Updated _sourceList with ${newSourceItems.size} new items. Total size: ${_sourceList.value.size}")
             } else {
                 Log.i("AddInfoPairs", "No new items to add to _sourceList.")
             }

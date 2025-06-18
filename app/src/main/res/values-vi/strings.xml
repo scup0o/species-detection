@@ -50,6 +50,7 @@
     <string name="empty_label_message">không được để trống</string>
     <string name="bad_formated">Email không hợp lệ</string>
     <string name="email_in_use">Email này đã được sử dụng. Xin vui lòng dùng email khác.</string>
+    <string name="account_disabled_message">Tài khoản bị vô hiệu hóa do vi phạm quy chuẩn cộng đồng</string>
 
     <string name="forgot_password_title">Đặt lại mật khẩu</string>
     <string name="send_reset_password_email_successful">Email đã được gửi thành công</string>

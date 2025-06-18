@@ -1,8 +1,10 @@
 package com.project.speciesdetection.data.model.user.repository
 
+import android.util.Log
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.speciesdetection.core.services.authentication.AuthServiceInterface
 import com.project.speciesdetection.core.services.authentication.FirebaseAuthService
@@ -51,6 +53,22 @@ class RemoteUserRepository @Inject constructor(
     }
     override suspend fun resendVerificationEmail(): Result<Unit> {
         return authService.resendVerificationEmail()
+    }
+
+    override fun addCurrentUserFcmToken(userId: String, token: String) {
+        firestore.collection("users").document(userId)
+            .update("fcmTokens", FieldValue.arrayUnion(token))
+            .addOnSuccessListener { Log.d("FCM", "FCM Token added/updated successfully.") }
+            .addOnFailureListener { e -> Log.w("FCM", "Error adding/updating FCM Token", e) }
+    }
+
+    override fun removeCurrentUserFcmToken(userId: String, token: String, onComplete: () -> Unit) {
+        firestore.collection("users").document(userId)
+            .update("fcmTokens", FieldValue.arrayRemove(token))
+            .addOnCompleteListener {
+                Log.d("FCM", "Attempted to remove FCM Token.")
+                onComplete() // Luôn gọi callback để tiếp tục quá trình logout
+            }
     }
 
 

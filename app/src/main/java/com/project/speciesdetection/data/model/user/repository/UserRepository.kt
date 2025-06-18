@@ -17,4 +17,6 @@ interface UserRepository {
     suspend fun signOut()
     suspend fun sendPasswordResetEmail(email: String): Result<Unit>
     suspend fun resendVerificationEmail(): Result<Unit>
+    fun addCurrentUserFcmToken(userId: String, token: String)
+    fun removeCurrentUserFcmToken(userId: String, token: String, onComplete: () -> Unit)
 }

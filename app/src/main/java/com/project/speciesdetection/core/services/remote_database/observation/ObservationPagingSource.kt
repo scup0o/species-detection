@@ -26,7 +26,7 @@ class ObservationPagingSource(
             val sortBy = if (queryByDesc!!) Query.Direction.DESCENDING else Query.Direction.ASCENDING
             Log.i("l", sortBy.toString())
 
-            var query: Query = firestore.collection("observations")
+            var query: Query = firestore.collection("observations").whereEqualTo("state", "normal")
 
             // Thêm điều kiện lọc nếu uid được cung cấp
             Log.i("now1","$uid, $speciesId")

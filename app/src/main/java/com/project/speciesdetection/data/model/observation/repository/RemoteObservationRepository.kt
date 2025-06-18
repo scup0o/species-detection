@@ -89,7 +89,7 @@ class RemoteObservationRepository @Inject constructor(
         point : Int,
         likeUserIds : List<String>,
         dislikeUserIds : List<String>,
-        locationTempName : String
+        locationTempName : String,
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             // Phân loại ảnh cũ và ảnh mới cần upload
@@ -119,7 +119,8 @@ class RemoteObservationRepository @Inject constructor(
                 point = point,
                 likeUserIds = likeUserIds,
                 dislikeUserIds = dislikeUserIds,
-                locationTempName = locationTempName
+                locationTempName = locationTempName,
+
             )
 
             databaseService.updateObservation(observationToUpdate)
@@ -136,7 +137,7 @@ class RemoteObservationRepository @Inject constructor(
         Log.i("i", species.toString())
         species.forEach {
             species ->
-                var state = firestore.collection("observations")
+                var state = firestore.collection("observations").whereEqualTo("state", "normal")
                     .whereEqualTo("uid", uid)
                     .whereEqualTo("speciesId", species.id)
                     .orderBy("dateFound", Query.Direction.ASCENDING)
@@ -200,7 +201,7 @@ class RemoteObservationRepository @Inject constructor(
      */
     override fun getObservationChanges(uid: String?, speciesId: String?, queryByDesc : Boolean?): Flow<Unit> = callbackFlow {
         // Xây dựng câu truy vấn tương tự như trong PagingSource
-        var query: Query = firestore.collection("observations")
+        var query: Query = firestore.collection("observations").whereEqualTo("state", "normal")
 
         if (uid != null) {
             query = query.whereEqualTo("uid", uid)
@@ -226,7 +227,7 @@ class RemoteObservationRepository @Inject constructor(
         // Xây dựng câu truy vấn tương tự như trong PagingSource
         val sortBy = if (queryByDesc!!) Query.Direction.DESCENDING else Query.Direction.ASCENDING
 
-        var query: Query = firestore.collection("observations")
+        var query: Query = firestore.collection("observations").whereEqualTo("state", "normal")
             .whereEqualTo("speciesId", speciesId)
         Log.i("aaaa", sortBy.toString())
 
@@ -273,7 +274,7 @@ class RemoteObservationRepository @Inject constructor(
     }
 
     override fun getAllObservationsAsList(speciesId: String, uid: String?): Flow<List<Observation>> = callbackFlow {
-        var query: Query = firestore.collection("observations")
+        var query: Query = firestore.collection("observations").whereEqualTo("state", "normal")
             .whereEqualTo("speciesId", speciesId)
             .orderBy("dateCreated", Query.Direction.DESCENDING)
 

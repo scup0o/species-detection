@@ -42,7 +42,7 @@ class FirestoreObservationService @Inject constructor(
     }
 
     override suspend fun checkUserObservationState(uid: String, speciesId: String, onDataChanged: (Timestamp?) -> Unit): ListenerRegistration {
-        val query: Query = observationCollection
+        val query: Query = observationCollection.whereEqualTo("state", "normal")
             .whereEqualTo("uid", uid)
             .whereEqualTo("speciesId", speciesId) // Chỉ lấy dữ liệu của 'uid' này
             .orderBy("dateFound", Query.Direction.ASCENDING)  // Sắp xếp theo 'dateFound'
@@ -68,7 +68,7 @@ class FirestoreObservationService @Inject constructor(
     }
 
     override fun listenToUserObservations(uid: String, onDataChanged: (ObservationChange) -> Unit): ListenerRegistration {
-        val query: Query = observationCollection.whereEqualTo("uid", uid)
+        val query: Query = observationCollection.whereEqualTo("uid", uid).whereEqualTo("state", "normal")
 
         // addSnapshotListener sẽ được kích hoạt cho lần đầu tiên và mỗi khi có thay đổi.
         // Chúng ta không cần dữ liệu (snapshot), chỉ cần biết là nó đã được kích hoạt.

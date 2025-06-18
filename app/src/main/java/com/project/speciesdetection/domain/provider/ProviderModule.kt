@@ -7,6 +7,7 @@ import android.net.ConnectivityManager
 import androidx.credentials.CredentialManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.project.speciesdetection.core.services.backend.species.SpeciesApiService
 import com.project.speciesdetection.domain.provider.image_classifier.EnetB0ImageClassifier
@@ -150,6 +151,9 @@ object NetworkModule {
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    @Provides
+    @Singleton
+    fun provideFirebaseMessaging(): FirebaseMessaging = FirebaseMessaging.getInstance()
 
     @Provides
     @Singleton

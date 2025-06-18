@@ -116,6 +116,12 @@ fun EncyclopediaMainScreen(
         }
     }
 
+    LaunchedEffect(authState.currentUser) {
+        if (authState.currentUser!=null){
+            authViewModel.reloadCurrentUser(authState.currentUser!!)
+        }
+    }
+
 
 
     Scaffold(

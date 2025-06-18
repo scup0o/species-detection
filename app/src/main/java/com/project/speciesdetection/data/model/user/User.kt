@@ -12,6 +12,7 @@ data class User(
     var photoUrl: String? = null,
     @ServerTimestamp
     val dayCreated: Timestamp? = null,
-    val source: String = "" // "google.com" hoặc "password"
+    val source: String = "", // "google.com" hoặc "password"
+    val fcmTokens: List<String> = emptyList()
 ) {
 }

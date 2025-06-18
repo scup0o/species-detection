@@ -50,6 +50,7 @@
     <string name="empty_label_message">cannot be empty</string>
     <string name="bad_formated">Email is badly formatted</string>
     <string name="email_in_use">This email is already in use. Please use another.</string>
+    <string name="account_disabled_message">Account is disabled for violating community standards</string>
 
     <string name="forgot_password_title">Password Recovery</string>
     <string name="send_reset_password_email_successful">An email has been sent</string>

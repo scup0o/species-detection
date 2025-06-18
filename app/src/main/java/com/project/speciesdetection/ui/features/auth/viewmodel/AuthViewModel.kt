@@ -16,7 +16,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.messaging.FirebaseMessaging
 import com.project.speciesdetection.data.model.user.User
 import com.project.speciesdetection.data.model.user.repository.RemoteUserRepository
 import com.project.speciesdetection.data.model.user.repository.UserRepository
@@ -27,6 +31,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 data class AuthState(
@@ -46,6 +51,7 @@ sealed class UiEvent {
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     application: Application,
+    private val firebaseMessaging: FirebaseMessaging,
     private val repository: UserRepository,
     private val credentialManager: CredentialManager,
 ) : AndroidViewModel(application) {
@@ -69,16 +75,42 @@ class AuthViewModel @Inject constructor(
         prepareGoogleSignInRequestObject()
     }
 
+    fun reloadCurrentUser(currentUser: FirebaseUser){
+        viewModelScope.launch {
+            try {
+                currentUser.reload().await() // await để dùng với coroutine
+                val userInfo = repository.getUserInformation(currentUser.uid)
+                _authState.update {
+                    it.copy(
+                        currentUser = currentUser,
+                        currentUserInformation = userInfo
+                    )
+                }
+            } catch (e: FirebaseAuthInvalidUserException) {
+                if (e.errorCode == "ERROR_USER_DISABLED") {
+                    signOut()
+                    _authState.update {
+                        it.copy(
+                            currentUser = null,
+                            currentUserInformation = null,
+                            error = "disabled"
+                        )
+                    }
+                    // Tùy chọn: Gửi sự kiện cho UI để điều hướng về màn hình đăng nhập
+                } else {
+                    Log.e("AuthCheck", "Lỗi không xác định khi reload: ${e.localizedMessage}")
+                }
+            } catch (e: Exception) {
+                Log.e("AuthCheck", "Lỗi khác khi reload user: ${e.localizedMessage}")
+            }
+        }
+    }
+
     private fun checkCurrentUser() {
         viewModelScope.launch {
             val currentUser = repository.getCurrentUser()
             if (currentUser != null) {
-                _authState.update {
-                    it.copy(
-                        currentUser = currentUser,
-                        currentUserInformation = repository.getUserInformation(currentUser.uid)
-                    )
-                }
+                reloadCurrentUser(currentUser)
             }
 
         }
@@ -159,6 +191,7 @@ class AuthViewModel @Inject constructor(
                                 "check",
                                 _authState.value.currentUser!!.uid + "," + _authState.value.currentUserInformation!!.uid
                             )
+                            updateFcmToken()
                         },
                         onFailure = { exception ->
                             handleAuthError(exception, errorMessage)
@@ -243,6 +276,7 @@ class AuthViewModel @Inject constructor(
                         )
                     }
                     _uiEvent.emit(UiEvent.ShowSnackbar(successMessage))
+                    updateFcmToken()
                 },
                 onFailure = { exception ->
                     handleAuthError(exception, errorMessage)
@@ -254,8 +288,24 @@ class AuthViewModel @Inject constructor(
     fun signOut() {
         viewModelScope.launch {
             _authState.update { it.copy(isLoading = true, error = null) }
-            repository.signOut()
-            _authState.update { AuthState() }
+            try{
+                val tokenToRemove = firebaseMessaging.token.await()
+                repository.removeCurrentUserFcmToken(
+                    _authState.value.currentUser?.uid?:"", tokenToRemove
+                ){
+                    viewModelScope.launch {
+                        repository.signOut()
+                        _authState.update { AuthState() }
+                    }
+                }
+            }
+            catch (e: Exception) {
+                // Nếu có lỗi khi lấy token, vẫn tiến hành đăng xuất
+                Log.e("Logout", "Không thể lấy token để xóa, vẫn tiến hành đăng xuất.", e)
+                repository.signOut()
+                _authState.update { AuthState() }
+            }
+
             //_uiEvent.emit(UiEvent.ShowSnackbar("Signed Out"))
             try {
                 credentialManager.clearCredentialState(ClearCredentialStateRequest())
@@ -327,6 +377,18 @@ class AuthViewModel @Inject constructor(
                     )
                 }
             )
+        }
+    }
+
+    fun updateFcmToken() {
+        val userId = _authState.value.currentUser?.uid?: return // Chỉ cập nhật nếu đã đăng nhập
+        viewModelScope.launch {
+            try {
+                val token = firebaseMessaging.token.await()
+                repository.addCurrentUserFcmToken(userId, token)
+            } catch (e: Exception) {
+                Log.e("FCM", "Không thể lấy FCM token", e)
+            }
         }
     }
 

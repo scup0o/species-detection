@@ -105,6 +105,7 @@ dependencies {
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.auth.ktx)
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     //Glide
     implementation(libs.glide)
