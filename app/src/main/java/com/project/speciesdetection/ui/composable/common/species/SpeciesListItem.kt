@@ -37,6 +37,7 @@ import com.project.speciesdetection.data.model.species.DisplayableSpecies
 @Composable
 fun SpeciesListItem(
     species: DisplayableSpecies,
+    observationState : Boolean = false,
     onClick : () -> Unit
     ) {
     Card(
@@ -101,7 +102,7 @@ fun SpeciesListItem(
                 )
             }
             Image(
-                painter = painterResource(R.drawable.butterfly_net),
+                painter = if (observationState) painterResource(R.drawable.butterfly_net) else painterResource(R.drawable.butterfly_net_disabeld),
                 contentDescription = null,
                 modifier = Modifier.size(45.dp).padding(horizontal = 5.dp)
             )

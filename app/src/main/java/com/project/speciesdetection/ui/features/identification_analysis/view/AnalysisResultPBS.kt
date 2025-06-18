@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
@@ -29,12 +31,14 @@ import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.domain.provider.image_classifier.Recognition // Đảm bảo import đúng
 import com.project.speciesdetection.ui.composable.common.ItemErrorPlaceholder
 import com.project.speciesdetection.ui.composable.common.species.SpeciesListItem
+import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.identification_analysis.viewmodel.AnalysisUiState
 import com.project.speciesdetection.ui.features.identification_analysis.viewmodel.AnalysisViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun AnalysisResultPBS(
+    authViewModel: AuthViewModel,
     navController: NavHostController,
     onDismiss: () -> Unit,
     analysisImage: Uri,
@@ -42,6 +46,9 @@ fun AnalysisResultPBS(
 {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val currentAnalysisState by analysisViewModel.uiState.collectAsState() // Lấy state từ ViewModel
+
+    val speciesObservationState by analysisViewModel.speciesDateFound.collectAsStateWithLifecycle()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
     ModalBottomSheet(
         sheetState = sheetState,
@@ -94,6 +101,7 @@ fun AnalysisResultPBS(
                         ) {
                             items(state.recognitions, key = { it.id }) { species ->
                                 SpeciesListItem(
+                                    observationState = speciesObservationState[species.id]!=null,
                                     species=species,
                                     onClick = {
                                         navController.popBackStack(

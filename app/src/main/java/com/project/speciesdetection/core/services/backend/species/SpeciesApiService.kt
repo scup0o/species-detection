@@ -14,13 +14,15 @@ interface SpeciesApiService {
         @Query("languageCode") languageCode: String,
         @Query("searchQuery") searchQuery: String? = null,
         @Query("classId") classId: String? = null,
-        @Query("lastVisibleDocId") lastVisibleDocId: String? = null
+        @Query("lastVisibleDocId") lastVisibleDocId: String? = null,
+        @Query("uid") uid : String
     ): ApiPagedResponse
 
     @GET("api/v1/species/by-ids")
     suspend fun getSpeciesByIds(
         @Query("ids") ids: String,
-        @Query("languageCode") languageCode: String
+        @Query("languageCode") languageCode: String,
+        @Query("uid") uid : String
     ): ApiPagedResponse
 
     @GET("api/v1/species/{speciesDocId}") // {speciesDocId} là path parameter

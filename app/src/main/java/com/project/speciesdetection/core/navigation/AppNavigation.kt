@@ -8,13 +8,13 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.ui.features.community_main_screen.view.CommunityFeed
 import com.project.speciesdetection.ui.features.encyclopedia_main_screen.view.EncyclopediaMainScreen
 import com.project.speciesdetection.ui.features.profile_main_screen.view.ProfileMainScreen
@@ -23,13 +23,17 @@ import com.project.speciesdetection.ui.features.identification_edit_image_screen
 import kotlinx.serialization.json.Json
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.project.speciesdetection.ui.features.auth.view.AuthScreen
+import com.project.speciesdetection.ui.features.media_screen.view.FullScreenImageViewer
 import com.project.speciesdetection.ui.features.auth.view.ForgotPasswordScreen
 import com.project.speciesdetection.ui.features.auth.view.LoginScreen
 import com.project.speciesdetection.ui.features.auth.view.SignupScreen
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view.EncyclopediaDetailScreen
+import com.project.speciesdetection.ui.features.observation.view.UpdateObservation
+import com.project.speciesdetection.ui.features.observation.view.map.MapPickerScreen
+import com.project.speciesdetection.ui.features.observation.view.species_observation.SpeciesObservationMainScreen
+import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationEvent
+import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationViewModel
 import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
 
 @Composable
@@ -120,7 +124,8 @@ fun AppNavigation(
             EncyclopediaMainScreen(
                 navController = navController,
                 containerColor = containerColor,
-                settingViewModel = settingViewModel
+                settingViewModel = settingViewModel,
+                authViewModel = authViewModel
             )
         }
 
@@ -171,7 +176,8 @@ fun AppNavigation(
             )
         ) { // backStackEntry -> không cần dùng trực tiếp ở đây vì ViewModel lấy từ SavedStateHandle
             EditImageForIdentificationScreen(
-                navController = navController
+                navController = navController,
+                authViewModel = authViewModel
             )
         }
 
@@ -207,6 +213,98 @@ fun AppNavigation(
             )
 
         }
+
+        composable(
+            route = AppScreen.FullScreenImageViewer.route,
+            arguments = listOf(
+                navArgument("imageUri") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val imageUriEncoded = backStackEntry.arguments?.getString("imageUri")
+            val imageUri = imageUriEncoded?.let { Uri.decode(it).toUri() }
+
+            FullScreenImageViewer(
+                image = imageUri!!,
+                onNavigateBack = {navController.popBackStack()}
+            )
+
+        }
+
+        composable(
+            route = AppScreen.SpeciesObservationMainScreen.route,
+            arguments = listOf(
+                navArgument("speciesId") {
+                    type = NavType.StringType
+                },
+                navArgument("speciesName") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+
+            val speciesId = backStackEntry.arguments?.getString("speciesId")
+            val speciesName = backStackEntry.arguments?.getString("speciesName")
+
+            SpeciesObservationMainScreen(
+                navController,
+                authViewModel,
+                speciesId!!,
+                speciesName!!
+            )
+
+        }
+
+        composable(
+            route = AppScreen.UpdateObservationScreen.route,
+            arguments = listOf(
+                navArgument("speciesId") { type = NavType.StringType; nullable = true },
+                navArgument("speciesName") { type = NavType.StringType; nullable = true },
+                navArgument("speciesSN") { type = NavType.StringType; nullable = true },
+                navArgument("imageUri") { type = NavType.StringType; nullable = true },
+                navArgument("observationJson") { type = NavType.StringType; nullable = true }
+            )
+        ) { backStackEntry ->
+            // QUAN TRỌNG: Lấy ViewModel được chia sẻ từ NavGraph
+            // Hilt sẽ tạo ra 1 instance của ViewModel và gắn nó vào backStackEntry này
+            val observationViewModel: ObservationViewModel = hiltViewModel(backStackEntry)
+
+            UpdateObservation(
+                authViewModel = authViewModel,
+                viewModel = observationViewModel, // Truyền shared ViewModel
+                navController = navController,
+                onDismiss = { navController.popBackStack() },
+                onSaveSuccess = { navController.popBackStack() } // Đơn giản là quay lại
+            )
+        }
+
+        // 2. Màn hình MapPicker, sẽ chia sẻ ViewModel với UpdateObservation
+        composable(
+            route = AppScreen.MapPickerScreen.route
+        ) { backStackEntry ->
+            // QUAN TRỌNG: Tìm back stack entry của màn hình TRƯỚC ĐÓ
+            // và lấy ra instance ViewModel đã được tạo ở đó.
+            val parentEntry = remember(backStackEntry) {
+                navController.getBackStackEntry(AppScreen.UpdateObservationScreen.route)
+            }
+            val observationViewModel: ObservationViewModel = hiltViewModel(parentEntry)
+
+            MapPickerScreen(
+                navController = navController,
+                onLocationPicked = { lan, lon, name, displayName, address ->
+                        observationViewModel.onEvent(ObservationEvent.OnLocationSelected(
+                            lan = lan,
+                            lon = lon,
+                            name = name,
+                            displayName = displayName,
+                            address = address
+                        ))
+                }
+            )
+        }
+
     }
 
 }

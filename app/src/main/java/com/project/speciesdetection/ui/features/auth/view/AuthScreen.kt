@@ -132,11 +132,11 @@ fun AuthScreen(
                                 modifier = Modifier
                                     .padding(horizontal = 10.dp, vertical = 5.dp),
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    shadow = Shadow(
+                                    /*shadow = Shadow(
                                         color = Color.Black,
                                         offset = Offset(4f, 4f), // Độ lệch của bóng
                                         blurRadius = 51f,          // Độ mờ của bóng
-                                    ),
+                                    ),*/
                                 )
                             )
                             Icon(

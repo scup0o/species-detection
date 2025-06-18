@@ -61,62 +61,95 @@ class MediaFileUseCase @Inject constructor(
         }
     }
 
-    suspend fun saveImageToGallery(
-        imageUri: Uri
-    ): Uri {
-        return withContext(Dispatchers.IO) {
-            // Sử dụng applicationContext cho tất cả
-            val resolver = context.contentResolver
-            val appName = try {
-                context.getString(R.string.app_name)
-            } catch (e: Exception) {
-                "SpeciesDetection"
+    suspend fun saveMediaToGallery(inputUri: Uri): Uri = withContext(Dispatchers.IO) {
+        val resolver = context.contentResolver
+        val appName = try {
+            context.getString(R.string.app_name)
+        } catch (e: Exception) {
+            "SpeciesDetection"
+        }
+
+        // Detect MIME type
+        var mimeType: String? = null
+        var fileExtension = ".bin"
+        var inputStream: java.io.InputStream? = null
+
+        if (inputUri.scheme == "http" || inputUri.scheme == "https") {
+            // Tải từ URL
+            val connection = java.net.URL(inputUri.toString()).openConnection()
+            connection.connect()
+            mimeType = connection.contentType ?: "application/octet-stream"
+            inputStream = connection.getInputStream()
+        } else {
+            // Local URI
+            mimeType = resolver.getType(inputUri)
+            inputStream = resolver.openInputStream(inputUri)
+        }
+
+        // MIME fallback nếu không xác định
+        mimeType = mimeType ?: "application/octet-stream"
+
+        // Xác định phần mở rộng từ MIME
+        fileExtension = when {
+            mimeType.contains("jpeg") || mimeType.contains("jpg") -> ".jpg"
+            mimeType.contains("png") -> ".png"
+            mimeType.contains("webp") -> ".webp"
+            mimeType.contains("gif") -> ".gif"
+            mimeType.contains("mp4") -> ".mp4"
+            mimeType.contains("webm") -> ".webm"
+            mimeType.contains("3gp") -> ".3gp"
+            else -> ".bin"
+        }
+
+        val isImage = mimeType.startsWith("image/")
+        val isVideo = mimeType.startsWith("video/")
+
+        val displayName = "MEDIA_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}$fileExtension"
+
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val basePath = if (isVideo) "Movies" else "Pictures"
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "$basePath/$appName")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
+        }
 
-            val displayName = "EDITED_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.jpg"
-            val mimeType = "image/jpeg"
-
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
-                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$appName")
-                    put(MediaStore.MediaColumns.IS_PENDING, 1)
-                }
-            }
-
-            val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val collectionUri = when {
+            isImage -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                 MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-            } else {
+            else
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+
+            isVideo -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+            else
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+
+            else -> throw IllegalArgumentException("Không hỗ trợ loại MIME này: $mimeType")
+        }
+
+        val outputUri = resolver.insert(collectionUri, contentValues)
+            ?: throw IOException("Không thể tạo MediaStore entry")
+
+        try {
+            resolver.openOutputStream(outputUri).use { outStream ->
+                if (outStream == null || inputStream == null)
+                    throw IOException("Không thể mở stream để sao chép media.")
+                inputStream.copyTo(outStream)
             }
 
-            val imageOutUri = resolver.insert(collection, contentValues)
-                ?: throw IOException("Không thể tạo bản ghi mới trong MediaStore cho việc lưu ảnh.")
-
-            try {
-                resolver.openOutputStream(imageOutUri).use { outStream ->
-                    if (outStream == null) throw IOException("Không thể mở output stream cho ảnh đích: $imageOutUri")
-
-                    // Sử dụng applicationContext để mở InputStream từ URI nguồn
-                    context.contentResolver.openInputStream(imageUri).use { inStream ->
-                        if (inStream == null) throw IOException("Không thể mở input stream từ ảnh nguồn: $imageUri")
-                        inStream.copyTo(outStream)
-                    }
-                }
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    contentValues.clear()
-                    contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
-                    resolver.update(imageOutUri, contentValues, null, null)
-                }
-                //Log.i(TAG, "Image saved to gallery: $imageOutUri")
-                imageOutUri
-            } catch (e: Exception) {
-                resolver.delete(imageOutUri, null, null)
-                //Log.e(TAG, "Error during stream copy or IS_PENDING update, deleted temp entry $imageOutUri", e)
-                throw e
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contentValues.clear()
+                contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(outputUri, contentValues, null, null)
             }
+
+            outputUri
+        } catch (e: Exception) {
+            resolver.delete(outputUri, null, null)
+            throw e
         }
     }
 }

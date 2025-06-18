@@ -92,7 +92,7 @@ fun SettingMainScreen(
                     onClick = {
                         Toast.makeText(
                             context,
-                            "Logout",
+                            R.string.log_out,
                             Toast.LENGTH_LONG).show()
                     })
         }

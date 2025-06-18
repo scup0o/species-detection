@@ -108,7 +108,11 @@ class FirebaseAuthService @Inject constructor(
     override suspend fun saveUserProfile(user: User): Result<Unit> {
         return try {
             firestore.collection("users").document(user.uid).set(user).await()
-            Result.success(Unit)
+            /*val placeholder = mapOf("placeholder" to 0)
+            firestore.collection("followers").document(user.uid).set(placeholder).await()
+            firestore.collection("following").document(user.uid).set(placeholder).await()
+            firestore.collection("feeds").document(user.uid).set(placeholder).await()
+            */Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

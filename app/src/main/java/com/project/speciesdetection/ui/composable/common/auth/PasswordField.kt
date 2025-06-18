@@ -57,6 +57,8 @@ fun PasswordField(
                 ErrorText(stringResource(R.string.invalid_email_password_message))
             if (error?.contains("invalid")==true)
                 ErrorText(stringResource(R.string.invalid_password_message))
+            if (error?.contains("disabled")==true)
+                ErrorText(stringResource(R.string.account_disabled_message))
         },
         visualTransformation =
             if (passwordVisible)
@@ -87,7 +89,9 @@ fun PasswordField(
         modifier = Modifier.fillMaxWidth(),
         isError = error?.contains("empty") == true && password.isEmpty()
                 || error?.contains("incorrect") == true
-                || error?.contains("invalid")==true,
+                || error?.contains("invalid")==true
+                || error?.contains("disabled") == true,
+
         paddingValues = 15.dp,
 
     )

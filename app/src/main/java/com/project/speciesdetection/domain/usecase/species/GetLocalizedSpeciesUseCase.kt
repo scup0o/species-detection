@@ -6,6 +6,7 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.project.speciesdetection.core.helpers.CloudinaryImageURLHelper
 import com.project.speciesdetection.core.services.remote_database.DataResult
+import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.species.repository.SpeciesRepository
 import com.project.speciesdetection.data.model.species_class.repository.RemoteSpeciesClassRepository
@@ -23,9 +24,10 @@ import javax.inject.Singleton
 @Singleton
 class GetLocalizedSpeciesUseCase @Inject constructor(
     private val speciesRepository: SpeciesRepository,
+
     @Named("language_provider") private val languageProvider: LanguageProvider
 ) {
-    fun getAll(searchQuery: String): Flow<PagingData<DisplayableSpecies>> {
+    fun getAll(searchQuery: String, uid : String?): Flow<PagingData<DisplayableSpecies>> {
         val currentLanguageCode = languageProvider.getCurrentLanguageCode()
         // Xử lý searchQuery: chuyển về chữ thường, bỏ khoảng trắng thừa, tách thành list token
         val processedSearchQuery = if (searchQuery.isNotBlank()) {
@@ -34,12 +36,14 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
             null // Nếu searchQuery rỗng, không gửi gì lên API
         }
         return speciesRepository.getAll(
+            uid = uid?:"",
             searchQuery = processedSearchQuery,
             languageCode = currentLanguageCode // Repository có thể dùng hoặc PagingSource tự lấy
         )
     }
 
     fun getByClassPaged(
+        uid : String?,
         searchQuery: String,
         classIdValue: String,
     ): Flow<PagingData<DisplayableSpecies>> {
@@ -52,13 +56,14 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
         return speciesRepository.getSpeciesByClassPaged(
             searchQuery = processedSearchQuery,
             classIdValue = classIdValue,
-            languageCode = currentLanguageCode
+            languageCode = currentLanguageCode,
+            uid = uid?:"",
         )
     }
 
-    suspend fun getById(idList: List<String>): List<DisplayableSpecies> {
+    suspend fun getById(idList: List<String>, uid : String?): List<DisplayableSpecies> {
         val currentLanguageCode = languageProvider.getCurrentLanguageCode()
-        return speciesRepository.getSpeciesById(idList, currentLanguageCode)
+        return speciesRepository.getSpeciesById(uid = uid?:"",idList, currentLanguageCode, )
     }
 
     suspend fun getDetailsByDocId(speciesDocId: String): DisplayableSpecies? {

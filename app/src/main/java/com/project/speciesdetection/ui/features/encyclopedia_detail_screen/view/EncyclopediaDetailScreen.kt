@@ -30,14 +30,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
@@ -46,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Updater
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -59,7 +64,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -79,23 +86,28 @@ import com.project.speciesdetection.ui.composable.common.species.IUCNConservatio
 import com.project.speciesdetection.ui.composable.common.species.SpeciesClassification
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.viewmodel.EncyclopediaDetailViewModel
+import com.project.speciesdetection.ui.features.observation.view.UpdateObservation
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class,
+@OptIn(
+    ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class,
     ExperimentalFoundationApi::class
 )
 @Composable
 fun EncyclopediaDetailScreen(
     //species: DisplayableSpecies,
-    observationImage : Uri? = null,
+    observationImage: Uri? = null,
     navController: NavController,
     authViewModel: AuthViewModel,
-    containerColor : Color = MaterialTheme.colorScheme.surfaceContainer,
-    speciesDetailViewModel : EncyclopediaDetailViewModel = hiltViewModel()
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    speciesDetailViewModel: EncyclopediaDetailViewModel = hiltViewModel()
 ) {
     val uiState by speciesDetailViewModel.uiState.collectAsStateWithLifecycle()
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
     val sourceList by speciesDetailViewModel.sourceList.collectAsStateWithLifecycle()
+    val observationState by speciesDetailViewModel.speciesDateFound.collectAsStateWithLifecycle()
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -109,22 +121,36 @@ fun EncyclopediaDetailScreen(
         stringResource(R.string.species_detail_distribution) to 3,
         stringResource(R.string.species_detail_habitat) to 4,
         stringResource(R.string.species_detail_behavior) to 5,
-        stringResource(R.string.species_detail_source)+" & "+stringResource(R.string.species_detail_more_info) to 6,
+        stringResource(R.string.species_detail_source) + " & " + stringResource(R.string.species_detail_more_info) to 6,
     )
 
+    val detailedDescriptionContainer: Color = MaterialTheme.colorScheme.surfaceContainer
 
-    /*LaunchedEffect(listCurrentState) {
+    LaunchedEffect(authState.currentUser){
+        if (authState.currentUser==null){
+            speciesDetailViewModel.clearObservationState()
+        }
+        else{
+            if (uiState is EncyclopediaDetailViewModel.UiState.Success)
+                speciesDetailViewModel.observeDateFoundForUidAndSpecies((uiState as EncyclopediaDetailViewModel.UiState.Success).species.id, authState.currentUser?.uid?:"")
+        }
+    }
+
+
+    LaunchedEffect(listCurrentState) {
         Log.i("check chekc", listCurrentState.toString())
-        if (chipListState.firstVisibleItemIndex.div(3)==0)
+        if (listCurrentState == 3 || listCurrentState == 6)
             coroutineScope.launch {
                 chipListState.animateScrollToItem(index = listCurrentState)
             }
 
-    }*/
+    }
 
-    when (uiState){
+    when (uiState) {
         EncyclopediaDetailViewModel.UiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize().background(containerColor)){
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(containerColor)) {
                 Row(modifier = Modifier.align(Alignment.Center)) {
                     CircularProgressIndicator()
                 }
@@ -132,7 +158,7 @@ fun EncyclopediaDetailScreen(
 
         }
 
-        is EncyclopediaDetailViewModel.UiState.Success ->{
+        is EncyclopediaDetailViewModel.UiState.Success -> {
             val species = (uiState as EncyclopediaDetailViewModel.UiState.Success).species
             val pagerState = rememberPagerState(pageCount = { species.imageURL.size })
 
@@ -145,10 +171,13 @@ fun EncyclopediaDetailScreen(
                     ) {
                         if (authState.currentUser != null) {
                             CustomActionButton(
-                                onClick = {},
+                                onClick = {
+                                    navController.navigate(AppScreen.UpdateObservationScreen.buildRouteForCreate(species, observationImage))
+                                },
                                 text =
                                     if (observationImage != null) stringResource(R.string.species_detail_record)
                                     else stringResource(R.string.species_detail_add),
+                                vectorLeadingIcon = Icons.Default.Add
                             )
 
                         } else {
@@ -166,15 +195,18 @@ fun EncyclopediaDetailScreen(
                                 text =
                                     if (observationImage != null) stringResource(R.string.species_detail_login_to_record)
                                     else stringResource(R.string.species_detail_login_to_add),
+
                             )
                         }
-                        CustomActionButton(
-                            onClick = {},
+                        /*CustomActionButton(
+                            onClick = {
+                                navController.navigate(AppScreen.UpdateObservationScreen.buildRouteForCreate(species, observationImage))
+                            },
                             text = stringResource(R.string.species_detail_view_observation),
                             color = MaterialTheme.colorScheme.surfaceContainer,
                             borderColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.primary
-                        )
+                        )*/
                     }
 
                 }
@@ -193,17 +225,20 @@ fun EncyclopediaDetailScreen(
                                     contentScale = ContentScale.FillWidth,
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .clickable {
+                                            navController.navigate(AppScreen.FullScreenImageViewer.createRoute(species.imageURL[page]))
+                                        }
+                                        .clip(RoundedCornerShape(0,0,60,0))
                                 )
 
                             }
 
-                            Button(
+                            IconButton(
                                 onClick = { navController.popBackStack() },
-                                contentPadding = PaddingValues(0.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.White.copy(0.3f)
-                                ),
-                                modifier = Modifier.padding(5.dp)
+                                modifier = Modifier.padding(5.dp),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                )
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowLeft,
@@ -211,7 +246,24 @@ fun EncyclopediaDetailScreen(
                                 )
                             }
 
-                            if (pagerState.pageCount>1){
+                            IconButton(
+                                onClick = {
+                                    navController.navigate(
+                                        AppScreen.SpeciesObservationMainScreen.createRoute(species)
+                                    )
+                                },
+                                modifier = Modifier.padding(5.dp).align(Alignment.BottomEnd).size(48.dp),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.tertiary,
+                                    contentColor = MaterialTheme.colorScheme.onTertiary
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Star,null,
+                                )
+                            }
+
+                            if (pagerState.pageCount > 1) {
                                 LazyRow(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter),
@@ -276,15 +328,30 @@ fun EncyclopediaDetailScreen(
                             }*/
                         }
 
-                        Column( modifier = Modifier.padding(MaterialTheme.spacing.m)) {
-                            Row(verticalAlignment = Alignment.CenterVertically){
+                        Column(modifier = Modifier.padding(MaterialTheme.spacing.m)) {
+
+                                Text(
+                                    if (observationState== null) ""
+                                            else
+                                        "You first observed it on " +
+                                                SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale.getDefault()).format(
+                                                    observationState?.toDate() ?: 0
+                                                ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                                    color = MaterialTheme.colorScheme.tertiary.copy(0.7f),
+                                    fontStyle = FontStyle.Italic,
+                                    textAlign = TextAlign.End
+                                )
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     species.localizedName,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    ", "+stringResource(R.string.species_family_description) + " ",
+                                    ", " + stringResource(R.string.species_family_description) + " ",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.outline
                                 )
@@ -295,12 +362,12 @@ fun EncyclopediaDetailScreen(
                                 )
                             }
 
-                            Row(verticalAlignment = Alignment.Bottom){
+                            Row(verticalAlignment = Alignment.Bottom) {
                                 Text(
-                                    stringResource(R.string.species_detail_scientific_name)+": ",
+                                    stringResource(R.string.species_detail_scientific_name) + ": ",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.outline
-                                    )
+                                )
 
                                 Text(
                                     species.getScientificName()!!,
@@ -310,20 +377,24 @@ fun EncyclopediaDetailScreen(
 
 
                             Text(
-                                species.localizedSummary.firstOrNull()?: stringResource(R.string.iucn_status_unknown),
+                                species.localizedSummary.firstOrNull()
+                                    ?: stringResource(R.string.iucn_status_unknown),
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(top=10.dp)
+                                modifier = Modifier.padding(top = 10.dp)
 
                             )
                             Row {
-                                sourceList.forEach{ source ->
-                                    if (source.listIndex==0){
+                                sourceList.forEach { source ->
+                                    if (source.listIndex == 0) {
                                         Text(
                                             "[${source.orderAdded}]",
                                             color = MaterialTheme.colorScheme.tertiary,
-                                            modifier = Modifier.clickable{
+                                            modifier = Modifier.clickable {
                                                 coroutineScope.launch {
-                                                    listState.scrollToItem(index = indexList.size-1, scrollOffset = 1000)
+                                                    listState.scrollToItem(
+                                                        index = indexList.size - 1,
+                                                        scrollOffset = 1000
+                                                    )
                                                 }
                                             }
                                         )
@@ -334,33 +405,60 @@ fun EncyclopediaDetailScreen(
                             Text(
                                 stringResource(R.string.species_detail_conservation_status),
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(top = MaterialTheme.spacing.m, bottom = MaterialTheme.spacing.xs)
+                                modifier = Modifier.padding(
+                                    top = MaterialTheme.spacing.m,
+                                    bottom = MaterialTheme.spacing.xs
+                                )
                             )
 
-                            IUCNConservationStatusView(species.conservation)
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.secondaryContainer,
+                                        RoundedCornerShape(15)
+                                    )
+                            ) {
+                                IUCNConservationStatusView(species.conservation)
+                            }
+
+
                         }
 
                     }
 
+
+
                     stickyHeader {
                         LazyRow(
                             modifier = Modifier
-                                .fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer),
+                                .background(
+                                    detailedDescriptionContainer,
+                                    RoundedCornerShape(
+                                        topStartPercent = 50
+                                    )
+                                ),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
+                            //contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
                             state = chipListState
                         ) {
                             items(
                                 indexList,
-                                key = {it.second}){ section->
+                                key = { it.second }) { section ->
                                 CustomChip(
                                     title = section.first,
                                     onClick = {
                                         coroutineScope.launch {
-                                            listState.scrollToItem(index = section.second, scrollOffset = if (section.second==indexList.size-1) 1000 else 0)
+                                            listState.scrollToItem(
+                                                index = section.second,
+                                                scrollOffset = if (section.second == indexList.size - 1) 1000 else 0
+                                            )
                                         }
                                     },
-                                    isSelected = listCurrentState == section.second
+                                    isSelected = listCurrentState == section.second,
+                                    containerColor = detailedDescriptionContainer,
+                                    contentColor = MaterialTheme.colorScheme.tertiary,
+                                    unSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
+                                    unSelectedContainerColor = MaterialTheme.colorScheme.tertiary
                                 )
                             }
 
@@ -368,24 +466,49 @@ fun EncyclopediaDetailScreen(
                     }
 
                     items(6) { index ->
+                        Box(
+                            modifier = Modifier
+                                .background(detailedDescriptionContainer)
+                        ) {
                             Column(
-                                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.m)
+                                modifier = Modifier
+                                    .padding(horizontal = MaterialTheme.spacing.m)
+                                    .background(detailedDescriptionContainer)
                             ) {
+                                if (index > 0)
+                                    HorizontalDivider(
+                                        color = MaterialTheme.colorScheme.outlineVariant,
+                                        modifier = Modifier.padding(vertical = 15.dp)
+                                    )
                                 Text(
-                                    if(indexList[index+1].first==stringResource(R.string.species_detail_source)+" & "+stringResource(R.string.species_detail_more_info)) stringResource(R.string.species_detail_source) else indexList[index+1].first,
+                                    if (indexList[index + 1].first == stringResource(R.string.species_detail_source) + " & " + stringResource(
+                                            R.string.species_detail_more_info
+                                        )
+                                    ) stringResource(R.string.species_detail_source) else indexList[index + 1].first,
                                     fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(top = MaterialTheme.spacing.m, bottom = MaterialTheme.spacing.xs)
+                                    modifier = Modifier.padding(
+                                        top = MaterialTheme.spacing.m,
+                                        bottom = MaterialTheme.spacing.xs
+                                    )
                                 )
-                                if (indexList[index+1].first== stringResource(R.string.species_detail_classification)){
-                                    SpeciesClassification(species)
-                                }
-                                else{
-                                    if(indexList[index+1].first==stringResource(R.string.species_detail_source)+" & "+stringResource(R.string.species_detail_more_info)){
+                                if (indexList[index + 1].first == stringResource(R.string.species_detail_classification)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .background(
+                                                MaterialTheme.colorScheme.secondaryContainer,
+                                                RoundedCornerShape(15)
+                                            )
+                                    ) { SpeciesClassification(species) }
+                                } else {
+                                    if (indexList[index + 1].first == stringResource(R.string.species_detail_source) + " & " + stringResource(
+                                            R.string.species_detail_more_info
+                                        )
+                                    ) {
                                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                            sourceList.forEachIndexed{ index, source ->
-                                                Row{
+                                            sourceList.forEachIndexed { index, source ->
+                                                Row {
                                                     HyperlinkText(
-                                                        fullText = "[${index+1}] "+source.firstValue+" "+source.secondValue,
+                                                        fullText = "[${index + 1}] " + source.firstValue + " " + source.secondValue,
                                                         linkText = source.secondValue,
                                                         url = source.secondValue
                                                     )
@@ -393,14 +516,19 @@ fun EncyclopediaDetailScreen(
 
                                             }
 
+                                            HorizontalDivider(
+                                                color = MaterialTheme.colorScheme.outlineVariant,
+                                                modifier = Modifier.padding(vertical = 15.dp)
+                                            )
+
                                             Text(
                                                 stringResource(R.string.species_detail_more_info),
                                                 modifier = Modifier.padding(top = MaterialTheme.spacing.m),
                                                 fontWeight = FontWeight.Bold,
-                                                )
+                                            )
 
                                             species.info.forEach { info ->
-                                                when (info.key){
+                                                when (info.key) {
                                                     "wikipedia" -> {
                                                         HyperlinkText(
                                                             fullText = "Wikipedia: " + info.value,
@@ -416,6 +544,7 @@ fun EncyclopediaDetailScreen(
                                                             url = info.value,
                                                         )
                                                     }
+
                                                     "worldlandtrust" -> {
                                                         HyperlinkText(
                                                             fullText = "World Land Trust: " + info.value,
@@ -427,8 +556,7 @@ fun EncyclopediaDetailScreen(
                                             }
                                         }
 
-                                    }
-                                    else {
+                                    } else {
                                         Text(
                                             text = when (indexList[index + 1].first) {
                                                 //"Summary" -> species.localizedSummary.firstOrNull() ?: ""
@@ -453,14 +581,17 @@ fun EncyclopediaDetailScreen(
 
 
                                         Row {
-                                            sourceList.forEach{ source ->
-                                                if (source.listIndex==indexList[index+1].second){
+                                            sourceList.forEach { source ->
+                                                if (source.listIndex == indexList[index + 1].second) {
                                                     Text(
                                                         "[${source.orderAdded}]",
                                                         color = MaterialTheme.colorScheme.tertiary,
-                                                        modifier = Modifier.clickable{
+                                                        modifier = Modifier.clickable {
                                                             coroutineScope.launch {
-                                                                listState.scrollToItem(index = indexList.size-1, scrollOffset = 1000)
+                                                                listState.scrollToItem(
+                                                                    index = indexList.size - 1,
+                                                                    scrollOffset = 1000
+                                                                )
                                                             }
                                                         }
                                                     )
@@ -472,6 +603,8 @@ fun EncyclopediaDetailScreen(
                                     }
                                 }
                             }
+                        }
+
                     }
 
 
@@ -479,12 +612,35 @@ fun EncyclopediaDetailScreen(
             }
         }
 
-        is EncyclopediaDetailViewModel.UiState.Error ->{
-            ErrorScreenPlaceholder(
-                onClick = {
-                    speciesDetailViewModel.getSpeciesDetailed()
+
+        is EncyclopediaDetailViewModel.UiState.Error -> {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {},
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.AutoMirrored.Default.ArrowBack, null)
+                            }
+                        }
+                    )
                 }
-            )
+            ) {
+                innerPadding ->
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(containerColor)
+                    .padding(innerPadding)) {
+                    Row(modifier = Modifier.align(Alignment.Center)) {
+                        ErrorScreenPlaceholder(
+                            onClick = {
+                                speciesDetailViewModel.getSpeciesDetailed()
+                            }
+                        )
+                    }
+                }
+            }
+
         }
     }
 }

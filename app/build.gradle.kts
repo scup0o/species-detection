@@ -1,3 +1,5 @@
+import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -21,6 +23,20 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Đọc properties từ local.properties
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(FileInputStream(localPropertiesFile))
+        }
+
+        //manifestPlaceholders["MAPS_API_KEY"] = "\"${localProperties.getProperty("MAPS_API_KEY")}\""
+
+        // Tạo các trường trong BuildConfig
+        buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"${localProperties.getProperty("CLOUDINARY_CLOUD_NAME")}\"")
+        buildConfigField("String", "CLOUDINARY_UPLOAD_PRESET", "\"${localProperties.getProperty("CLOUDINARY_UPLOAD_PRESET")}\"")
+        //buildConfigField("String", "MAPS_API_KEY", "\"${localProperties.getProperty("MAPS_API_KEY")}\"")
     }
 
     buildTypes {
@@ -46,6 +62,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     // Ngăn không nén file TFLite
@@ -88,6 +105,7 @@ dependencies {
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.auth.ktx)
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     //Glide
     implementation(libs.glide)
@@ -133,6 +151,24 @@ dependencies {
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    // THÊM THƯ VIỆN CHO OPENSTREETMAP:
+    // Thư viện chính để hiển thị bản đồ OSM
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+    // Thư viện để tích hợp osmdroid với Jetpack Compose
+    //implementation("com.github.utsman:osmandcompose:0.2.2")
+    //implementation("com.github.krizzu:compose-maps-osmdroid:2.1.0")
+    //implementation("org.osmdroid:osmdroid-compose:1.0.0-alpha02")
+
+    /*implementation("com.google.maps.android:maps-compose:4.3.3") // Kiểm tra phiên bản mới nhất
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.libraries.places:places:3.4.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")*/
+
+    implementation ("com.google.android.gms:play-services-location:21.0.1")
+
+
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.34.0")
 
     configurations.all {
         exclude(group = "com.google.ai.edge.litert", module = "litert-api")

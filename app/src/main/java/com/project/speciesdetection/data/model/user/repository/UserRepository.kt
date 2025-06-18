@@ -11,7 +11,12 @@ interface UserRepository {
     suspend fun signUpWithEmailPassword(email: String, pass: String, name: String): Result<FirebaseUser>
     suspend fun signInWithEmailPassword(email: String, pass: String): Result<FirebaseUser>
     fun getCurrentUser(): FirebaseUser?
+
+    suspend fun getUserInformation(uid : String): User?
+
     suspend fun signOut()
     suspend fun sendPasswordResetEmail(email: String): Result<Unit>
     suspend fun resendVerificationEmail(): Result<Unit>
+    fun addCurrentUserFcmToken(userId: String, token: String)
+    fun removeCurrentUserFcmToken(userId: String, token: String, onComplete: () -> Unit)
 }

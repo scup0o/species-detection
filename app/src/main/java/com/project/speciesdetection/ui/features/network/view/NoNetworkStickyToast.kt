@@ -1,6 +1,12 @@
 package com.project.speciesdetection.ui.features.network.view
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.expandIn
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +31,9 @@ import com.project.speciesdetection.ui.features.network.viewmodel.NetworkViewMod
 
 @Composable
 fun NoNetworkStickyToast(
-    networkViewModel: NetworkViewModel = hiltViewModel()
+    networkViewModel: NetworkViewModel = hiltViewModel(),
+    enter: EnterTransition = fadeIn() + expandIn(),
+    exit: ExitTransition = shrinkOut() + fadeOut(),
 ) {
     val networkStatus by networkViewModel.networkStatus.collectAsStateWithLifecycle()
 

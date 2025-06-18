@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.features.auth.view
 
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background

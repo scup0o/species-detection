@@ -5,8 +5,12 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ListenerRegistration
+import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
 // import androidx.lifecycle.viewmodel.compose.viewModel // Không cần import này trong ViewModel
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
+import com.project.speciesdetection.data.model.user.repository.UserRepository
 import com.project.speciesdetection.domain.usecase.species.GetLocalizedSpeciesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,8 +31,10 @@ data class SourceInfoItem(
 
 @HiltViewModel
 class EncyclopediaDetailViewModel @Inject constructor(
+    private val observationRepository : ObservationRepository,
     private val savedStateHandle: SavedStateHandle,
     private val getLocalizedSpeciesUseCase: GetLocalizedSpeciesUseCase,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     sealed class UiState {
@@ -40,6 +46,10 @@ class EncyclopediaDetailViewModel @Inject constructor(
     // Biến Json nên là private hoặc internal nếu không cần truy cập từ bên ngoài
     private val json = Json { ignoreUnknownKeys = true }
 
+    private val _speciesDateFound = MutableStateFlow<Timestamp?>(null) // Map để lưu trữ dateFound theo speciesId
+    val speciesDateFound: StateFlow<Timestamp?> = _speciesDateFound.asStateFlow()
+
+
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
@@ -49,6 +59,7 @@ class EncyclopediaDetailViewModel @Inject constructor(
 
     // Biến đếm để theo dõi thứ tự thêm vào
     private var sourceOrderCounter = 0 // Bắt đầu từ 0 hoặc 1 tùy bạn muốn
+    private var observationListener: ListenerRegistration? = null
 
     init {
         getSpeciesDetailed()
@@ -78,10 +89,19 @@ class EncyclopediaDetailViewModel @Inject constructor(
                 if (detailedSpecies != null) {
                     _uiState.value = UiState.Success(
                         detailedSpecies.copy(
-                            localizedClass = baseSpecies.localizedClass
+                            localizedClass = baseSpecies.localizedClass,
+                            //haveObservation = baseSpecies.haveObservation,
+                            //firstFound = baseSpecies.firstFound
                             // Bạn có thể muốn copy thêm các trường khác từ baseSpecies nếu cần
                         )
                     )
+
+                    val currentUser = userRepository.getCurrentUser()
+                    if (currentUser!=null){
+                        observeDateFoundForUidAndSpecies(detailedSpecies.id, currentUser.uid)
+                    }
+
+
                     // Reset bộ đếm và sourceList trước khi thêm mới (nếu hàm này có thể được gọi lại)
                     sourceOrderCounter = 0
                     _sourceList.value = emptyList() // Xóa danh sách cũ
@@ -96,52 +116,99 @@ class EncyclopediaDetailViewModel @Inject constructor(
         }
     }
 
+    fun observeDateFoundForUidAndSpecies(speciesId: String, uid : String) {
+        if (uid.isNotEmpty())
+            viewModelScope.launch {
+            }
+            viewModelScope.launch {
+                observationListener?.remove()
+
+                // Bắt đầu lắng nghe và lưu lại listener registration
+                observationListener =
+                observationRepository.checkUserObservationState(uid,speciesId) { dateFound ->
+
+                        Log.i("obs", dateFound.toString())
+                        _speciesDateFound.value = dateFound
+
+                }
+            }
+
+    }
+
     fun addInfoPairsToSourceList() {
         val currentState = _uiState.value
 
         if (currentState is UiState.Success) {
             val species = currentState.species
-            // Không cần newPairsToAdd tạm thời nữa, chúng ta sẽ cập nhật _sourceList trực tiếp
-            // hoặc tạo danh sách mới mỗi lần processList để giữ thứ tự.
-            // Cách an toàn hơn là tạo một list tạm thời rồi update _sourceList một lần.
             val newSourceItems = mutableListOf<SourceInfoItem>()
 
-            // Hàm processList giờ sẽ tạo SourceInfoItem
             fun processList(list: List<String>, listNameForLog: Int) {
                 if (list.size >= 2) {
-                    val secondLastItem = list[list.size - 2]
-                    val lastItem = list[list.size - 1]
-                    sourceOrderCounter++ // Tăng bộ đếm thứ tự
-                    val newItem = SourceInfoItem(
-                        firstValue = secondLastItem,
-                        secondValue = lastItem,
-                        listIndex = listNameForLog,
-                        orderAdded = sourceOrderCounter // Gán số thứ tự hiện tại
-                    )
-                    newSourceItems.add(newItem)
-                    Log.d("AddInfoPairs", "Prepared item for $listNameForLog: $newItem")
+                    // Duyệt ngược từ phần tử gần cuối (list.size - 2) đến index = 1
+                    for (i in list.size - 2 downTo 1 step 2) {
+                        val first = list.getOrNull(i)
+                        val second = list.getOrNull(i + 1)
+
+                        if (first != null && second != null) {
+                            sourceOrderCounter++
+                            val newItem = SourceInfoItem(
+                                firstValue = first,
+                                secondValue = second,
+                                listIndex = listNameForLog,
+                                orderAdded = sourceOrderCounter
+                            )
+                            newSourceItems.add(newItem)
+                            Log.d("AddInfoPairs", "Prepared item for $listNameForLog: $newItem")
+                        }
+                    }
                 } else {
-                    Log.w("AddInfoPairs", "$listNameForLog does not have at least 2 elements. Size: ${list.size}")
+                    Log.w("AddInfoPairs", "$listNameForLog does not have enough elements. Size: ${list.size}")
                 }
             }
 
-            // Thứ tự gọi processList sẽ quyết định `orderAdded`
             processList(species.localizedSummary, 0)
             processList(species.localizedPhysical, 2)
             processList(species.localizedDistribution, 3)
             processList(species.localizedHabitat, 4)
             processList(species.localizedBehavior, 5)
-            // Thêm các danh sách khác nếu cần
 
             if (newSourceItems.isNotEmpty()) {
-                // Cập nhật _sourceList với tất cả các item mới đã thu thập
                 _sourceList.update { currentList ->
-                    currentList + newSourceItems // Nối danh sách item mới vào danh sách hiện tại
+                    currentList + newSourceItems
                 }
-                Log.i("AddInfoPairs", "Updated _sourceList with ${newSourceItems.size} new items. Total size: ${(_sourceList.value).size}")
+                Log.i("AddInfoPairs", "Updated _sourceList with ${newSourceItems.size} new items. Total size: ${_sourceList.value.size}")
             } else {
                 Log.i("AddInfoPairs", "No new items to add to _sourceList.")
             }
         }
     }
+
+    fun updateSaveStated(imageUri : Uri?){
+        val currentState = _uiState.value
+        if (currentState is UiState.Success)
+        {
+            savedStateHandle["speciesId"] = currentState.species.id
+            savedStateHandle["speciesName"] = currentState.species.localizedName
+            savedStateHandle["speciesSN"] = currentState.species.getScientificName()
+            savedStateHandle["imageUri"] = imageUri
+        }
+
+    }
+
+    fun clearObservationState(){
+        _speciesDateFound.value = null
+    }
+
+    override fun onCleared() {
+        super.onCleared() // Luôn gọi super.onCleared()
+
+        // 3. Gỡ bỏ listener để tránh memory leak.
+        // Kiểm tra null để đảm bảo an toàn.
+        observationListener?.remove()
+
+        // Log để xác nhận việc dọn dẹp đã xảy ra
+        Log.d("ViewModelLifecycle", "SpeciesDetailViewModel cleared and listener removed.")
+    }
+
+
 }

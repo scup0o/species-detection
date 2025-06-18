@@ -2,6 +2,7 @@ package com.project.speciesdetection.core.services.remote_database
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.project.speciesdetection.core.services.remote_database.observation.FirestoreObservationService
 import com.project.speciesdetection.core.services.remote_database.species_class.FirestoreSpeciesClassService
 import com.project.speciesdetection.core.services.remote_database.species.FirestoreSpeciesService
 import com.project.speciesdetection.data.model.species.Species
@@ -32,4 +33,10 @@ abstract class DatabaseServiceModule {
         speciesClassService: FirestoreSpeciesClassService
     ): SpeciesClassDatabaseService<SpeciesClass, String>
 
+    @Binds
+    @Singleton
+    @Named("observation_db")
+    abstract fun bindObservationDatabaseService(
+        observationService: FirestoreObservationService
+    ): ObservationDatabaseService
 }
