@@ -133,4 +133,12 @@ sealed class AppScreen(
             return "species_observation_main_screen/${species.id}&${species.localizedName}"
         }
     }
+
+    object ObservationDetailScreen:AppScreen(
+        route = "observation_detail/{observationId}"
+    ){
+        fun createRoute(observationId : String) : String{
+            return "observation_detail/${observationId}"
+        }
+    }
 }

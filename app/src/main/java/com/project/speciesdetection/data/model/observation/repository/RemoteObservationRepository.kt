@@ -3,12 +3,14 @@ package com.project.speciesdetection.data.model.observation.repository
 import android.net.Uri
 import android.nfc.tech.MifareUltralight.PAGE_SIZE
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.GeoPoint
 import com.google.firebase.firestore.ListenerRegistration
@@ -18,6 +20,7 @@ import com.project.speciesdetection.core.services.map.GeocodingService
 import com.project.speciesdetection.core.services.remote_database.ObservationDatabaseService
 import com.project.speciesdetection.core.services.remote_database.observation.ObservationPagingSource
 import com.project.speciesdetection.core.services.storage.StorageService
+import com.project.speciesdetection.data.model.observation.Comment
 import com.project.speciesdetection.data.model.observation.Observation
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.user.User
@@ -27,6 +30,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -47,7 +51,8 @@ class RemoteObservationRepository @Inject constructor(
         privacy: String,
         location: GeoPoint?,
         dateFound: Timestamp?,
-        locationTempName : String
+        locationTempName : String,
+        speciesName : Map<String, String>,
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             // Tải tất cả ảnh lên song song
@@ -66,7 +71,8 @@ class RemoteObservationRepository @Inject constructor(
                 location = location,
                 dateFound = dateFound,
                 point = 0, // Mới tạo,
-                locationTempName =locationTempName
+                locationTempName =locationTempName,
+                speciesName = speciesName
             )
 
             databaseService.createObservation(newObservation).map { } // Convert Result<String> to Result<Unit>
@@ -90,6 +96,8 @@ class RemoteObservationRepository @Inject constructor(
         likeUserIds : List<String>,
         dislikeUserIds : List<String>,
         locationTempName : String,
+        speciesName : Map<String, String>,
+        baseObservation : Observation,
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             // Phân loại ảnh cũ và ảnh mới cần upload
@@ -108,6 +116,8 @@ class RemoteObservationRepository @Inject constructor(
             val observationToUpdate = Observation(
                 uid = user.uid,
                 id = observationId,
+                userName = user.name?:"",
+                userImage = user.photoUrl?:"",
                 speciesId = speciesId,
                 content = content,
                 imageURL = finalImageUrls,
@@ -120,6 +130,9 @@ class RemoteObservationRepository @Inject constructor(
                 likeUserIds = likeUserIds,
                 dislikeUserIds = dislikeUserIds,
                 locationTempName = locationTempName,
+                speciesName = speciesName,
+                saveUserIds = baseObservation.saveUserIds,
+
 
             )
 
@@ -294,5 +307,271 @@ class RemoteObservationRepository @Inject constructor(
 
         awaitClose { listener.remove() }
     }
+
+    override fun observeObservationWithComments(observationId: String, sortDescending: Boolean): Flow<Pair<Observation?, List<Comment>>> {
+        val observationFlow = databaseService.listenObservation(observationId)
+        val commentsFlow = databaseService.listenComments(observationId, sortDescending)
+
+        // Kết hợp 2 flow để trả về cả observation và comments cùng lúc
+        return combine(observationFlow, commentsFlow) { observation, comments ->
+            observation to comments
+        }
+    }
+
+    override fun observeObservationWithoutComments(observationId: String): Flow<Observation?> {
+        return databaseService.listenObservation(observationId)
+    }
+
+    override fun observeObservation(observationId: String): Flow<Observation?> {
+        return databaseService.listenObservation(observationId)
+    }
+
+    // 2. Tạo hàm mới để lắng nghe thay đổi của Comment collection
+    //    Hàm này sẽ trả về chính xác loại thay đổi (thêm/sửa/xóa)
+    override fun observeCommentUpdates(observationId: String): Flow<ListUpdate<Comment>> {
+        return databaseService.listenCommentChanges(observationId) // Giả sử bạn có hàm này trong service
+    }
+
+    override suspend fun postComment(
+        observationId: String,
+        comment: Comment
+    ): Result<Comment> = withContext(Dispatchers.IO) {
+        try {
+            // Validate nội dung
+            if (comment.content.isBlank() && comment.speciesId.isEmpty() && comment.imageUrl.isEmpty()) {
+                return@withContext Result.failure(IllegalArgumentException("Nội dung bình luận không được để trống"))
+            }
+
+            // Upload ảnh (nếu có)
+            val imageUrl = if (comment.imageUrl.isNotEmpty()) {
+                storageService.uploadImage(Uri.decode(comment.imageUrl).toUri()).getOrNull().toString()
+            } else ""
+
+            val commentToPost = comment.copy(
+                imageUrl = imageUrl,
+                timestamp = null,
+                updated = null
+            )
+
+            // Thêm comment vào Firestore
+            val documentRef = firestore.collection("observations")
+                .document(observationId)
+                .collection("comments")
+                .add(commentToPost)
+                .await()
+
+            // Tăng commentCount trong document của observation
+            firestore.collection("observations")
+                .document(observationId)
+                .update("commentCount", FieldValue.increment(1))
+                .await()
+
+
+            // Lấy comment vừa tạo, thêm ID
+            val savedComment = commentToPost.copy(id = documentRef.id)
+
+            Result.success(savedComment)
+
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+
+    override suspend fun deleteComment(observationId: String, commentId: String): Result<Unit> {
+        return try {
+            val commentRef = firestore.collection("observations")
+                .document(observationId)
+                .collection("comments")
+                .document(commentId)
+
+            commentRef.update("state", "deleted").await()
+
+            firestore.collection("observations")
+                .document(observationId)
+                .update("commentCount", FieldValue.increment(-1))
+                .await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun toggleLikeObservation(observationId: String, userId: String) {
+        val docRef = firestore.collection("observations").document(observationId)
+
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            val current = snapshot.toObject(Observation::class.java) ?: return@runTransaction
+
+            val likes = current.likeUserIds.toMutableList()
+            val dislikes = current.dislikeUserIds.toMutableList()
+
+            var point = current.point
+
+            val hasLiked = userId in likes
+            val hasDisliked = userId in dislikes
+
+            if (hasLiked) {
+                likes.remove(userId)
+                point -= 1
+            } else {
+                likes.add(userId)
+                point += 1
+                if (hasDisliked) {
+                    dislikes.remove(userId)
+                    point += 1 // undo previous -1 from dislike
+                }
+            }
+
+            transaction.update(docRef, mapOf(
+                "likeUserIds" to likes,
+                "dislikeUserIds" to dislikes,
+                "point" to point,
+                "dateUpdated" to Timestamp.now()
+            ))
+        }.await()
+    }
+
+    override suspend fun deleteObservation(observationId: String) {
+        val docRef = firestore.collection("observations").document(observationId)
+        docRef.update(mapOf("state" to "deleted", "dateUpdated" to Timestamp.now())).await()
+    }
+
+    override suspend fun toggleDislikeObservation(observationId: String, userId: String) {
+        val docRef = firestore.collection("observations").document(observationId)
+
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            val current = snapshot.toObject(Observation::class.java) ?: return@runTransaction
+
+            val likes = current.likeUserIds.toMutableList()
+            val dislikes = current.dislikeUserIds.toMutableList()
+
+            var point = current.point
+
+            val hasLiked = userId in likes
+            val hasDisliked = userId in dislikes
+
+            if (hasDisliked) {
+                dislikes.remove(userId)
+                point += 1
+            } else {
+                dislikes.add(userId)
+                point -= 1
+                if (hasLiked) {
+                    likes.remove(userId)
+                    point -= 1 // undo previous +1 from like
+                }
+            }
+
+            transaction.update(docRef, mapOf(
+                "likeUserIds" to likes,
+                "dislikeUserIds" to dislikes,
+                "point" to point,
+                "dateUpdated" to Timestamp.now()
+            ))
+        }.await()
+    }
+
+    override suspend fun toggleSaveObservation(observationId: String, userId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val docRef = firestore.collection("observations").document(observationId)
+            val snapshot = docRef.get().await()
+
+            val currentMap = snapshot.get("saveUserIds") as? Map<String, String> ?: emptyMap()
+            val newMap = if (currentMap.containsKey(userId)) {
+                currentMap - userId
+            } else {
+                currentMap + (userId to System.currentTimeMillis().toString())
+            }
+
+            docRef.update("saveUserIds", newMap).await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun toggleLikeComment(observationId: String, commentId: String, userId: String) {
+        // Đường dẫn tới document comment cụ thể
+        val docRef = firestore.collection("observations").document(observationId)
+            .collection("comments").document(commentId)
+
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            val currentComment = snapshot.toObject(Comment::class.java) ?: return@runTransaction
+
+            val likes = currentComment.likeUserIds.toMutableList()
+            val dislikes = currentComment.dislikeUserIds.toMutableList()
+            var point = currentComment.likeCount
+
+            val hasLiked = userId in likes
+            val hasDisliked = userId in dislikes
+
+            if (hasLiked) {
+                // Nếu đã thích -> bỏ thích
+                likes.remove(userId)
+                point -= 1
+            } else {
+                // Nếu chưa thích -> thêm thích
+                likes.add(userId)
+                point += 1
+                if (hasDisliked) {
+                    // Nếu đang không thích -> bỏ không thích
+                    dislikes.remove(userId)
+                    point += 1 // +1 cho việc bỏ không thích
+                }
+            }
+
+            // Cập nhật lại document
+            transaction.update(docRef, mapOf(
+                "likeUserIds" to likes,
+                "dislikeUserIds" to dislikes,
+                "likeCount" to point
+            ))
+        }.await() // Chờ transaction hoàn tất
+    }
+
+    override suspend fun toggleDislikeComment(observationId: String, commentId: String, userId: String) {
+        val docRef = firestore.collection("observations").document(observationId)
+            .collection("comments").document(commentId)
+
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            val currentComment = snapshot.toObject(Comment::class.java) ?: return@runTransaction
+
+            val likes = currentComment.likeUserIds.toMutableList()
+            val dislikes = currentComment.dislikeUserIds.toMutableList()
+            var point = currentComment.likeCount
+
+            val hasLiked = userId in likes
+            val hasDisliked = userId in dislikes
+
+            if (hasDisliked) {
+                // Nếu đã không thích -> bỏ không thích
+                dislikes.remove(userId)
+                point += 1
+            } else {
+                // Nếu chưa không thích -> thêm không thích
+                dislikes.add(userId)
+                point -= 1
+                if (hasLiked) {
+                    // Nếu đang thích -> bỏ thích
+                    likes.remove(userId)
+                    point -= 1 // -1 cho việc bỏ thích
+                }
+            }
+
+            transaction.update(docRef, mapOf(
+                "likeUserIds" to likes,
+                "dislikeUserIds" to dislikes,
+                "likeCount" to point
+            ))
+        }.await()
+    }
+
 
 }

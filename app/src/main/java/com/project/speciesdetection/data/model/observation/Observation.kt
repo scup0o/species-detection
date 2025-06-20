@@ -20,7 +20,7 @@ data class Observation(
 
     // Species Info
     var speciesId: String = "",
-    var speciesName: String = "",
+    var speciesName: Map<String, String> = emptyMap(),
     var speciesScientificName: String = "",
 
     val point: Int = 0,
@@ -35,6 +35,7 @@ data class Observation(
     val locationDisplayName : String ="",
     val likeUserIds : List<String> = emptyList(),
     val dislikeUserIds : List<String> = emptyList(),
+    val saveUserIds : Map<String, String> = emptyMap(),
 
     val state: String = "normal",
 

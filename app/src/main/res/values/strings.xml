@@ -123,9 +123,21 @@
     <string name="species_detail_record">Record Observation</string>
     <string name="species_detail_view_observation">View Observations</string>
 
-
-
-
+    <string name="noti_title_lock">Your account has been disabled</string>
+    <string name="noti_body_lock">Your account has been disabled for violated our community standard more than two times</string>
+    <string name="noti_title_warning">Your observation has been removed</string>
+    <string name="noti_body_warning">Your observation has been removed for violated our community standard</string>
+    <string name="noti_title_like_observation">Your observation has received a new like!</string>
+    <string name="noti_body_like_observation"> has liked </string>
+    <string name="noti_title_dislike_observation">Your observation has got a disagreement</string>
+    <string name="noti_body_dislike_observation"> has disagreed </string>
+    <string name="noti_title_comment" >Your observation has received a new comment!</string>
+    <string name="noti_body_comment"> has commented </string>
+    <string name="noti_title_like_comment">Your comment has received a new like!</string>
+    <string name="noti_body_like_comment"> has liked </string>
+    <string name="noti_title_dislike_comment">Your comment has got a disagreement</string>
+    <string name="noti_body_dislike_comment"> has disagreed </string>
+    <string name="noti_body_to_your_post" > to your observation </string>
 
 
 </resources>

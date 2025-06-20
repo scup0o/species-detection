@@ -130,6 +130,7 @@ class EncyclopediaMainScreenViewModel @Inject constructor(
 
     fun getSpeciesListState(speciesList: List<DisplayableSpecies>, uid : String){
         viewModelScope.launch {
+            _init.value = true
             clearObservationState()
             observationRepository.getObservationsStateForSpeciesList(speciesList, uid)
                 .forEach{ pair ->

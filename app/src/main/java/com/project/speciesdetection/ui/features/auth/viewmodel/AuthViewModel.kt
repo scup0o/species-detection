@@ -71,6 +71,11 @@ class AuthViewModel @Inject constructor(
     private var googleSignInApiRequest: GetCredentialRequest? = null
 
     init {
+        _authState.update {
+            it.copy(
+                isLoading = true
+            )
+        }
         checkCurrentUser()
         prepareGoogleSignInRequestObject()
     }
@@ -82,6 +87,7 @@ class AuthViewModel @Inject constructor(
                 val userInfo = repository.getUserInformation(currentUser.uid)
                 _authState.update {
                     it.copy(
+                        isLoading = false,
                         currentUser = currentUser,
                         currentUserInformation = userInfo
                     )
@@ -91,6 +97,7 @@ class AuthViewModel @Inject constructor(
                     signOut()
                     _authState.update {
                         it.copy(
+                            isLoading = false,
                             currentUser = null,
                             currentUserInformation = null,
                             error = "disabled"
@@ -111,6 +118,13 @@ class AuthViewModel @Inject constructor(
             val currentUser = repository.getCurrentUser()
             if (currentUser != null) {
                 reloadCurrentUser(currentUser)
+            }
+            else{
+                _authState.update {
+                    it.copy(
+                        isLoading = false,
+                    )
+                }
             }
 
         }

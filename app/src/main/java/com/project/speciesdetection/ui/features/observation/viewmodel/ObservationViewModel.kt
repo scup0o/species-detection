@@ -15,6 +15,7 @@ import com.project.speciesdetection.core.services.map.GeocodingService
 import com.project.speciesdetection.data.model.observation.Observation
 import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
 import com.project.speciesdetection.data.model.user.User
+import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -25,12 +26,13 @@ import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Named
 
 data class ObservationUiState(
     val isEditing: Boolean = false,
     val observationId: String? = null,
     val description: String = "",
-    val speciesName: String = "",
+    val speciesName: String ="",
     val speciesId: String = "",
     val speciesScientificName: String = "",
 
@@ -77,7 +79,8 @@ class ObservationViewModel @Inject constructor(
     private val repository: ObservationRepository,
     savedStateHandle: SavedStateHandle,
     @ApplicationContext private val context: Context,
-    private val geocodingService: GeocodingService
+    private val geocodingService: GeocodingService,
+    @Named("language_provider") languageProvider: LanguageProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ObservationUiState())
@@ -86,27 +89,39 @@ class ObservationViewModel @Inject constructor(
     private val _effect = MutableSharedFlow<ObservationEffect>()
     val effect = _effect.asSharedFlow()
 
+    private val currentLanguage = languageProvider.getCurrentLanguageCode()
+
+    private val _observationSelected = MutableStateFlow(Observation())
+    val observationSelected = _observationSelected.asStateFlow()
+
+    val observationJson: String? = savedStateHandle["observationJson"]
+    val observationFromNav = observationJson?.let {
+        try { Json.decodeFromString<Observation>(Uri.decode(it)) } catch (e: Exception) { null }
+    }
+
     init {
         initializeState(savedStateHandle)
+    }
+
+    fun selectedObservation(observation: Observation){
+        _observationSelected.value = observation
     }
 
     private fun initializeState(savedStateHandle: SavedStateHandle) {
         // Luôn reset cờ loading vị trí khi ViewModel được tạo
         _uiState.update { it.copy(isFetchingInitialLocation = true) }
 
-        val observationJson: String? = savedStateHandle["observationJson"]
-        val observationFromNav = observationJson?.let {
-            try { Json.decodeFromString<Observation>(Uri.decode(it)) } catch (e: Exception) { null }
-        }
+
 
         if (observationFromNav != null) {
             // Chế độ chỉnh sửa
+
             _uiState.update {
                 it.copy(
                     isEditing = true,
                     observationId = observationFromNav.id,
                     description = observationFromNav.content,
-                    speciesName = observationFromNav.speciesName,
+                    speciesName = observationFromNav.speciesName[currentLanguage]?:"",
                     speciesId = observationFromNav.speciesId,
                     speciesScientificName = observationFromNav.speciesScientificName,
                     location = observationFromNav.location,
@@ -130,7 +145,7 @@ class ObservationViewModel @Inject constructor(
             // Chế độ tạo mới
             val imageUri: Uri? = savedStateHandle.get<String>("imageUri")?.toUri()
             val speciesId: String? = savedStateHandle["speciesId"]
-            val speciesName: String? = savedStateHandle.get<String>("speciesName")?.let { Uri.decode(it) }
+            val speciesName: String = savedStateHandle.get<String>("speciesName")?.let { Uri.decode(it) }?:""
             val speciesScientificName: String? = savedStateHandle.get<String>("speciesSN")?.let { Uri.decode(it) }
 
             val initialImages = imageUri?.let { listOf(it) } ?: emptyList()
@@ -138,7 +153,7 @@ class ObservationViewModel @Inject constructor(
                 it.copy(
                     isEditing = false,
                     speciesId = speciesId ?: "",
-                    speciesName = speciesName ?: "",
+                    speciesName = speciesName?:"",
                     speciesScientificName = speciesScientificName ?: "",
                     images = initialImages,
                     dateFound = Timestamp.now(),
@@ -252,7 +267,9 @@ class ObservationViewModel @Inject constructor(
                     likeUserIds = currentState.likeUserIds,
                     dislikeUserIds = currentState.dislikeUserIds,
                     commentCount = currentState.commentCount,
-                    locationTempName = currentState.locationTempName
+                    locationTempName = currentState.locationTempName,
+                    speciesName = mapOf("default" to currentState.speciesName),
+                    baseObservation = observationFromNav?:Observation()
 
                 )
             } else {
@@ -269,7 +286,8 @@ class ObservationViewModel @Inject constructor(
                     privacy = currentState.privacy,
                     location = currentState.location,
                     dateFound = currentState.dateFound,
-                    locationTempName = currentState.locationTempName
+                    locationTempName = currentState.locationTempName,
+                    speciesName = mapOf("default" to currentState.speciesName)
                 )
             }
             result.onSuccess {
@@ -280,6 +298,7 @@ class ObservationViewModel @Inject constructor(
             }
         }
     }
+
 
     private fun formatDate(date: Date): String {
         val formatter = SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale.getDefault())

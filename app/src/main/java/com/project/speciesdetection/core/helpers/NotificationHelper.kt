@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.compose.ui.res.stringResource
 import androidx.core.app.NotificationCompat
 import com.project.speciesdetection.R
 import com.project.speciesdetection.app.MainActivity
@@ -44,14 +45,52 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
     fun showNotification(title: String, body: String, postId: String?) {
         val pendingIntent = createDeepLinkIntent(postId)
 
+        var newTitle = ""
+        var newBody =""
+        when (title){
+            "lock" -> {
+                newTitle = context.getString(R.string.noti_title_lock)
+                newBody = context.getString(R.string.noti_body_lock)
+            }
+            "warning" ->{
+                newTitle = context.getString(R.string.noti_title_warning)
+                newBody = context.getString(R.string.noti_body_warning) + " '${body}'"
+            }
+            "like_observation" -> {
+                val parts = body.split(" / ")
+                newTitle = context.getString(R.string.noti_title_like_observation)
+                newBody =  parts[0] +" " + context.getString(R.string.noti_body_like_observation) + " '${parts[1]}'"
+            }
+            "dislike_observation" -> {
+                val parts = body.split(" / ")
+                newTitle = context.getString(R.string.noti_title_dislike_observation)
+                newBody =  parts[0] +" "+ context.getString(R.string.noti_body_dislike_observation) + " '${parts[1]}'"
+            }
+            "comment" ->{
+                val parts = body.split(" / ")
+                newTitle = context.getString(R.string.noti_title_comment)
+                newBody =  parts[0] +" "+ context.getString(R.string.noti_body_comment) + " '${parts[1]}' " + context.getString(R.string.noti_body_to_your_post)
+            }
+            "like_comment" ->{
+                val parts = body.split(" / ")
+                newTitle = context.getString(R.string.noti_title_like_comment)
+                newBody =  parts[0] +" "+ context.getString(R.string.noti_body_like_comment) + " '${parts[1]}'"
+            }
+            "dislike_comment" ->{
+                val parts = body.split(" / ")
+                newTitle = context.getString(R.string.noti_title_dislike_comment)
+                newBody =  parts[0] +" "+ context.getString(R.string.noti_body_dislike_comment) + " '${parts[1]}'"
+            }
+        }
+
         val bigTextStyle = NotificationCompat.BigTextStyle()
-            .bigText(body)
+            .bigText(newBody)
 
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.logo) // *** THAY BẰNG ICON CỦA BẠN ***
-            .setContentTitle(title)
-            .setContentText(body)
+            .setContentTitle(newTitle)
+            .setContentText(newBody)
             .setStyle(bigTextStyle)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
@@ -76,4 +115,5 @@ class NotificationHelper @Inject constructor(@ApplicationContext private val con
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
+
 }

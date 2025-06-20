@@ -47,135 +47,138 @@ import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.auth.viewmodel.UiEvent
 import kotlinx.coroutines.flow.collectLatest
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun AuthScreen(
     navController: NavHostController,
+    authViewModel: AuthViewModel
 ) {
-    Scaffold(
-    ) {
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
         Box(modifier = Modifier.fillMaxSize()) {
-            GlideImage(
-                model = R.drawable.login_background,
-                contentDescription = null,
-                contentScale = ContentScale.Crop
-            )
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ){
+            if (authState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                GlideImage(
+                    model = R.drawable.login_background,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop
+                )
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(100.dp),
-                    modifier = Modifier.padding(20.dp).fillMaxWidth(),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    Column {
-                        Text(
-                            stringResource(R.string.get_started_title),
-                            style = MaterialTheme.typography.displaySmall.copy(
-                                color = Color.White,
-                                shadow = Shadow(
-                                    color = Color.Black,
-                                    offset = Offset(4f, 4f), // Độ lệch của bóng
-                                    blurRadius = 10f,          // Độ mờ của bóng
-                                ),
-                                fontWeight = FontWeight.Bold,
-                            )
-                        )
-                        Text(
-                            stringResource(R.string.get_started_text),
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = Color.White,
-                                shadow = Shadow(
-                                    color = Color.Black,
-                                    offset = Offset(4f, 4f), // Độ lệch của bóng
-                                    blurRadius = 10f,          // Độ mờ của bóng
-                                ),
-                            )
-                        )
-                    }
-
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        modifier = Modifier.fillMaxWidth()
-                    ){
-                        Button(
-                            onClick = {
-                                navController.popBackStack(
-                                    AppScreen.LoginScreen.route,
-                                    inclusive = true,
-                                    saveState = false
-                                )
-                                navController.navigate(AppScreen.LoginScreen.route) {
-                                    launchSingleTop = true
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.primary
-                            ),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier
-                                .graphicsLayer {
-                                    shadowElevation = 10.dp.toPx()
-                                    shape = RoundedCornerShape(10.dp)
-                                    clip = true
-                                    ambientShadowColor = Color.White // Màu của bóng (phát sáng)
-                                    spotShadowColor = Color.White
-                                }
-                        ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(100.dp),
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        Column {
                             Text(
-                                stringResource(R.string.get_started).uppercase(),
-                                modifier = Modifier
-                                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    /*shadow = Shadow(
+                                stringResource(R.string.get_started_title),
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    color = Color.White,
+                                    shadow = Shadow(
                                         color = Color.Black,
                                         offset = Offset(4f, 4f), // Độ lệch của bóng
-                                        blurRadius = 51f,          // Độ mờ của bóng
-                                    ),*/
+                                        blurRadius = 10f,          // Độ mờ của bóng
+                                    ),
+                                    fontWeight = FontWeight.Bold,
                                 )
                             )
-                            Icon(
-                                Icons.AutoMirrored.Default.ArrowForward, null
+                            Text(
+                                stringResource(R.string.get_started_text),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    color = Color.White,
+                                    shadow = Shadow(
+                                        color = Color.Black,
+                                        offset = Offset(4f, 4f), // Độ lệch của bóng
+                                        blurRadius = 10f,          // Độ mờ của bóng
+                                    ),
+                                )
                             )
                         }
 
-                        /*
-                        Text(
-                            stringResource(R.string.login_divider)
-                        )
 
-                        Button(
-                            onClick = {
-                                navController.popBackStack(
-                                    AppScreen.SignUpScreen.route,
-                                    inclusive = true,
-                                    saveState = false
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Button(
+                                onClick = {
+                                    navController.popBackStack(
+                                        AppScreen.LoginScreen.route,
+                                        inclusive = true,
+                                        saveState = false
+                                    )
+                                    navController.navigate(AppScreen.LoginScreen.route) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .graphicsLayer {
+                                        shadowElevation = 10.dp.toPx()
+                                        shape = RoundedCornerShape(10.dp)
+                                        clip = true
+                                        ambientShadowColor = Color.White // Màu của bóng (phát sáng)
+                                        spotShadowColor = Color.White
+                                    }
+                            ) {
+                                Text(
+                                    stringResource(R.string.get_started).uppercase(),
+                                    modifier = Modifier
+                                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        /*shadow = Shadow(
+                                            color = Color.Black,
+                                            offset = Offset(4f, 4f), // Độ lệch của bóng
+                                            blurRadius = 51f,          // Độ mờ của bóng
+                                        ),*/
+                                    )
                                 )
-                                navController.navigate(AppScreen.SignUpScreen.route) {
-                                    launchSingleTop = true
-                                }
+                                Icon(
+                                    Icons.AutoMirrored.Default.ArrowForward, null
+                                )
                             }
-                        ) { Text("SignUp") }*/
+
+                            /*
+                            Text(
+                                stringResource(R.string.login_divider)
+                            )
+
+                            Button(
+                                onClick = {
+                                    navController.popBackStack(
+                                        AppScreen.SignUpScreen.route,
+                                        inclusive = true,
+                                        saveState = false
+                                    )
+                                    navController.navigate(AppScreen.SignUpScreen.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+                            ) { Text("SignUp") }*/
+                        }
                     }
-                }
+                    Spacer(modifier = Modifier.height(100.dp))
 
 
-                Row(
-                ) {
-                    BottomNavigationBar(navController)
                 }
             }
 
-
-
-
+            Row(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)
+            ) {
+                BottomNavigationBar(navController)
+            }
 
 
         }
-    }
 }

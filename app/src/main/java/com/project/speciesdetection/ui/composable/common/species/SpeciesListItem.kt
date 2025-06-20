@@ -38,7 +38,8 @@ import com.project.speciesdetection.data.model.species.DisplayableSpecies
 fun SpeciesListItem(
     species: DisplayableSpecies,
     observationState : Boolean = false,
-    onClick : () -> Unit
+    onClick : () -> Unit,
+    showObservationState : Boolean = true,
     ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -101,11 +102,13 @@ fun SpeciesListItem(
                     color = MaterialTheme.colorScheme.outline
                 )
             }
-            Image(
-                painter = if (observationState) painterResource(R.drawable.butterfly_net) else painterResource(R.drawable.butterfly_net_disabeld),
-                contentDescription = null,
-                modifier = Modifier.size(45.dp).padding(horizontal = 5.dp)
-            )
+            if (showObservationState){
+                Image(
+                    painter = if (observationState) painterResource(R.drawable.butterfly_net) else painterResource(R.drawable.butterfly_net_disabeld),
+                    contentDescription = null,
+                    modifier = Modifier.size(45.dp).padding(horizontal = 5.dp)
+                )
+            }
         }
     }
 }

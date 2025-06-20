@@ -8,10 +8,15 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.project.speciesdetection.core.services.remote_database.ObservationDatabaseService
+import com.project.speciesdetection.data.model.observation.Comment
 import com.project.speciesdetection.data.model.observation.Observation
+import com.project.speciesdetection.data.model.observation.repository.ListUpdate
 import com.project.speciesdetection.data.model.observation.repository.ObservationChange
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -24,7 +29,19 @@ class FirestoreObservationService @Inject constructor(
 
     override suspend fun createObservation(observation: Observation): Result<String> {
         return try {
-            val documentReference = observationCollection.add(observation).await()
+            // Lấy speciesName từ collection "species"
+            val speciesSnapshot = FirebaseFirestore.getInstance()
+                .collection("species")
+                .document(observation.speciesId)
+                .get()
+                .await()
+
+            val speciesNameMap = speciesSnapshot.get("name") as? Map<String, String>
+            val updatedObservation = observation.copy(
+                speciesName = speciesNameMap ?: observation.speciesName
+            )
+
+            val documentReference = observationCollection.add(updatedObservation).await()
             Result.success(documentReference.id)
         } catch (e: Exception) {
             Result.failure(e)
@@ -34,7 +51,23 @@ class FirestoreObservationService @Inject constructor(
     override suspend fun updateObservation(observation: Observation): Result<Unit> {
         return try {
             requireNotNull(observation.id) { "Observation ID cannot be null for an update." }
-            observationCollection.document(observation.id!!).set(observation, SetOptions.merge()).await()
+
+            val speciesSnapshot = FirebaseFirestore.getInstance()
+                .collection("species")
+                .document(observation.speciesId)
+                .get()
+                .await()
+
+            val speciesNameMap = speciesSnapshot.get("name") as? Map<String, String>
+            val updatedObservation = observation.copy(
+                speciesName = speciesNameMap ?: observation.speciesName
+            )
+
+            observationCollection
+                .document(observation.id!!)
+                .set(updatedObservation, SetOptions.merge())
+                .await()
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -129,5 +162,99 @@ class FirestoreObservationService @Inject constructor(
                 }
             }
         }
+    }
+
+    override fun listenObservation(observationId: String): Flow<Observation?> = callbackFlow {
+        val docRef = firestore.collection("observations").document(observationId)
+
+        val listenerRegistration = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.e("FirestoreService", "Observation listen failed", error)
+                trySend(null)
+                return@addSnapshotListener
+            }
+            if (snapshot != null && snapshot.exists()) {
+                val observation = snapshot.toObject(Observation::class.java)
+                trySend(observation)
+            } else {
+                trySend(null)
+            }
+        }
+
+        awaitClose{ listenerRegistration.remove() }
+    }
+
+    override fun listenComments(
+        observationId: String,
+        sortDescending: Boolean // Mặc định là tăng dần
+    ): Flow<List<Comment>> = callbackFlow {
+        val commentsRef = firestore.collection("observations")
+            .document(observationId)
+            .collection("comments")
+            .whereEqualTo("state", "normal")
+            .orderBy("timestamp", if (sortDescending) Query.Direction.DESCENDING else Query.Direction.ASCENDING)
+
+        val listenerRegistration = commentsRef.addSnapshotListener { snapshots, error ->
+            if (error != null) {
+                Log.e("FirestoreService", "Comments listen failed", error)
+                trySend(emptyList())
+                return@addSnapshotListener
+            }
+
+            val comments = snapshots?.toObjects(Comment::class.java) ?: emptyList()
+            trySend(comments)
+        }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    override fun listenCommentChanges(observationId: String): Flow<ListUpdate<Comment>> = callbackFlow {
+        if (observationId.isEmpty()) {
+            close(IllegalArgumentException("Observation ID cannot be empty."))
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("observations").document(observationId)
+            .collection("comments")
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    // Đóng flow và báo lỗi
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots == null) return@addSnapshotListener
+
+                for (change in snapshots.documentChanges) {
+                    // Cố gắng parse document thành object Comment
+                    val comment = try {
+                        change.document.toObject(Comment::class.java).copy(id = change.document.id)
+                    } catch (e: Exception) {
+                        Log.e("FirestoreService", "Failed to parse comment document", e)
+                        continue // Bỏ qua document bị lỗi và xử lý cái tiếp theo
+                    }
+                    if (comment.state != "normal") {
+                        // Gửi đi sự kiện "Removed" nếu state != "normal"
+                        trySend(ListUpdate.Removed(comment))
+                    } else {
+                    when (change.type) {
+                        DocumentChange.Type.ADDED -> {
+                            // Gửi đi sự kiện "Added"
+                            trySend(ListUpdate.Added(comment))
+                        }
+                        DocumentChange.Type.MODIFIED -> {
+                            // Gửi đi sự kiện "Modified"
+                            trySend(ListUpdate.Modified(comment))
+                        }
+                        DocumentChange.Type.REMOVED -> {
+                            // Gửi đi sự kiện "Removed"
+                            trySend(ListUpdate.Removed(comment))
+                        }
+                    }}
+                }
+            }
+
+        // Khi flow bị hủy (ViewModel bị onCleared), gỡ bỏ listener
+        awaitClose { listener.remove() }
     }
 }

@@ -315,6 +315,9 @@ fun SpeciesObservationMainScreen(
                         ObservationItem(
                             observation = newObservation,
                             onclick = {
+                                navController.navigate(
+                                    AppScreen.ObservationDetailScreen.createRoute(newObservation.id?:"")
+                                )
                             }
                         )
                     }
@@ -371,7 +374,7 @@ fun ObservationList(
                     observation = newObservation,
                     onclick = {
                         navController.navigate(
-                            AppScreen.UpdateObservationScreen.buildRouteForEdit(newObservation)
+                            AppScreen.ObservationDetailScreen.createRoute(newObservation.id?:"")
                         )
                     }
                 )
@@ -395,9 +398,7 @@ fun ObservationList(
                             observation = finalObservation,
                             onclick = {
                                 navController.navigate(
-                                    AppScreen.UpdateObservationScreen.buildRouteForEdit(
-                                        finalObservation
-                                    )
+                                    AppScreen.ObservationDetailScreen.createRoute(finalObservation.id?:"")
                                 )
                             }
                         )

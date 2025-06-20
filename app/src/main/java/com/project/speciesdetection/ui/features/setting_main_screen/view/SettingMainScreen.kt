@@ -1,6 +1,9 @@
 package com.project.speciesdetection.ui.features.setting_main_screen.view
 
+import android.app.Activity
+import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -30,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.project.speciesdetection.R
+import com.project.speciesdetection.app.MainActivity
 import com.project.speciesdetection.core.navigation.BottomNavigationBar
 import com.project.speciesdetection.ui.composable.common.setting.SettingItem
 import com.project.speciesdetection.ui.features.auth.view.LogoutButton
@@ -48,10 +52,22 @@ fun SettingMainScreen(
     val context = LocalContext.current
 
     val showLanguagePicker by settingViewModel.showLanguagePicker.collectAsStateWithLifecycle()
+    var resetState = false
+    /*BackHandler(enabled = true) { // Luôn bật để bắt sự kiện
+        if (resetState) {
+            val intent = Intent(context, MainActivity::class.java) // Hoặc (context as Activity).javaClass
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            (context as? Activity)?.startActivity(intent)
+            (context as? Activity)?.finishAffinity()
+        } else {
+            navController.popBackStack()
+        }
+    }*/
 
     if (showLanguagePicker)
         LanguagePickerDialog(
-            viewModel = settingViewModel
+            viewModel = settingViewModel,
+            onBackPressed = {resetState = it}
         )
 
     Scaffold(
@@ -62,7 +78,14 @@ fun SettingMainScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = {navController.popBackStack()}
+                        onClick = {if (resetState) {
+                            val intent = Intent(context, MainActivity::class.java) // Hoặc (context as Activity).javaClass
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            (context as? Activity)?.startActivity(intent)
+                            (context as? Activity)?.finishAffinity()
+                        } else {
+                            navController.popBackStack()
+                        }}
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,

@@ -9,6 +9,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.project.speciesdetection.core.services.backend.message.MessageApiService
 import com.project.speciesdetection.core.services.backend.species.SpeciesApiService
 import com.project.speciesdetection.domain.provider.image_classifier.EnetB0ImageClassifier
 import com.project.speciesdetection.domain.provider.image_classifier.EnetLite0ImageClassifier
@@ -133,6 +134,12 @@ object NetworkModule {
     @Singleton
     fun provideSpeciesApiService(retrofit: Retrofit): SpeciesApiService {
         return retrofit.create(SpeciesApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMessageApiService(retrofit: Retrofit): MessageApiService {
+        return retrofit.create(MessageApiService::class.java)
     }
 
     @Provides

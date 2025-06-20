@@ -3,6 +3,8 @@ package com.project.speciesdetection.ui.features.community_main_screen.view
 import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -12,9 +14,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.google.firebase.messaging.FirebaseMessaging
@@ -43,7 +47,7 @@ fun CommunityFeed(
     }
 
     if (authState.currentUserInformation==null){
-        AuthScreen(navController)
+        AuthScreen(navController, authViewModel)
     }
     else{
 
@@ -66,21 +70,28 @@ fun CommunityFeed(
         Log.i("check check", authState.currentUserInformation.toString())
         Scaffold(
             containerColor = containerColor!!,
-            bottomBar = {BottomNavigationBar(navController)}
         ){
                 innerPadding ->
-            Column {Text(
-                modifier = Modifier.padding(innerPadding),
-                text="community")
-                Button(
+            Box(modifier = Modifier.fillMaxSize()){
+                Column {Text(
                     modifier = Modifier.padding(innerPadding),
-                    onClick={viewModel.updateSearchQuery(true)},
-                ){
-                    Text("open")
+                    text="community")
+                    Button(
+                        modifier = Modifier.padding(innerPadding),
+                        onClick={viewModel.updateSearchQuery(true)},
+                    ){
+                        Text("open")
+                    }
+                    if (open){
+                        Text("a")
+                    }  }
+                Row(
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)
+                ) {
+                    BottomNavigationBar(navController)
                 }
-                if (open){
-                    Text("a")
-                }  }
+            }
+
 
         }
     }

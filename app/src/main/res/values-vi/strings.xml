@@ -122,4 +122,28 @@
     <string name="species_detail_record">Tạo Bản ghi</string>
     <string name="species_detail_view_observation">Xem các Bản ghi</string>
 
+    <string name="noti_title_lock">Tài khoản của bạn đã bị vô hiệu hóa</string>
+    <string name="noti_body_lock">Tài khoản của bạn đã bị vô hiệu hóa vì vi phạm tiêu chuẩn cộng đồng của chúng tôi hơn hai lần</string>
+
+    <string name="noti_title_warning">Bài viết của bạn đã bị xóa</string>
+    <string name="noti_body_warning">Bài viết của bạn đã bị xóa vì vi phạm tiêu chuẩn cộng đồng của chúng tôi</string>
+
+    <string name="noti_title_like_observation">Bài viết của bạn đã nhận được một lượt thích mới!</string>
+    <string name="noti_body_like_observation"> đã thích </string>
+
+    <string name="noti_title_dislike_observation">Bài viết của bạn đã nhận được một lượt phản đối</string>
+    <string name="noti_body_dislike_observation"> đã phản đối </string>
+
+    <string name="noti_title_comment">Bài viết của bạn đã nhận được một bình luận mới!</string>
+    <string name="noti_body_comment"> đã bình luận </string>
+
+    <string name="noti_title_like_comment">Bình luận của bạn đã nhận được một lượt thích mới!</string>
+    <string name="noti_body_like_comment"> đã thích </string>
+
+    <string name="noti_title_dislike_comment">Bình luận của bạn đã nhận được một lượt phản đối</string>
+    <string name="noti_body_dislike_comment"> đã phản đối </string>
+
+    <string name="noti_body_to_your_post"> vào bài viết của bạn </string>
+
+
 </resources>

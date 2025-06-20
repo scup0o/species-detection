@@ -30,10 +30,12 @@ import com.project.speciesdetection.ui.features.auth.view.SignupScreen
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view.EncyclopediaDetailScreen
 import com.project.speciesdetection.ui.features.observation.view.UpdateObservation
+import com.project.speciesdetection.ui.features.observation.view.detail.ObservationDetailView
 import com.project.speciesdetection.ui.features.observation.view.map.MapPickerScreen
 import com.project.speciesdetection.ui.features.observation.view.species_observation.SpeciesObservationMainScreen
 import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationEvent
 import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationViewModel
+import com.project.speciesdetection.ui.features.observation.viewmodel.detail.ObservationDetailViewModel
 import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
 
 @Composable
@@ -302,6 +304,26 @@ fun AppNavigation(
                             address = address
                         ))
                 }
+            )
+        }
+
+        composable(
+            route = AppScreen.ObservationDetailScreen.route,
+            arguments = listOf(
+                navArgument("observationId"){
+                    type = NavType.StringType;
+                    nullable = false
+                }
+            )
+        ){backStackEntry ->
+            val observationViewModel : ObservationDetailViewModel = hiltViewModel()
+            val observationId = backStackEntry.arguments?.getString("observationId")
+            ObservationDetailView(
+
+                navController,
+                observationId,
+                observationViewModel,
+                authViewModel = authViewModel
             )
         }
 

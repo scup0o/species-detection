@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -36,70 +37,56 @@ fun ExpandableText(
     collapsedMaxLines: Int = DEFAULT_COLLAPSED_LINES,
     seeMoreColor: Color = MaterialTheme.colorScheme.primary
 ) {
-    // State để theo dõi trạng thái mở rộng/thu gọn
     var isExpanded by remember { mutableStateOf(false) }
-    // State để theo dõi xem văn bản có thực sự dài hơn số dòng cho phép không
-    var isOverflowing by remember { mutableStateOf(false) }
-    // State để lưu trữ văn bản sẽ được hiển thị (đã cắt hoặc đầy đủ)
-    val textToShow = remember(isExpanded, isOverflowing) {
-        buildAnnotatedString {
-            if (isExpanded) {
-                // Nếu mở rộng, hiển thị toàn bộ văn bản
-                append(text)
-                // Và thêm nút "Thu gọn"
-                withStyle(
-                    style = SpanStyle(
-                        color = seeMoreColor,
-                        fontWeight = FontWeight.Bold
-                    )
-                ) {
-                    append(SEE_LESS_TEXT)
+    var hasOverflow by remember { mutableStateOf(false) }
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    val seeMore = " ...See More"
+    val seeLess = " See Less"
+
+    val annotatedText = buildAnnotatedString {
+        if (isExpanded) {
+            append(text)
+            withStyle(style = SpanStyle(color = seeMoreColor, fontWeight = FontWeight.Bold)) {
+                append(seeLess)
+            }
+        } else {
+            // Chỉ thêm "See More" nếu thực sự bị tràn
+            if (hasOverflow) {
+                // Lấy vị trí cắt của dấu "..."
+                val lastCharIndex = textLayoutResult?.getLineEnd(collapsedMaxLines - 1) ?: 0
+                // Cắt văn bản gốc để chừa chỗ cho "... See More"
+                // Cần tính toán cẩn thận để không bị cắt mất chữ
+                val adjustedText = text.take(lastCharIndex)
+                    .dropLast(seeMore.length) // Bỏ bớt ký tự để chừa chỗ
+                    .dropLastWhile { it.isWhitespace() }
+
+                append(adjustedText)
+                withStyle(style = SpanStyle(color = seeMoreColor, fontWeight = FontWeight.Bold)) {
+                    append(seeMore)
                 }
             } else {
-                // Nếu thu gọn, chỉ hiển thị phần văn bản đã được cắt bớt
-                if (isOverflowing) {
-                    // Nếu văn bản bị tràn, thêm nút "Xem thêm"
-                    val seeMoreText = SEE_MORE_TEXT
-                    // Lấy văn bản gốc và cắt bớt để chừa chỗ cho "... See More"
-                    val cutText = text.take(
-                        (text.length - seeMoreText.length).coerceAtLeast(0)
-                    )
-                    append(cutText)
-                    withStyle(
-                        style = SpanStyle(
-                            color = seeMoreColor,
-                            fontWeight = FontWeight.Bold
-                        )
-                    ) {
-                        append(seeMoreText)
-                    }
-                } else {
-                    // Nếu không tràn, hiển thị toàn bộ văn bản
-                    append(text)
-                }
+                append(text)
             }
         }
     }
 
-    Box(
-        modifier = modifier
-            .animateContentSize() // Thêm hiệu ứng animation mượt mà khi thay đổi kích thước
-            .clickable(
-                // Chỉ cho phép click khi văn bản bị tràn
-                enabled = isOverflowing,
-                onClick = { isExpanded = !isExpanded }
-            )
+    Box(modifier = modifier
+        .animateContentSize()
+        .clickable(enabled = hasOverflow) {
+            isExpanded = !isExpanded
+        }
     ) {
         Text(
-            text = textToShow,
-            maxLines = if (isExpanded) Int.MAX_VALUE else collapsedMaxLines,
-            overflow = TextOverflow.Ellipsis, // Cần thiết để onTextLayout hoạt động đúng
+            text = annotatedText,
             style = style,
-            onTextLayout = { textLayoutResult ->
-                // Kiểm tra xem dòng cuối cùng có bị cắt bớt không.
-                // Nếu có, tức là văn bản gốc dài hơn không gian hiển thị.
-                if (!isExpanded && textLayoutResult.hasVisualOverflow) {
-                    isOverflowing = true
+            maxLines = if (isExpanded) Int.MAX_VALUE else collapsedMaxLines,
+            overflow = TextOverflow.Clip, // Dùng Clip thay vì Ellipsis để chúng ta tự kiểm soát
+            onTextLayout = { result ->
+                // Chỉ gán lần đầu để xác định có bị tràn hay không
+                if (textLayoutResult == null) {
+                    hasOverflow = result.hasVisualOverflow
+                    textLayoutResult = result
                 }
             }
         )

@@ -63,9 +63,9 @@ fun BottomNavigationBar(
     )
     val navBarItemColors = NavigationBarItemColors(
         selectedIndicatorColor = Color.Transparent,
-        selectedIconColor = MaterialTheme.colorScheme.primary,
-        selectedTextColor = MaterialTheme.colorScheme.primary,
-        unselectedIconColor = MaterialTheme.colorScheme.inversePrimary,
+        selectedIconColor = MaterialTheme.colorScheme.tertiary,
+        selectedTextColor = MaterialTheme.colorScheme.tertiary,
+        unselectedIconColor = MaterialTheme.colorScheme.tertiary.copy(0.5f),
         unselectedTextColor = MaterialTheme.colorScheme.outlineVariant,
         disabledIconColor = MaterialTheme.colorScheme.outlineVariant,
         disabledTextColor = MaterialTheme.colorScheme.outlineVariant
@@ -148,7 +148,7 @@ fun BottomNavigationBar(
                         screens.forEach { screen ->
                             val selected =
                                 currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                            val isSelectedColor = MaterialTheme.colorScheme.primary
+                            val isSelectedColor = MaterialTheme.colorScheme.tertiary
 
                             NavigationBarItem(
                                 modifier = Modifier
