@@ -20,8 +20,8 @@
     <string name="save_image_successfuly">Lưu ảnh thành công!</string>
 
 
-    <string name="gallery_source_for_identification">Chọn Ảnh</string>
-    <string name="camera_source_for_identification">Chụp Ảnh</string>
+    <string name="gallery_source_for_identification">Chọn từ thư viện</string>
+    <string name="camera_source_for_identification">Chụp ảnh</string>
 
     <string name="setting">Cài đặt</string>
     <string name="language">Ngôn ngữ</string>
@@ -86,6 +86,7 @@
     <string name="iucn_status_dd">Thiếu dữ liệu</string> <!-- Thêm nếu cần -->
     <string name="iucn_status_ne">Không được đánh giá</string> <!-- Thêm nếu cần -->
     <string name="iucn_status_unknown">Không có thông tin</string>
+    <string name="iucn_status_domesticate">Đã thuần hóa</string>
 
     <!-- Labels for groups (tùy chọn, nếu bạn muốn đa ngôn ngữ cho cả các nhãn nhóm)-->
     <string name="iucn_group_extinct">Tuyệt chủng</string>
@@ -121,5 +122,116 @@
     <string name="species_detail_add">Thêm Bản ghi mới</string>
     <string name="species_detail_record">Tạo Bản ghi</string>
     <string name="species_detail_view_observation">Xem các Bản ghi</string>
+
+    <string name="noti_title_lock">Tài khoản của bạn đã bị vô hiệu hóa</string>
+    <string name="noti_body_lock">Tài khoản của bạn đã bị vô hiệu hóa vì vi phạm tiêu chuẩn cộng đồng của chúng tôi hơn hai lần</string>
+
+    <string name="noti_title_warning">Bài viết của bạn đã bị xóa</string>
+    <string name="noti_body_warning">Bài viết của bạn đã bị xóa vì vi phạm tiêu chuẩn cộng đồng của chúng tôi</string>
+
+    <string name="noti_title_like_observation">Bài viết của bạn đã nhận được một lượt thích mới!</string>
+    <string name="noti_body_like_observation"> đã thích bản ghi quan sát của bạn</string>
+
+    <string name="noti_title_dislike_observation">Bài viết của bạn đã nhận được một lượt phản đối</string>
+    <string name="noti_body_dislike_observation"> đã phản đối bản ghi quan sát của bạn</string>
+
+    <string name="noti_title_comment">Bài viết của bạn đã nhận được một bình luận mới!</string>
+    <string name="noti_body_comment"> đã bình luận </string>
+
+    <string name="noti_title_like_comment">Bình luận của bạn đã nhận được một lượt thích mới!</string>
+    <string name="noti_body_like_comment"> đã thích bình luận của bạn</string>
+
+    <string name="noti_title_dislike_comment">Bình luận của bạn đã nhận được một lượt phản đối</string>
+    <string name="noti_body_dislike_comment"> đã phản đối bình luận của bạn</string>
+
+    <string name="noti_body_to_your_post"> vào bài viết của bạn </string>
+
+    <string name="delete_comment">Xóa bình luận</string>
+    <string name="confirm_delete_obs">Xác nhận xoá</string>
+    <string name="delete">Xóa</string>
+    <string name="confirm_delete_obs_body">Bản ghi quan sát sẽ được chuyển vào hộp lưu trữ và xóa trong 30 ngày</string>
+    <string name="cancel">Hủy</string>
+    <string name="edit">Chỉnh sửa</string>
+    <string name="delete_obs">Xóa bản ghi</string>
+    <string name="comment_placeholder">Hãy viết gì đó…</string>
+    <string name="updated_on">Cập nhật vào </string>
+    <string name="no_comment">Không có bình luận nào</string>
+
+    <string name="download_content">Quản lý dữ liệu</string>
+    <string name="change_password">Đổi mật khẩu</string>
+
+    <string name="obs_delete_success">Bản ghi quan sát đã được chuyển vào hộp lưu trữ</string>
+    <string name="location_init">Đang tìm vị trí của bạn…</string>
+
+    <string name="change_password_current">Mật khẩu hiện tại</string>
+    <string name="change_password_new">Mật khẩu mới</string>
+    <string name="change_password_confirm">Xác nhận mật khẩu</string>
+    <string name="change_password_sucess">Cập nhật mật khẩu thành công!</string>
+    <string name="change_password_confirm_mismatch">Mật khẩu xác nhận không khớp</string>
+    <string name="update_password">Cập nhật mật khẩu</string>
+
+    <string name="see_more">…Xem thêm</string>
+    <string name="see_less">Thu gọn</string>
+
+    <string name="newest">Mới nhất</string>
+    <string name="oldest">Cũ nhất</string>
+
+    <string name="empty_notification">Hộp thông báo của bạn đang trống</string>
+
+    <string name="community_add_post">Chia sẻ hành trình của bạn</string>
+    <string name="obs_is_hided">Bản ghi đã được ẩn</string>
+
+    <string name="save">Lưu</string>
+    <string name="obs_detail_state">Bạn đã quan sát sinh vật này vào</string>
+
+    <string name="enter_address">Tìm kiếm địa điểm…</string>
+    <string name="no_obs">Chưa có bản ghi quan sát nào.</string>
+
+    <string name="comment_species_suggestion">đã gợi ý sinh vật này</string>
+
+    <string name="comment_empty">Chưa có bình luận nào.\nHãy là người đầu tiên bình luận!</string>
+
+    <string name="my_obs">Bản ghi của tôi</string>
+    <string name="update_success">Cập nhật thành công!</string>
+
+    <string name="add_obs">Thêm bản ghi mới</string>
+    <string name="edit_obs">Chỉnh sửa bản ghi</string>
+
+    <string name="obs_description">Hãy mô tả thêm về sinh vật này…</string>
+    <string name="obs_location">Được quan sát tại</string>
+    <string name="obs_time">Được quan sát vào</string>
+    <string name="obs_choose_location">Chọn vị trí</string>
+    <string name="obs_choose_species">Nhập hoặc chọn sinh vật từ danh sách</string>
+
+    <string name="obs_public">Công khai</string>
+    <string name="obs_private">Riêng tư</string>
+    <string name="obs_choose_privacy">Chọn chế độ hiển thị</string>
+
+    <string name="moderation_error">Lỗi kiểm duyệt</string>
+    <string name="empty_species">Vui lòng chọn hoặc nhập sinh vật</string>
+    <string name="text_unappropriated">Một số hình ảnh có thể chứa nội dung không phù hợp</string>
+    <string name="images_unappropriated">Mô tả có chứa từ ngữ không phù hợp</string>
+    <string name="select_location">Xác nhận vị trí</string>
+
+    <string name="update">Cập nhật</string>
+    <string name="obs">Bản ghi Quan sát</string>
+    <string name="species">Sinh vật</string>
+    <string name="empty_species_profile">Chưa có sinh vật nào được quan sát</string>
+    <string name="empty_archived">Hộp lưu trữ đang trống</string>
+    <string name="empty_saved">Bạn chưa lưu mục nào</string>
+    <string name="expires_in_days">Hết hạn sau %1$d ngày</string>
+    <string name="restore">Khôi phục</string>
+    <string name="display_name_inappropriate">Tên hiển thị chứa từ ngữ không phù hợp</string>
+    <string name="display_name_empty">Tên hiển thị không được để trống</string>
+
+    <string name="image_inappropriate">Hình ảnh chứa nội dung không phù hợp</string>
+    <string name="comment_inappropriate">Bình luận chứa nội dung không phù hợp</string>
+    <string name="download_languages_offline">Tải dữ liệu ngôn ngữ để sử dụng ứng dụng khi ngoại tuyến.</string>
+    <string name="internet_required">Cần kết nối internet để tải xuống.</string>
+
+    <string name="like_dislike_count">và %1$d người khác</string>
+    <string name="notification">Thông báo</string>
+    <string name="no_species">Không có sinh vật nào</string>
+
 
 </resources>

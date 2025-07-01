@@ -20,7 +20,9 @@ import kotlinx.coroutines.flow.map
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Named
+import javax.inject.Singleton
 
+@Singleton
 class RemoteSpeciesRepository @Inject constructor(
     private val apiService: SpeciesApiService,
     @Named("language_provider") private val languageProvider: LanguageProvider // Inject LanguageProvider để PagingSource có thể lấy ngôn ngữ hiện tại
@@ -33,10 +35,12 @@ class RemoteSpeciesRepository @Inject constructor(
     }
 
     override fun getAll(
+        sortByDesc: Boolean,
         uid : String?,
         searchQuery: List<String>?,
         languageCode: String // languageCode này có thể không cần thiết nếu PagingSource tự lấy từ LanguageProvider
     ): Flow<PagingData<DisplayableSpecies>> {
+        Log.i("sort",sortByDesc.toString())
         val queryStr = searchQuery?.joinToString(" ")?.trim() // Chuyển List<String> thành một chuỗi query
         Log.d(TAG, "getAll called. Query: '$queryStr', Effective Lang (from PagingSource): ${languageProvider.getCurrentLanguageCode()}")
         return Pager(
@@ -48,6 +52,7 @@ class RemoteSpeciesRepository @Inject constructor(
             ),
             pagingSourceFactory = {
                 RemoteSpeciesPagingSource(
+                    sortByDesc = sortByDesc,
                     apiService = apiService,
                     languageProvider = languageProvider, // Truyền LanguageProvider cho PagingSource
                     searchQuery = queryStr,
@@ -59,6 +64,7 @@ class RemoteSpeciesRepository @Inject constructor(
     }
 
     override fun getSpeciesByClassPaged(
+        sortByDesc: Boolean,
         uid: String?,
         searchQuery: List<String>?,
         classIdValue: String,
@@ -74,6 +80,7 @@ class RemoteSpeciesRepository @Inject constructor(
             ),
             pagingSourceFactory = {
                 RemoteSpeciesPagingSource(
+                    sortByDesc = sortByDesc,
                     uid = uid?:"",
                     apiService = apiService,
                     languageProvider = languageProvider,

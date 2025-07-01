@@ -2,6 +2,7 @@ package com.project.speciesdetection.ui.features.setting_main_screen.view
 
 import android.app.Activity
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,12 +42,13 @@ import java.util.Locale
 @Composable
 fun LanguagePickerDialog(
     viewModel: SettingViewModel,
+    onBackPressed:(Boolean) -> Unit,
 ){
     val currentLanguageCode by viewModel.currentLanguageCode.collectAsState()
     val supportedLanguages = viewModel.supportedLanguages
     val context = LocalContext.current
-
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = {viewModel.onCloseLanguagePicker()},
         confirmButton = {
             TextButton(
@@ -56,7 +61,7 @@ fun LanguagePickerDialog(
         title = {
             Text(
                 stringResource(R.string.language),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold
             )
         },
@@ -73,13 +78,15 @@ fun LanguagePickerDialog(
                         isSelected = languageItem.code == currentLanguageCode,
                         onLanguageSelected = {
                             if (languageItem.code != currentLanguageCode) {
+
+                                onBackPressed(true)
                                 viewModel.onLanguageSelected(languageItem.code)
                                 setLanguage(context, languageItem.code)
                                 (context as? Activity)?.recreate()
-                                /*val intent = Intent(context, MainActivity::class.java) // Hoặc (context as Activity).javaClass
+                                val intent = Intent(context, MainActivity::class.java) // Hoặc (context as Activity).javaClass
                                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                 (context as? Activity)?.startActivity(intent)
-                                (context as? Activity)?.finishAffinity()*/
+                                (context as? Activity)?.finishAffinity()
                             }
                         }
                     )
@@ -105,7 +112,7 @@ fun LanguageRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = languageItem.displayName)
+        Text(text = languageItem.displayName, style = MaterialTheme.typography.bodyLarge)
         if (isSelected) {
             Icon(
                 imageVector = Icons.Filled.Check,

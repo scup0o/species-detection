@@ -2,7 +2,6 @@ package com.project.speciesdetection.ui.features.auth.viewmodel
 
 import android.app.Activity
 import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -12,17 +11,13 @@ import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.messaging.FirebaseMessaging
 import com.project.speciesdetection.data.model.user.User
-import com.project.speciesdetection.data.model.user.repository.RemoteUserRepository
 import com.project.speciesdetection.data.model.user.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -71,17 +66,23 @@ class AuthViewModel @Inject constructor(
     private var googleSignInApiRequest: GetCredentialRequest? = null
 
     init {
+        _authState.update {
+            it.copy(
+                isLoading = true
+            )
+        }
         checkCurrentUser()
         prepareGoogleSignInRequestObject()
     }
 
-    fun reloadCurrentUser(currentUser: FirebaseUser){
+    fun reloadCurrentUser(currentUser: FirebaseUser) {
         viewModelScope.launch {
             try {
-                currentUser.reload().await() // await để dùng với coroutine
+                currentUser.reload().await()
                 val userInfo = repository.getUserInformation(currentUser.uid)
                 _authState.update {
                     it.copy(
+                        isLoading = false,
                         currentUser = currentUser,
                         currentUserInformation = userInfo
                     )
@@ -91,26 +92,40 @@ class AuthViewModel @Inject constructor(
                     signOut()
                     _authState.update {
                         it.copy(
+                            isLoading = false,
                             currentUser = null,
                             currentUserInformation = null,
                             error = "disabled"
                         )
                     }
-                    // Tùy chọn: Gửi sự kiện cho UI để điều hướng về màn hình đăng nhập
                 } else {
                     Log.e("AuthCheck", "Lỗi không xác định khi reload: ${e.localizedMessage}")
                 }
             } catch (e: Exception) {
+                _authState.update {
+                    it.copy(
+                        isLoading = false,
+                        currentUser = null,
+                        currentUserInformation = null,
+                        error = "network"
+                    )
+                }
                 Log.e("AuthCheck", "Lỗi khác khi reload user: ${e.localizedMessage}")
             }
         }
     }
 
-    private fun checkCurrentUser() {
+    fun checkCurrentUser() {
         viewModelScope.launch {
             val currentUser = repository.getCurrentUser()
             if (currentUser != null) {
                 reloadCurrentUser(currentUser)
+            } else {
+                _authState.update {
+                    it.copy(
+                        isLoading = false,
+                    )
+                }
             }
 
         }
@@ -157,12 +172,10 @@ class AuthViewModel @Inject constructor(
                             GoogleIdTokenCredential.createFrom(credential.data)
                         idToken = googleIdTokenCredential.idToken
                     } catch (e: GoogleIdTokenParsingException) {
-                        //Log.e("AuthViewModel", "GoogleIdTokenParsingException", e)
                         handleAuthError(Exception(errorMessage), "Google Sign-In Failed: ")
                         return@launch
                     }
                 } else {
-                    //Log.e("AuthViewModel", "Unexpected credential type: ${credential::class.java.simpleName}")
                     _authState.update {
                         it.copy(
                             isLoading = false,
@@ -288,19 +301,17 @@ class AuthViewModel @Inject constructor(
     fun signOut() {
         viewModelScope.launch {
             _authState.update { it.copy(isLoading = true, error = null) }
-            try{
+            try {
                 val tokenToRemove = firebaseMessaging.token.await()
                 repository.removeCurrentUserFcmToken(
-                    _authState.value.currentUser?.uid?:"", tokenToRemove
-                ){
+                    _authState.value.currentUser?.uid ?: "", tokenToRemove
+                ) {
                     viewModelScope.launch {
                         repository.signOut()
                         _authState.update { AuthState() }
                     }
                 }
-            }
-            catch (e: Exception) {
-                // Nếu có lỗi khi lấy token, vẫn tiến hành đăng xuất
+            } catch (e: Exception) {
                 Log.e("Logout", "Không thể lấy token để xóa, vẫn tiến hành đăng xuất.", e)
                 repository.signOut()
                 _authState.update { AuthState() }
@@ -381,7 +392,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun updateFcmToken() {
-        val userId = _authState.value.currentUser?.uid?: return // Chỉ cập nhật nếu đã đăng nhập
+        val userId = _authState.value.currentUser?.uid ?: return // Chỉ cập nhật nếu đã đăng nhập
         viewModelScope.launch {
             try {
                 val token = firebaseMessaging.token.await()

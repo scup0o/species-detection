@@ -14,6 +14,7 @@ class RemoteSpeciesPagingSource(
     private val searchQuery: String?,
     private val classId: String?,
     private val uid : String?,
+    private val sortByDesc : Boolean = false,
 ) : PagingSource<String, DisplayableSpecies>() { // Key là String (lastVisibleDocId), Value là DisplayableSpecies
 
     companion object {
@@ -29,9 +30,11 @@ class RemoteSpeciesPagingSource(
 
         return try {
             Log.d(TAG, "Loading page: lastDocId=$lastDocId, pageSizeToLoad=$pageSizeToLoad, lang=$currentLanguageCode, query='$searchQuery', classId=$classId")
+            Log.i("sort",sortByDesc.toString())
 
             // Gọi API
             val response = apiService.getSpecies(
+                sortByDesc = sortByDesc,
                 pageSize = pageSizeToLoad,
                 languageCode = currentLanguageCode,
                 searchQuery = if (searchQuery.isNullOrBlank()) null else searchQuery,

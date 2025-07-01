@@ -82,7 +82,17 @@ sealed class AppScreen(
     object ProfileMainScreen : AppScreen(
         route = "profile_main_screen",
         icon = R.drawable.user
-    )
+    ){
+    }
+
+    object CommunityProfileMainScreen : AppScreen(
+        route = "community_profile_main_screen/{uid}",
+        icon = R.drawable.user
+    ){
+        fun createRoute(uid: String):String{
+            return "community_profile_main_screen/${uid}"
+        }
+    }
 
     object SettingMainScreen : AppScreen(
         route = "setting_main_screen",
@@ -133,4 +143,16 @@ sealed class AppScreen(
             return "species_observation_main_screen/${species.id}&${species.localizedName}"
         }
     }
+
+    object ObservationDetailScreen:AppScreen(
+        route = "observation_detail/{observationId}"
+    ){
+        fun createRoute(observationId : String) : String{
+            return "observation_detail/${observationId}"
+        }
+    }
+
+    object NotificationScreen:AppScreen(
+        route = "notification"
+    )
 }

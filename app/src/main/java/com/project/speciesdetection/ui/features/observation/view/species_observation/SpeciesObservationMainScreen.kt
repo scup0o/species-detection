@@ -3,6 +3,7 @@ package com.project.speciesdetection.ui.features.observation.view.species_observ
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,8 +27,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Place
@@ -64,8 +68,10 @@ import com.project.speciesdetection.ui.composable.common.ListItemPlaceholder
 import com.project.speciesdetection.ui.features.observation.viewmodel.species_observation.SpeciesObservationViewModel
 
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.navigation.NavHostController
 import com.project.speciesdetection.core.helpers.MediaHelper
@@ -84,25 +90,21 @@ fun SpeciesObservationMainScreen(
     speciesName: String,
     viewModel: SpeciesObservationViewModel = hiltViewModel()
 ) {
+    val observationSortState by viewModel.sortByDesc.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val tabs = listOf("Tất cả", "Của tôi")
+    val tabs = listOf(stringResource(R.string.all), stringResource(R.string.my_obs))
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
     val selectedTabIndex by viewModel.selectedTab.collectAsStateWithLifecycle()
 
-    // Thu thập Paging Items một lần duy nhất ở đây
-// <-- THAY ĐỔI: Thu thập cả 2 luồng dữ liệu và viewMode ---
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val lazyPagingItems = viewModel.observationPagingData.collectAsLazyPagingItems()
     val allObservationsForMap by viewModel.allObservationsForMap.collectAsStateWithLifecycle()
     var selectedObservations by remember { mutableStateOf<List<Observation>?>(null) }
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
-    val pullToRefreshState = rememberPullToRefreshState()
 
-    // Thu thập Map chứa các thay đổi real-time
     val updatedObservations by viewModel.updatedObservations.collectAsStateWithLifecycle()
     val isRefreshing = lazyPagingItems.loadState.refresh is LoadState.Loading
-    // Thiết lập các bộ lọc cho ViewModel khi màn hình được tạo hoặc tham số thay đổi
     LaunchedEffect(speciesId, authState.currentUser) {
         viewModel.setFilters(speciesId, authState.currentUser?.uid)
         //viewModel.listenForRealtimeUpdates()
@@ -110,16 +112,6 @@ fun SpeciesObservationMainScreen(
 
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(speciesName) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Default.ArrowBack, null)
-                    }
-                }
-            )
-        },
         /*floatingActionButton = {
             if(selectedTabIndex==1)
                 FloatingActionButton(
@@ -141,6 +133,23 @@ fun SpeciesObservationMainScreen(
                 .fillMaxWidth()
                 .padding(innerPadding)
         ) {
+            Row(
+                Modifier
+                    .padding(horizontal = 10.dp)
+                    .padding(bottom = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Default.ArrowBack,
+                    null,
+                    Modifier.clickable { navController.popBackStack() })
+                Text(
+                    speciesName,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 indicator = { tabPositions ->
@@ -148,7 +157,7 @@ fun SpeciesObservationMainScreen(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
+                },
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -157,9 +166,15 @@ fun SpeciesObservationMainScreen(
                             viewModel.selectTab(index)
                             //lazyPagingItems.refresh()
                         },
-                        text = { Text(title, style = MaterialTheme.typography.bodyLarge) },
-                        enabled = !(index == 1 && authState.currentUser == null)
-                    )
+                        text = {
+                            Text(
+                                title, style = MaterialTheme.typography.bodyLarge,
+                                color = if (!(index == 1 && authState.currentUser == null)) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            )
+                        },
+                        enabled = !(index == 1 && authState.currentUser == null),
+
+                        )
                 }
             }
 
@@ -176,12 +191,165 @@ fun SpeciesObservationMainScreen(
 
                 when (viewMode) {
                     SpeciesObservationViewModel.ViewMode.LIST -> {
-                        ObservationList(
-                            lazyPagingItems = lazyPagingItems,
-                            updatedObservations = updatedObservations,
-                            navController = navController,
-                            isRefreshing = isRefreshing,
-                        )
+                        val addedItems = remember(
+                            updatedObservations,
+                            lazyPagingItems.itemSnapshotList
+                        ) {
+                            val pagedItemIds = lazyPagingItems.itemSnapshotList.items
+                                .mapNotNull { it.id }
+                                .toSet()
+
+                            if (pagedItemIds.isEmpty() && lazyPagingItems.loadState.refresh is LoadState.Loading) {
+
+                                emptyList()
+                            } else {
+                                updatedObservations.values
+                                    .filterNotNull()
+                                    .filter { obs ->
+                                        obs.id !in pagedItemIds
+                                    }
+                                    .sortedByDescending { it.dateCreated }
+                            }
+                        }
+
+                        if (lazyPagingItems.itemCount == 0 && !isRefreshing) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    stringResource(R.string.no_obs),
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
+
+                        }
+
+                        LazyColumn(
+                            contentPadding = PaddingValues(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
+                        ) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        Modifier
+                                            .align(Alignment.CenterEnd)
+                                            .clickable {
+                                                viewModel.updateSortDirection()
+                                            }
+                                            .padding(horizontal = 15.dp)) {
+                                        Text(
+                                            if (observationSortState) "Newest" else "Oldest",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Icon(
+                                            if (observationSortState) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                            null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+
+                                    }
+                                }
+                            }
+                            if (!isRefreshing) {
+                                // --- Hiển thị các item mới được thêm vào ---
+                                items(
+                                    count = addedItems.size,
+                                    key = { index -> "added_${addedItems[index].id}" } // Key phải là duy nhất
+                                ) { index ->
+                                    val newObservation = addedItems[index]
+                                    ObservationItem(
+                                        observation = newObservation,
+                                        onclick = {
+                                            if (authState.currentUser != null)
+                                                navController.navigate(
+                                                    AppScreen.ObservationDetailScreen.createRoute(
+                                                        newObservation.id ?: ""
+                                                    )
+                                                )
+                                            else
+                                                Toast.makeText(
+                                                    context,
+                                                    "You need to login to view this",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                        }
+                                    )
+                                }
+
+                                // --- Hiển thị các item từ Paging (với các cập nhật đã được áp dụng) ---
+                                items(
+                                    count = lazyPagingItems.itemCount,
+                                    key = lazyPagingItems.itemKey { it.id!! }
+                                ) { index ->
+                                    val pagedObservation = lazyPagingItems[index]
+                                    if (pagedObservation != null) {
+                                        // Kiểm tra xem có bản cập nhật cho item này không
+                                        // .getOrDefault sẽ trả về giá trị trong map, hoặc giá trị mặc định (pagedObservation) nếu không có
+                                        val finalObservation =
+                                            updatedObservations.getOrDefault(
+                                                pagedObservation.id!!,
+                                                pagedObservation
+                                            )
+
+                                        // Nếu finalObservation là null, nghĩa là nó đã bị xóa, không hiển thị gì cả
+                                        if (finalObservation != null) {
+                                            ObservationItem(
+                                                observation = finalObservation,
+                                                onclick = {
+                                                    if (authState.currentUser != null)
+                                                        navController.navigate(
+                                                            AppScreen.ObservationDetailScreen.createRoute(
+                                                                finalObservation.id ?: ""
+                                                            )
+                                                        )
+                                                    else
+                                                        Toast.makeText(
+                                                            context,
+                                                            "You need to login to view this",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+
+                            }
+                            // --- Xử lý trạng thái loading/error của Paging ---
+                            lazyPagingItems.apply {
+                                when (loadState.refresh) {
+                                    is LoadState.Loading -> {
+                                        items(3) { ListItemPlaceholder() }
+                                    }
+
+                                    is LoadState.Error -> {
+                                        item {
+                                            ErrorScreenPlaceholder { lazyPagingItems.refresh() }
+                                        }
+                                    }
+
+                                    else -> {}
+                                }
+                                when (loadState.append) {
+                                    is LoadState.Loading -> {
+                                        item(1) {
+                                            ListItemPlaceholder()
+                                        }
+                                    }
+
+                                    is LoadState.Error -> {
+                                        item {
+                                            ItemErrorPlaceholder { lazyPagingItems.refresh() }
+                                        }
+                                    }
+
+                                    else -> {}
+                                }
+                            }
+                        }
                     }
 
                     SpeciesObservationViewModel.ViewMode.MAP -> {
@@ -207,12 +375,139 @@ fun SpeciesObservationMainScreen(
                                 )
                             }
                         } else {
-                            ObservationList(
-                                lazyPagingItems = lazyPagingItems,
-                                updatedObservations = updatedObservations,
-                                navController = navController,
-                                isRefreshing = isRefreshing,
-                            )
+                            val addedItems = remember(
+                                updatedObservations,
+                                lazyPagingItems.itemSnapshotList
+                            ) { // <-- THAY ĐỔI: Dùng itemSnapshotList
+                                // Lấy danh sách ID đã được tải bởi Paging một cách ổn định hơn
+                                val pagedItemIds = lazyPagingItems.itemSnapshotList.items
+                                    .mapNotNull { it.id }
+                                    .toSet()
+
+                                if (pagedItemIds.isEmpty() && lazyPagingItems.loadState.refresh is LoadState.Loading) {
+                                    // Nếu Paging đang tải lại từ đầu và chưa có item nào,
+                                    // thì không nên có item "thêm mới" nào cả.
+                                    emptyList()
+                                } else {
+                                    updatedObservations.values
+                                        .filterNotNull()
+                                        .filter { obs ->
+                                            obs.id !in pagedItemIds
+                                        }
+                                        .sortedByDescending { it.dateCreated } // <-- NÊN CÓ: Sắp xếp các item mới theo thời gian tạo
+                                }
+                            }
+
+                            LazyColumn(
+                                contentPadding = PaddingValues(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
+                            ) {
+                                item {
+                                    Box(modifier = Modifier.fillMaxWidth()) {
+                                        Row(
+                                            Modifier
+                                                .align(Alignment.CenterEnd)
+                                                .clickable {
+                                                    viewModel.updateSortDirection()
+                                                }
+                                                .padding(horizontal = 15.dp)) {
+                                            Text(
+                                                if (observationSortState) "Newest" else "Oldest",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Icon(
+                                                if (observationSortState) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+
+                                        }
+                                    }
+                                }
+                                if (!isRefreshing) {
+                                    // --- Hiển thị các item mới được thêm vào ---
+                                    items(
+                                        count = addedItems.size,
+                                        key = { index -> "added_${addedItems[index].id}" } // Key phải là duy nhất
+                                    ) { index ->
+                                        val newObservation = addedItems[index]
+                                        ObservationItem(
+                                            observation = newObservation,
+                                            onclick = {
+                                                navController.navigate(
+                                                    AppScreen.ObservationDetailScreen.createRoute(
+                                                        newObservation.id ?: ""
+                                                    )
+                                                )
+                                            }
+                                        )
+                                    }
+
+                                    // --- Hiển thị các item từ Paging (với các cập nhật đã được áp dụng) ---
+                                    items(
+                                        count = lazyPagingItems.itemCount,
+                                        key = lazyPagingItems.itemKey { it.id!! }
+                                    ) { index ->
+                                        val pagedObservation = lazyPagingItems[index]
+                                        if (pagedObservation != null) {
+                                            // Kiểm tra xem có bản cập nhật cho item này không
+                                            // .getOrDefault sẽ trả về giá trị trong map, hoặc giá trị mặc định (pagedObservation) nếu không có
+                                            val finalObservation =
+                                                updatedObservations.getOrDefault(
+                                                    pagedObservation.id!!,
+                                                    pagedObservation
+                                                )
+
+                                            // Nếu finalObservation là null, nghĩa là nó đã bị xóa, không hiển thị gì cả
+                                            if (finalObservation != null) {
+                                                ObservationItem(
+                                                    observation = finalObservation,
+                                                    onclick = {
+                                                        navController.navigate(
+                                                            AppScreen.ObservationDetailScreen.createRoute(
+                                                                finalObservation.id ?: ""
+                                                            )
+                                                        )
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                // --- Xử lý trạng thái loading/error của Paging ---
+                                lazyPagingItems.apply {
+                                    when (loadState.refresh) {
+                                        is LoadState.Loading -> {
+                                            items(3) { ListItemPlaceholder() }
+                                        }
+
+                                        is LoadState.Error -> {
+                                            item {
+                                                ErrorScreenPlaceholder { lazyPagingItems.refresh() }
+                                            }
+                                        }
+
+                                        else -> {}
+                                    }
+                                    when (loadState.append) {
+                                        is LoadState.Loading -> {
+                                            item(1) {
+                                                ListItemPlaceholder()
+                                            }
+                                        }
+
+                                        is LoadState.Error -> {
+                                            item {
+                                                ItemErrorPlaceholder { lazyPagingItems.refresh() }
+                                            }
+                                        }
+
+                                        else -> {}
+                                    }
+                                }
+                            }
+
                         }
                     }
                 }
@@ -252,7 +547,7 @@ fun SpeciesObservationMainScreen(
                                 ) {
 
                                     Icon(
-                                        imageVector = Icons.Default.List, // Ví dụ
+                                        imageVector = Icons.AutoMirrored.Filled.List, // Ví dụ
                                         contentDescription = "List View",
                                     )
                                 }
@@ -312,11 +607,25 @@ fun SpeciesObservationMainScreen(
                         key = { index -> observationsAtPoint[index].id ?: "" }
                     ) { index ->
                         val newObservation = selectedObservations!![index]
-                        ObservationItem(
-                            observation = newObservation,
-                            onclick = {
-                            }
-                        )
+                        Box(Modifier.padding(horizontal = 10.dp)) {
+                            ObservationItem(
+                                observation = newObservation,
+                                onclick = {
+                                    if (authState.currentUser != null)
+                                        navController.navigate(
+                                            AppScreen.ObservationDetailScreen.createRoute(
+                                                newObservation.id ?: ""
+                                            )
+                                        )
+                                    else
+                                        Toast.makeText(
+                                            context,
+                                            "You need to login",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -325,131 +634,44 @@ fun SpeciesObservationMainScreen(
 }
 
 
-@Composable
+/*@Composable
 fun ObservationList(
     isRefreshing: Boolean,
     lazyPagingItems: LazyPagingItems<Observation>,
     updatedObservations: Map<String, Observation?>,
-    navController: NavController
+    navController: NavController,
+    viewModel: SpeciesObservationViewModel
 ) {
     // Lấy các item được THÊM MỚI (chưa có trong Paging) để hiển thị ở trên cùng
-    val addedItems = remember(
-        updatedObservations,
-        lazyPagingItems.itemSnapshotList
-    ) { // <-- THAY ĐỔI: Dùng itemSnapshotList
-        // Lấy danh sách ID đã được tải bởi Paging một cách ổn định hơn
-        val pagedItemIds = lazyPagingItems.itemSnapshotList.items
-            .mapNotNull { it.id }
-            .toSet()
 
-        if (pagedItemIds.isEmpty() && lazyPagingItems.loadState.refresh is LoadState.Loading) {
-            // Nếu Paging đang tải lại từ đầu và chưa có item nào,
-            // thì không nên có item "thêm mới" nào cả.
-            emptyList()
-        } else {
-            updatedObservations.values
-                .filterNotNull()
-                .filter { obs ->
-                    obs.id !in pagedItemIds
-                }
-                .sortedByDescending { it.dateCreated } // <-- NÊN CÓ: Sắp xếp các item mới theo thời gian tạo
-        }
-    }
-
-    LazyColumn(
-        contentPadding = PaddingValues(10.dp),
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
-    ) {
-        if (!isRefreshing) {
-            // --- Hiển thị các item mới được thêm vào ---
-            items(
-                count = addedItems.size,
-                key = { index -> "added_${addedItems[index].id}" } // Key phải là duy nhất
-            ) { index ->
-                val newObservation = addedItems[index]
-                ObservationItem(
-                    observation = newObservation,
-                    onclick = {
-                        navController.navigate(
-                            AppScreen.UpdateObservationScreen.buildRouteForEdit(newObservation)
-                        )
-                    }
-                )
-            }
-
-            // --- Hiển thị các item từ Paging (với các cập nhật đã được áp dụng) ---
-            items(
-                count = lazyPagingItems.itemCount,
-                key = lazyPagingItems.itemKey { it.id!! }
-            ) { index ->
-                val pagedObservation = lazyPagingItems[index]
-                if (pagedObservation != null) {
-                    // Kiểm tra xem có bản cập nhật cho item này không
-                    // .getOrDefault sẽ trả về giá trị trong map, hoặc giá trị mặc định (pagedObservation) nếu không có
-                    val finalObservation =
-                        updatedObservations.getOrDefault(pagedObservation.id!!, pagedObservation)
-
-                    // Nếu finalObservation là null, nghĩa là nó đã bị xóa, không hiển thị gì cả
-                    if (finalObservation != null) {
-                        ObservationItem(
-                            observation = finalObservation,
-                            onclick = {
-                                navController.navigate(
-                                    AppScreen.UpdateObservationScreen.buildRouteForEdit(
-                                        finalObservation
-                                    )
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-        }
-        // --- Xử lý trạng thái loading/error của Paging ---
-        lazyPagingItems.apply {
-            when (loadState.refresh) {
-                is LoadState.Loading -> {
-                    items(3) { ListItemPlaceholder() }
-                }
-
-                is LoadState.Error -> {
-                    item {
-                        ErrorScreenPlaceholder { lazyPagingItems.refresh() }
-                    }
-                }
-
-                else -> {}
-            }
-            when (loadState.append) {
-                is LoadState.Loading -> {
-                    item(1) {
-                        ListItemPlaceholder()
-                    }
-                }
-
-                is LoadState.Error -> {
-                    item {
-                        ItemErrorPlaceholder { lazyPagingItems.refresh() }
-                    }
-                }
-
-                else -> {}
-            }
-        }
-    }
-}
+}*/
 
 // ObservationItem không thay đổi
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
-fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation: Boolean = true) {
+fun ObservationItem(
+    currentLang: String = "",
+    showSpecies: Boolean = false,
+    observation: Observation,
+    onclick: () -> Unit,
+    showLocation: Boolean = true,
+    containerColor: Color = MaterialTheme.colorScheme.surface
+) {
+    val color = MaterialTheme.colorScheme.outline.copy(0.5f)
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = containerColor
         ),
         modifier = Modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                shadowElevation = 4.dp.toPx()
+                ambientShadowColor = color// Màu của bóng (phát sáng)
+                spotShadowColor = color
+                clip = true
+                shape = RoundedCornerShape(20.dp)
+            }
             /*.shadow(
                 elevation = MaterialTheme.spacing.m,
                 shape = RoundedCornerShape(percent = 10),
@@ -476,7 +698,7 @@ fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation:
                         failure = placeholder(R.drawable.error_image),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(100.dp)
+                            .size(110.dp)
                             .padding(MaterialTheme.spacing.xxxs)
                             .clip(MaterialTheme.shapes.small)
                     )
@@ -523,20 +745,40 @@ fun ObservationItem(observation: Observation, onclick: () -> Unit, showLocation:
                     style = MaterialTheme.typography.bodyMedium,
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (observation.locationTempName.isNotEmpty())
+                if (observation.location != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (observation.locationTempName.isNotEmpty())
+                            Icon(
+                                Icons.Default.LocationOn, null,
+                                tint = MaterialTheme.colorScheme.outlineVariant,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(end = 5.dp)
+                            )
+                        Text(
+                            observation.locationTempName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+                if (showSpecies && observation.speciesId.isNotEmpty()) {
+                    Row {
                         Icon(
-                            Icons.Default.LocationOn, null,
+                            painterResource(R.drawable.otter_solid), null,
                             tint = MaterialTheme.colorScheme.outlineVariant,
                             modifier = Modifier
                                 .size(24.dp)
                                 .padding(end = 5.dp)
                         )
-                    Text(
-                        observation.locationTempName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                        Text(
+                            observation?.speciesName?.get(currentLang)
+                                ?: observation?.speciesName?.get("default")
+                                ?: observation?.speciesId ?: "Unknown Species",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
                 }
 
                 Row(

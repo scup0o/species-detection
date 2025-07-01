@@ -101,6 +101,7 @@ fun EditImageForIdentificationScreen(
                         }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                     },
                     actions = {
+                        val color = MaterialTheme.colorScheme.primary
                         IconButton(onClick = { // Crop Button
                             val uriToCrop = editImageUiState.currentImageUri
                                 uriToCrop?.let {
@@ -111,16 +112,20 @@ fun EditImageForIdentificationScreen(
                                             fixAspectRatio = false,
                                             outputCompressFormat = Bitmap.CompressFormat.JPEG,
                                             outputCompressQuality = 90,
-                                            backgroundColor = Color.Black.toArgb(),
+                                            //backgroundColor = Color.Black.toArgb(),
                                             toolbarColor = Color.Black.toArgb(),
                                             toolbarBackButtonColor = Color.White.toArgb(),
                                             toolbarTintColor = Color.White.toArgb(),
-                                            //cropperLabelTextColor = Color.White.toArgb(),
                                             activityBackgroundColor = Color.Black.toArgb(),
-                                            //toolbarTitleColor = Color.White.toArgb(),
-                                            activityMenuTextColor = Color.White.toArgb()
+                                            toolbarTitleColor = Color.Black.toArgb(),
+                                            activityMenuTextColor = Color.Black.toArgb(),
+                                            guidelinesColor = Color.White.toArgb(),
+                                            cropMenuCropButtonIcon = R.drawable.checkmark
+
+
                                         )
                                     )
+
                                     cropImageLauncher.launch(cropOptions)
 
                             }

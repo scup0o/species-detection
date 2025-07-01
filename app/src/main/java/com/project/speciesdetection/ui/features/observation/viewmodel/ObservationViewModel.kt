@@ -1,30 +1,30 @@
 package com.project.speciesdetection.ui.features.observation.viewmodel
 
 import android.content.Context
-import android.location.Geocoder
 import android.net.Uri
-import android.os.Build
-import android.util.Log
 import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.GeoPoint
+import com.project.speciesdetection.core.services.content_moderation.ContentModerationService // Đảm bảo import đúng service
 import com.project.speciesdetection.core.services.map.GeocodingService
 import com.project.speciesdetection.data.model.observation.Observation
 import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
+import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.data.model.user.User
+import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Named
 
 data class ObservationUiState(
     val isEditing: Boolean = false,
@@ -36,8 +36,8 @@ data class ObservationUiState(
 
     val location: GeoPoint? = null,
     val locationName: String = "Chọn vị trí",
-    val locationDisplayName : String = "",
-    val isFetchingInitialLocation: Boolean = true, // Cờ để biết đang lấy vị trí ban đầu
+    val locationDisplayName: String = "",
+    val isFetchingInitialLocation: Boolean = true,
 
     val dateFound: Timestamp? = null,
     val dateFoundText: String = "Chọn ngày giờ",
@@ -47,16 +47,25 @@ data class ObservationUiState(
     val saveSuccess: Boolean = false,
 
     val dateCreated: Timestamp? = null,
-    val commentCount : Int = 0,
-    val likeUserIds : List<String> = emptyList(),
-    val dislikeUserIds : List<String> = emptyList(),
+    val commentCount: Int = 0,
+    val likeUserIds: List<String> = emptyList(),
+    val dislikeUserIds: List<String> = emptyList(),
     val point: Int = 0,
-    val locationTempName: String =""
+    val locationTempName: String = "",
+
+    val isSpeciesLocked: Boolean = false,
 )
 
 sealed interface ObservationEvent {
     data class OnDescriptionChange(val text: String) : ObservationEvent
-    data class OnLocationSelected(val lan: Double, val lon: Double, val name: String, val displayName: String, val address:String) : ObservationEvent
+    data class OnLocationSelected(
+        val lan: Double,
+        val lon: Double,
+        val name: String,
+        val displayName: String,
+        val address: String
+    ) : ObservationEvent
+
     object OnLocationClear : ObservationEvent
     data class OnDateSelected(val date: Date) : ObservationEvent
     object OnDateClear : ObservationEvent
@@ -65,6 +74,9 @@ sealed interface ObservationEvent {
     data class OnPrivacyChange(val newPrivacy: String) : ObservationEvent
     data class OnImageClick(val image: Any) : ObservationEvent
     data class SaveObservation(val user: User) : ObservationEvent
+    data class OnSpeciesSelected(val species: DisplayableSpecies) : ObservationEvent
+    object OnSpeciesClear : ObservationEvent
+    data class OnSpeciesNameChange(val name: String) : ObservationEvent
 }
 
 sealed interface ObservationEffect {
@@ -77,7 +89,10 @@ class ObservationViewModel @Inject constructor(
     private val repository: ObservationRepository,
     savedStateHandle: SavedStateHandle,
     @ApplicationContext private val context: Context,
-    private val geocodingService: GeocodingService
+    private val geocodingService: GeocodingService,
+    // Đổi tên biến inject để rõ ràng hơn
+    private val contentModerationService: ContentModerationService,
+    @Named("language_provider") languageProvider: LanguageProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ObservationUiState())
@@ -86,37 +101,41 @@ class ObservationViewModel @Inject constructor(
     private val _effect = MutableSharedFlow<ObservationEffect>()
     val effect = _effect.asSharedFlow()
 
+    private val currentLanguage = languageProvider.getCurrentLanguageCode()
+
+    private val observationFromNav: Observation?
+
     init {
+        observationFromNav = savedStateHandle.get<String>("observationJson")?.let {
+            try {
+                Json.decodeFromString<Observation>(Uri.decode(it))
+            } catch (e: Exception) {
+                null
+            }
+        }
         initializeState(savedStateHandle)
     }
 
     private fun initializeState(savedStateHandle: SavedStateHandle) {
-        // Luôn reset cờ loading vị trí khi ViewModel được tạo
-        _uiState.update { it.copy(isFetchingInitialLocation = true) }
-
-        val observationJson: String? = savedStateHandle["observationJson"]
-        val observationFromNav = observationJson?.let {
-            try { Json.decodeFromString<Observation>(Uri.decode(it)) } catch (e: Exception) { null }
-        }
-
         if (observationFromNav != null) {
-            // Chế độ chỉnh sửa
             _uiState.update {
                 it.copy(
+                    isSpeciesLocked = false,
                     isEditing = true,
                     observationId = observationFromNav.id,
                     description = observationFromNav.content,
-                    speciesName = observationFromNav.speciesName,
+                    speciesName = observationFromNav.speciesName[currentLanguage] ?: "",
                     speciesId = observationFromNav.speciesId,
                     speciesScientificName = observationFromNav.speciesScientificName,
                     location = observationFromNav.location,
                     locationName = observationFromNav.locationName,
                     locationDisplayName = observationFromNav.locationDisplayName,
                     dateFound = observationFromNav.dateFound,
-                    dateFoundText = observationFromNav.dateFound?.toDate()?.let { d -> formatDate(d) } ?: "Chọn ngày giờ",
+                    dateFoundText = observationFromNav.dateFound?.toDate()
+                        ?.let { d -> formatDate(d) } ?: "Chọn ngày giờ",
                     images = observationFromNav.imageURL,
                     privacy = observationFromNav.privacy,
-                    isFetchingInitialLocation = false, // Đã có vị trí, không cần fetch
+                    isFetchingInitialLocation = false,
                     dateCreated = observationFromNav.dateCreated,
                     commentCount = observationFromNav.commentCount,
                     point = observationFromNav.point,
@@ -125,20 +144,21 @@ class ObservationViewModel @Inject constructor(
                     locationTempName = observationFromNav.locationTempName
                 )
             }
-            //observationFromNav.location?.let { reverseGeocode(it) }
         } else {
-            // Chế độ tạo mới
             val imageUri: Uri? = savedStateHandle.get<String>("imageUri")?.toUri()
             val speciesId: String? = savedStateHandle["speciesId"]
-            val speciesName: String? = savedStateHandle.get<String>("speciesName")?.let { Uri.decode(it) }
-            val speciesScientificName: String? = savedStateHandle.get<String>("speciesSN")?.let { Uri.decode(it) }
-
+            val speciesName: String =
+                savedStateHandle.get<String>("speciesName")?.let { Uri.decode(it) } ?: ""
+            val speciesScientificName: String? =
+                savedStateHandle.get<String>("speciesSN")?.let { Uri.decode(it) }
+            val isLocked = !speciesId.isNullOrBlank()
             val initialImages = imageUri?.let { listOf(it) } ?: emptyList()
             _uiState.update {
                 it.copy(
+                    isSpeciesLocked = isLocked,
                     isEditing = false,
                     speciesId = speciesId ?: "",
-                    speciesName = speciesName ?: "",
+                    speciesName = speciesName,
                     speciesScientificName = speciesScientificName ?: "",
                     images = initialImages,
                     dateFound = Timestamp.now(),
@@ -148,95 +168,136 @@ class ObservationViewModel @Inject constructor(
         }
     }
 
-    fun reverseGeocode(geoPoint: org.osmdroid.util.GeoPoint) {
-        viewModelScope.launch {
-            val selectedAddress = geocodingService.reverseSearch(geoPoint.latitude, geoPoint.longitude)?.displayName
-                ?: "Khong"
-            if (selectedAddress.isNotEmpty()) {
-                val firebaseGeoPoint = GeoPoint(geoPoint.latitude, geoPoint.longitude)
-                _uiState.update {
-                    it.copy(
-                        location = firebaseGeoPoint,
-                        locationName = selectedAddress
-                    )
-                }
-            }
-        }
-        /*if (!Geocoder.isPresent()) {
-            _uiState.update { it.copy(locationName = "Không thể tìm địa chỉ") }
-            return
-        }
-
-        viewModelScope.launch {
-            val address = withContext(Dispatchers.IO) {
-                try {
-                    val geocoder = Geocoder(context, Locale.getDefault())
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        var foundAddress: String? = null
-                        geocoder.getFromLocation(geoPoint.latitude, geoPoint.longitude, 1) { addresses ->
-                            foundAddress = addresses.firstOrNull()?.getAddressLine(0)
-                        }
-                        kotlinx.coroutines.delay(500)
-                        foundAddress
-                    } else {
-                        @Suppress("DEPRECATION")
-                        geocoder.getFromLocation(geoPoint.latitude, geoPoint.longitude, 1)
-                            ?.firstOrNull()?.getAddressLine(0)
-                    }
-                } catch (e: Exception) { "Vị trí không xác định" }
-            }
-            _uiState.update { it.copy(locationName = address ?: "Vị trí không xác định") }
-        }*/
-    }
-
     fun onEvent(event: ObservationEvent) {
         when (event) {
             is ObservationEvent.OnDescriptionChange -> _uiState.update { it.copy(description = event.text) }
             is ObservationEvent.OnLocationSelected -> {
-
                 _uiState.update {
                     it.copy(
-                        location = GeoPoint(event.lan,event.lon),
+                        location = GeoPoint(event.lan, event.lon),
                         locationName = event.name,
                         locationDisplayName = event.displayName,
                         isFetchingInitialLocation = false,
                         locationTempName = event.address
                     )
                 }
-
-                /*
-                // Luôn tắt cờ loading khi nhận được một vị trí mới
-                _uiState.update {
-                    it.copy(
-                        location = event.geoPoint,
-                        isFetchingInitialLocation = false
-                    )
-                }
-                // Nếu có tên địa chỉ (từ search) thì dùng luôn, nếu không thì gọi API
-                if (event.name.isNotBlank()) {
-                    _uiState.update { it.copy(locationName = event.name) }
-                } else {
-                    //reverseGeocode(event.geoPoint)
-                }*/
             }
-            is ObservationEvent.OnLocationClear -> _uiState.update { it.copy(location = null, locationName = "Chọn vị trí") }
+
+            is ObservationEvent.OnLocationClear -> _uiState.update {
+                it.copy(
+                    location = null,
+                    locationName = "Chọn vị trí",
+                    locationDisplayName = ""
+                )
+            }
+
             is ObservationEvent.OnDateSelected -> {
                 val timestamp = Timestamp(event.date)
-                _uiState.update { it.copy(dateFound = timestamp, dateFoundText = formatDate(event.date)) }
+                _uiState.update {
+                    it.copy(
+                        dateFound = timestamp,
+                        dateFoundText = formatDate(event.date)
+                    )
+                }
             }
-            is ObservationEvent.OnDateClear -> _uiState.update { it.copy(dateFound = null, dateFoundText = "Chọn ngày giờ") }
+
+            is ObservationEvent.OnDateClear -> _uiState.update {
+                it.copy(
+                    dateFound = null,
+                    dateFoundText = "Chọn ngày giờ"
+                )
+            }
+
             is ObservationEvent.OnAddImage -> _uiState.update { it.copy(images = it.images + event.uri) }
             is ObservationEvent.OnRemoveImage -> _uiState.update { it.copy(images = it.images - event.image) }
             is ObservationEvent.OnPrivacyChange -> _uiState.update { it.copy(privacy = event.newPrivacy) }
-            is ObservationEvent.OnImageClick -> viewModelScope.launch { _effect.emit(ObservationEffect.NavigateToFullScreenImage(event.image)) }
+            is ObservationEvent.OnImageClick -> viewModelScope.launch {
+                _effect.emit(
+                    ObservationEffect.NavigateToFullScreenImage(event.image)
+                )
+            }
+
             is ObservationEvent.SaveObservation -> save(event.user)
+            is ObservationEvent.OnSpeciesSelected -> {
+                _uiState.update {
+                    it.copy(
+                        speciesId = event.species.id,
+                        speciesName = event.species.localizedName.ifEmpty { "" },
+                        speciesScientificName = event.species.getScientificName() ?: ""
+                    )
+                }
+            }
+
+            is ObservationEvent.OnSpeciesClear -> {
+                _uiState.update {
+                    it.copy(
+                        speciesId = "",
+                        speciesName = "",
+                        speciesScientificName = ""
+                    )
+                }
+            }
+
+            is ObservationEvent.OnSpeciesNameChange -> {
+                _uiState.update {
+                    it.copy(
+                        speciesName = event.name,
+                        speciesId = if (it.speciesName != event.name) "" else it.speciesId,
+                        speciesScientificName = if (it.speciesName != event.name) "" else it.speciesScientificName
+                    )
+                }
+            }
         }
     }
 
     private fun save(user: User) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true) }
             val currentState = _uiState.value
+
+            if (currentState.speciesId.isEmpty() && currentState.speciesName.isEmpty()) {
+                _effect.emit(ObservationEffect.ShowError("empty_species"))
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
+            }
+
+            if (currentState.description.isNotBlank()) {
+                val textModerationResult = contentModerationService.isTextAppropriate(
+                    text = currentState.description,
+                    lang = currentLanguage
+                )
+
+                if (textModerationResult.isFailure) {
+                    _uiState.update { it.copy(isLoading = false) }
+                    _effect.emit(ObservationEffect.ShowError("moderation_error"))
+                    return@launch
+                }
+
+                if (!textModerationResult.getOrDefault(false)) {
+                    _uiState.update { it.copy(isLoading = false) }
+                    _effect.emit(ObservationEffect.ShowError("text_unappropriated"))
+                    return@launch
+                }
+            }
+            val newImageUris = currentState.images.filterIsInstance<Uri>()
+
+            if (newImageUris.isNotEmpty()) {
+                for (uri in newImageUris) {
+                    val imageModerationResult = contentModerationService.isImageAppropriate(uri)
+
+                    if (imageModerationResult.isFailure) {
+                        _uiState.update { it.copy(isLoading = false) }
+                        _effect.emit(ObservationEffect.ShowError("moderation_error"))
+                        return@launch
+                    }
+
+                    if (!imageModerationResult.getOrDefault(false)) {
+                        _uiState.update { it.copy(isLoading = false) }
+                        _effect.emit(ObservationEffect.ShowError("images_unappropriated"))
+                        return@launch
+                    }
+                }
+            }
             val result = if (currentState.isEditing) {
                 repository.updateObservation(
                     user = user,
@@ -252,20 +313,17 @@ class ObservationViewModel @Inject constructor(
                     likeUserIds = currentState.likeUserIds,
                     dislikeUserIds = currentState.dislikeUserIds,
                     commentCount = currentState.commentCount,
-                    locationTempName = currentState.locationTempName
-
+                    locationTempName = currentState.locationTempName,
+                    speciesName = mapOf(currentLanguage to currentState.speciesName),
+                    baseObservation = observationFromNav ?: Observation()
                 )
             } else {
-                if (currentState.speciesId.isEmpty() || user.uid.isEmpty()) {
-                    _effect.emit(ObservationEffect.ShowError("Thiếu thông tin loài hoặc người dùng."))
-                    _uiState.update { it.copy(isLoading = false) }
-                    return@launch
-                }
                 repository.createObservation(
                     user = user,
                     speciesId = currentState.speciesId,
+                    speciesName = mapOf(currentLanguage to currentState.speciesName),
                     content = currentState.description,
-                    imageUris = currentState.images.filterIsInstance<Uri>(),
+                    imageUris = newImageUris,
                     privacy = currentState.privacy,
                     location = currentState.location,
                     dateFound = currentState.dateFound,
@@ -276,7 +334,11 @@ class ObservationViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false, saveSuccess = true) }
             }.onFailure { error ->
                 _uiState.update { it.copy(isLoading = false) }
-                _effect.emit(ObservationEffect.ShowError(error.message ?: "Đã xảy ra lỗi không xác định"))
+                _effect.emit(
+                    ObservationEffect.ShowError(
+                        error.message ?: "Đã xảy ra lỗi không xác định"
+                    )
+                )
             }
         }
     }
@@ -285,5 +347,4 @@ class ObservationViewModel @Inject constructor(
         val formatter = SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale.getDefault())
         return formatter.format(date)
     }
-
 }

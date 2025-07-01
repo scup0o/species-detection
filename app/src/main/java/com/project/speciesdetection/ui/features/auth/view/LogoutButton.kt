@@ -16,6 +16,7 @@ fun LogoutButton(
         onClickAction = {
             authViewModel.signOut()
             onClick()},
-        title = R.string.log_out
+        title = R.string.log_out,
+        painterIcon = R.drawable.log_out
     )
 }

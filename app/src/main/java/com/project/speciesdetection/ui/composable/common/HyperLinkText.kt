@@ -1,4 +1,5 @@
 package com.project.speciesdetection.ui.composable.common
+
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -27,7 +28,6 @@ fun HyperlinkText(
         val startIndex = fullText.indexOf(linkText)
         val endIndex = startIndex + linkText.length
 
-        // Phần văn bản trước link
         if (startIndex > 0) {
             withStyle(style = normalTextStyle) {
                 append(fullText.substring(0, startIndex))
@@ -35,7 +35,7 @@ fun HyperlinkText(
         }
 
         // Phần link
-        pushStringAnnotation(tag = "URL", annotation = url) // Đánh dấu phần này là URL
+        pushStringAnnotation(tag = "URL", annotation = url)
         withStyle(style = hyperlinkStyle) {
             append(linkText)
         }
@@ -51,12 +51,12 @@ fun HyperlinkText(
 
     ClickableText(
         text = annotatedString,
-        style = MaterialTheme.typography.bodyMedium.copy(color = normalTextStyle.color), // Áp dụng style chung
+        style = MaterialTheme.typography.bodyMedium.copy(color = normalTextStyle.color),
         onClick = { offset ->
             annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
                 .firstOrNull()?.let { annotation ->
                     try {
-                        uriHandler.openUri(annotation.item) // annotation.item chính là URL
+                        uriHandler.openUri(annotation.item)
                     } catch (e: Exception) {
                         Log.e("HyperlinkText", "Could not open URL: ${annotation.item}", e)
                     }

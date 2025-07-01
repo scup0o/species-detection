@@ -20,8 +20,8 @@
     <string name="error">Error! Please try again later</string>
     <string name="save_image_successfuly">Image saved successfully!</string>
 
-    <string name="gallery_source_for_identification">Choose Image</string>
-    <string name="camera_source_for_identification">Take Photo</string>
+    <string name="gallery_source_for_identification">Choose from gallery</string>
+    <string name="camera_source_for_identification">Take photo</string>
 
     <string name="setting">Settings</string>
     <string name="language">Language</string>
@@ -87,6 +87,7 @@
     <string name="iucn_status_dd">Data Deficient</string> <!-- Thêm nếu cần -->
     <string name="iucn_status_ne">Not Evaluated</string> <!-- Thêm nếu cần -->
     <string name="iucn_status_unknown">Unknown Information</string>
+    <string name="iucn_status_domesticate">Domesticated</string>
 
     <!-- Labels for groups (tùy chọn, nếu bạn muốn đa ngôn ngữ cho cả các nhãn nhóm)-->
     <string name="iucn_group_extinct">Extinct</string>
@@ -123,9 +124,109 @@
     <string name="species_detail_record">Record Observation</string>
     <string name="species_detail_view_observation">View Observations</string>
 
+    <string name="noti_title_lock">Your account has been disabled</string>
+    <string name="noti_body_lock">Your account has been disabled for violated our community standard more than two times</string>
+    <string name="noti_title_warning">Your observation has been removed</string>
+    <string name="noti_body_warning">Your observation has been removed for violated our community standard</string>
+    <string name="noti_title_like_observation">Your observation has received a new like!</string>
+    <string name="noti_body_like_observation"> has liked your observation</string>
+    <string name="noti_title_dislike_observation">Your observation has got a disagreement</string>
+    <string name="noti_body_dislike_observation"> has disagreed your observation</string>
+    <string name="noti_title_comment" >Your observation has received a new comment!</string>
+    <string name="noti_body_comment"> has commented </string>
+    <string name="noti_title_like_comment">Your comment has received a new like!</string>
+    <string name="noti_body_like_comment"> has liked your comment</string>
+    <string name="noti_title_dislike_comment">Your comment has got a disagreement</string>
+    <string name="noti_body_dislike_comment"> has disagreed your comment</string>
+    <string name="noti_body_to_your_post" > to your observation </string>
 
+    <string name="delete_comment">Delete comment</string>
+    <string name="confirm_delete_obs">Confirm deleting</string>
+    <string name="delete">Delete</string>
+    <string name="confirm_delete_obs_body">The observation wil be moved to the Archive and will be deleted after 30 days</string>
+    <string name="cancel">Cancel</string>
+    <string name="edit">Edit</string>
+    <string name="delete_obs">Delete observation</string>
+    <string name="comment_placeholder">Write something…</string>
+    <string name="updated_on">Updated on </string>
 
+    <string name="no_comment">No comment</string>
 
+    <string name="download_content">Data Management</string>
+    <string name="change_password">Change Password</string>
+
+    <string name="obs_delete_success">The observation has been moved to the archive</string>
+    <string name="location_init">Searching for your location…</string>
+
+    <string name="change_password_current">Current Password</string>
+    <string name="change_password_new">New Password</string>
+    <string name="change_password_confirm">Confirm Password</string>
+    <string name="change_password_sucess">Password updated successfully!</string>
+    <string name="change_password_confirm_mismatch">Confirm password does not match</string>
+    <string name="update_password">Update password</string>
+
+    <string name="see_more">…See more</string>
+    <string name="see_less">See less</string>
+
+    <string name="newest">Newest</string>
+    <string name="oldest">Oldest</string>
+
+    <string name="empty_notification">Your notification box is empty</string>
+
+    <string name="community_add_post">Share your journey</string>
+    <string name="obs_is_hided">The item has been hide</string>
+
+    <string name="save">Save</string>
+    <string name="obs_detail_state">You first observed it on</string>
+
+    <string name="enter_address">Search places…</string>
+    <string name="no_obs">No observation recorded yet.</string>
+
+    <string name="comment_species_suggestion">is suggested this species</string>
+
+    <string name="comment_empty">No comments yet.\nBe the first one to comment!</string>
+
+    <string name="my_obs">My Observations</string>
+    <string name="update_success">Update successfully!</string>
+
+    <string name="add_obs">Add new Observation</string>
+    <string name="edit_obs">Edit Observation</string>
+
+    <string name="obs_description">Tell us more about this…</string>
+    <string name="obs_location">Observed at</string>
+    <string name="obs_time">Observed on</string>
+    <string name="obs_choose_location">Choose location</string>
+    <string name="obs_choose_species">Type or choose species from list</string>
+
+    <string name="obs_public">Public</string>
+    <string name="obs_private">Private</string>
+    <string name="obs_choose_privacy">Set privacy</string>
+
+    <string name="moderation_error">Moderation error</string>
+    <string name="empty_species">Please select or enter a species</string>
+    <string name="text_unappropriated">Some images may contain inappropriate content</string>
+    <string name="images_unappropriated">The description includes words that may be considered inappropriate</string>
+    <string name="select_location">Select location</string>
+
+    <string name="update">Update</string>
+    <string name="obs">Observations</string>
+    <string name="species">Species</string>
+    <string name="empty_species_profile">No species observed yet</string>
+    <string name="empty_archived">The archived is empty</string>
+    <string name="empty_saved">You haven\'t saved anything yet</string>
+    <string name="expires_in_days">Expires in %1$d days</string>
+    <string name="restore">Restore</string>
+    <string name="display_name_inappropriate">Display name contains inappropriate words</string>
+    <string name="display_name_empty">Display name cannot be empty</string>
+
+    <string name="image_inappropriate">Image contains inappropriate content</string>
+    <string name="comment_inappropriate">Comment contains inappropriate content</string>
+    <string name="download_languages_offline">Download data for languages to use the app offline.</string>
+    <string name="internet_required">Internet connection required to download.</string>
+
+    <string name="like_dislike_count">and %1$d others</string>
+    <string name="notification">Notifications</string>
+    <string name="no_species">No species found</string>
 
 
 </resources>

@@ -27,7 +27,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
 
     @Named("language_provider") private val languageProvider: LanguageProvider
 ) {
-    fun getAll(searchQuery: String, uid : String?): Flow<PagingData<DisplayableSpecies>> {
+    fun getAll(searchQuery: String, uid : String?, sortByDesc: Boolean = false): Flow<PagingData<DisplayableSpecies>> {
         val currentLanguageCode = languageProvider.getCurrentLanguageCode()
         // Xử lý searchQuery: chuyển về chữ thường, bỏ khoảng trắng thừa, tách thành list token
         val processedSearchQuery = if (searchQuery.isNotBlank()) {
@@ -36,6 +36,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
             null // Nếu searchQuery rỗng, không gửi gì lên API
         }
         return speciesRepository.getAll(
+            sortByDesc = sortByDesc,
             uid = uid?:"",
             searchQuery = processedSearchQuery,
             languageCode = currentLanguageCode // Repository có thể dùng hoặc PagingSource tự lấy
@@ -46,6 +47,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
         uid : String?,
         searchQuery: String,
         classIdValue: String,
+        sortByDesc: Boolean = false
     ): Flow<PagingData<DisplayableSpecies>> {
         val currentLanguageCode = languageProvider.getCurrentLanguageCode()
         val processedSearchQuery = if (searchQuery.isNotBlank()) {
@@ -54,6 +56,7 @@ class GetLocalizedSpeciesUseCase @Inject constructor(
             null
         }
         return speciesRepository.getSpeciesByClassPaged(
+sortByDesc = sortByDesc,
             searchQuery = processedSearchQuery,
             classIdValue = classIdValue,
             languageCode = currentLanguageCode,

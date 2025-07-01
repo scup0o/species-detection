@@ -7,34 +7,108 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import com.project.speciesdetection.core.services.backend.message.MessageApiService
 import com.project.speciesdetection.core.services.remote_database.ObservationDatabaseService
+import com.project.speciesdetection.data.model.observation.Comment
 import com.project.speciesdetection.data.model.observation.Observation
+import com.project.speciesdetection.data.model.observation.repository.ListUpdate
 import com.project.speciesdetection.data.model.observation.repository.ObservationChange
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class FirestoreObservationService @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val messageApiService: MessageApiService
+
 ) : ObservationDatabaseService {
 
     private val observationCollection = firestore.collection("observations")
 
     override suspend fun createObservation(observation: Observation): Result<String> {
         return try {
-            val documentReference = observationCollection.add(observation).await()
+            var observationToSave = observation
+
+            // CHỈ thực hiện truy vấn khi speciesId có giá trị hợp lệ.
+            if (!observation.speciesId.isNullOrBlank()) {
+                // Lấy speciesName chính thức từ collection "species" để đảm bảo đồng bộ
+                val speciesSnapshot = FirebaseFirestore.getInstance()
+                    .collection("species")
+                    .document(observation.speciesId)
+                    .get()
+                    .await()
+
+                // Nếu tìm thấy document loài, cập nhật lại tên cho chính xác
+                if (speciesSnapshot.exists()) {
+                    val officialSpeciesNameMap = speciesSnapshot.get("name") as? Map<String, String>
+                    if (officialSpeciesNameMap != null) {
+                        observationToSave = observation.copy(
+                            speciesName = officialSpeciesNameMap
+                        )
+                    }
+                }
+                // Nếu không tìm thấy (ví dụ: species đã bị xóa), chúng ta vẫn giữ nguyên
+                // tên mà người dùng đã nhập, không làm gì cả.
+            }
+
+            // Nếu speciesId rỗng, toàn bộ khối if ở trên sẽ được bỏ qua,
+            // và `observationToSave` sẽ chính là `observation` ban đầu.
+
+            // Lưu đối tượng observation cuối cùng vào Firestore.
+            val documentReference = observationCollection.add(observationToSave).await()
             Result.success(documentReference.id)
         } catch (e: Exception) {
+            // Bắt các lỗi khác như không có kết nối mạng, v.v.
             Result.failure(e)
         }
     }
 
-    override suspend fun updateObservation(observation: Observation): Result<Unit> {
+    override suspend fun updateObservation(observation: Observation, baseObservation: Observation): Result<Unit> {
         return try {
+            // Đảm bảo observation.id không null khi cập nhật
             requireNotNull(observation.id) { "Observation ID cannot be null for an update." }
-            observationCollection.document(observation.id!!).set(observation, SetOptions.merge()).await()
+
+            var observationToSave = observation
+
+            // Logic tương tự như createObservation: chỉ truy vấn khi có speciesId.
+            if (!observation.speciesId.isNullOrBlank()) {
+                val speciesSnapshot = FirebaseFirestore.getInstance()
+                    .collection("species")
+                    .document(observation.speciesId)
+                    .get()
+                    .await()
+
+                if (speciesSnapshot.exists()) {
+                    val officialSpeciesNameMap = speciesSnapshot.get("name") as? Map<String, String>
+                    // Nếu lấy được map tên chính thức, cập nhật lại observation.
+                    if (officialSpeciesNameMap != null) {
+                        observationToSave = observation.copy(
+                            speciesName = officialSpeciesNameMap
+                        )
+                    }
+                }
+            }
+
+            // Cập nhật document với dữ liệu đã được xử lý.
+            observationCollection
+                .document(observation.id?:"") // không cần !! vì đã có requireNotNull
+                .set(observationToSave, SetOptions.merge())
+                .await()
+
+            if (baseObservation.privacy!=observation.privacy){
+                if (observation.privacy=="Private"){
+                    messageApiService.updateNotificationState(postId = observation.id, state="hide")
+                }
+                if (observation.privacy=="Public"){
+                    messageApiService.updateNotificationState(postId = observation.id, state="show")
+                }
+            }
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -129,5 +203,99 @@ class FirestoreObservationService @Inject constructor(
                 }
             }
         }
+    }
+
+    override fun listenObservation(observationId: String): Flow<Observation?> = callbackFlow {
+        val docRef = firestore.collection("observations").document(observationId)
+
+        val listenerRegistration = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.e("FirestoreService", "Observation listen failed", error)
+                trySend(null)
+                return@addSnapshotListener
+            }
+            if (snapshot != null && snapshot.exists()) {
+                val observation = snapshot.toObject(Observation::class.java)
+                trySend(observation)
+            } else {
+                trySend(null)
+            }
+        }
+
+        awaitClose{ listenerRegistration.remove() }
+    }
+
+    override fun listenComments(
+        observationId: String,
+        sortDescending: Boolean // Mặc định là tăng dần
+    ): Flow<List<Comment>> = callbackFlow {
+        val commentsRef = firestore.collection("observations")
+            .document(observationId)
+            .collection("comments")
+            .whereEqualTo("state", "normal")
+            .orderBy("timestamp", if (sortDescending) Query.Direction.DESCENDING else Query.Direction.ASCENDING)
+
+        val listenerRegistration = commentsRef.addSnapshotListener { snapshots, error ->
+            if (error != null) {
+                Log.e("FirestoreService", "Comments listen failed", error)
+                trySend(emptyList())
+                return@addSnapshotListener
+            }
+
+            val comments = snapshots?.toObjects(Comment::class.java) ?: emptyList()
+            trySend(comments)
+        }
+
+        awaitClose { listenerRegistration.remove() }
+    }
+
+    override fun listenCommentChanges(observationId: String): Flow<ListUpdate<Comment>> = callbackFlow {
+        if (observationId.isEmpty()) {
+            close(IllegalArgumentException("Observation ID cannot be empty."))
+            return@callbackFlow
+        }
+
+        val listener = firestore.collection("observations").document(observationId)
+            .collection("comments")
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    // Đóng flow và báo lỗi
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots == null) return@addSnapshotListener
+
+                for (change in snapshots.documentChanges) {
+                    // Cố gắng parse document thành object Comment
+                    val comment = try {
+                        change.document.toObject(Comment::class.java).copy(id = change.document.id)
+                    } catch (e: Exception) {
+                        Log.e("FirestoreService", "Failed to parse comment document", e)
+                        continue // Bỏ qua document bị lỗi và xử lý cái tiếp theo
+                    }
+                    if (comment.state != "normal") {
+                        // Gửi đi sự kiện "Removed" nếu state != "normal"
+                        trySend(ListUpdate.Removed(comment))
+                    } else {
+                    when (change.type) {
+                        DocumentChange.Type.ADDED -> {
+                            // Gửi đi sự kiện "Added"
+                            trySend(ListUpdate.Added(comment))
+                        }
+                        DocumentChange.Type.MODIFIED -> {
+                            // Gửi đi sự kiện "Modified"
+                            trySend(ListUpdate.Modified(comment))
+                        }
+                        DocumentChange.Type.REMOVED -> {
+                            // Gửi đi sự kiện "Removed"
+                            trySend(ListUpdate.Removed(comment))
+                        }
+                    }}
+                }
+            }
+
+        // Khi flow bị hủy (ViewModel bị onCleared), gỡ bỏ listener
+        awaitClose { listener.remove() }
     }
 }

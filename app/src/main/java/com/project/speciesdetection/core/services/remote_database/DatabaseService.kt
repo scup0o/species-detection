@@ -4,7 +4,9 @@ import androidx.paging.PagingData
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.project.speciesdetection.data.model.observation.Comment
 import com.project.speciesdetection.data.model.observation.Observation
+import com.project.speciesdetection.data.model.observation.repository.ListUpdate
 import com.project.speciesdetection.data.model.observation.repository.ObservationChange
 import kotlinx.coroutines.flow.Flow
 
@@ -50,8 +52,13 @@ interface UserDatabaseService<T : Any, ID> {
 }
 
 interface ObservationDatabaseService {
+    //detail-view
+    fun listenComments(observationId: String, sortDescending: Boolean = false): Flow<List<Comment>>
+    fun listenObservation(observationId: String): Flow<Observation?>
+    fun listenCommentChanges(observationId: String): Flow<ListUpdate<Comment>>
+
     fun listenToUserObservations(uid: String, onDataChanged: (ObservationChange) -> Unit): ListenerRegistration
     suspend fun createObservation(observation: Observation): Result<String>
-    suspend fun updateObservation(observation: Observation): Result<Unit>
+    suspend fun updateObservation(observation: Observation, baseObservation: Observation): Result<Unit>
     suspend fun checkUserObservationState(uid: String, speciesId: String, onDataChanged: (Timestamp?) -> Unit): ListenerRegistration
 }

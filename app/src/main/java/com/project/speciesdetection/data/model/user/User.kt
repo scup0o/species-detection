@@ -13,6 +13,7 @@ data class User(
     @ServerTimestamp
     val dayCreated: Timestamp? = null,
     val source: String = "", // "google.com" hoặc "password"
-    val fcmTokens: List<String> = emptyList()
+    val fcmTokens: List<String> = emptyList(),
+    val status : String =""
 ) {
 }

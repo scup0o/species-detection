@@ -7,6 +7,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.navigation.NavType
@@ -23,27 +24,35 @@ import com.project.speciesdetection.ui.features.identification_edit_image_screen
 import kotlinx.serialization.json.Json
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.project.speciesdetection.ui.features.media_screen.view.FullScreenImageViewer
 import com.project.speciesdetection.ui.features.auth.view.ForgotPasswordScreen
 import com.project.speciesdetection.ui.features.auth.view.LoginScreen
 import com.project.speciesdetection.ui.features.auth.view.SignupScreen
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
+import com.project.speciesdetection.ui.features.community_main_screen.view.notification.NotificationView
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view.EncyclopediaDetailScreen
 import com.project.speciesdetection.ui.features.observation.view.UpdateObservation
+import com.project.speciesdetection.ui.features.observation.view.detail.ObservationDetailView
 import com.project.speciesdetection.ui.features.observation.view.map.MapPickerScreen
 import com.project.speciesdetection.ui.features.observation.view.species_observation.SpeciesObservationMainScreen
 import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationEvent
 import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationViewModel
+import com.project.speciesdetection.ui.features.observation.viewmodel.detail.ObservationDetailViewModel
 import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
 
 @Composable
 fun AppNavigation(
     activity: Activity,
+    navController: NavHostController,
 ) {
     val json = Json { ignoreUnknownKeys = true }
-    val navController = rememberNavController()
+
     val authViewModel: AuthViewModel = hiltViewModel()
     val settingViewModel: SettingViewModel = hiltViewModel()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
     // Danh sách các route là tab gốc
     val rootDestinations = listOf(
@@ -77,7 +86,7 @@ fun AppNavigation(
         ) {
             CommunityFeed(
                 navController = navController,
-                containerColor = containerColor,
+                //containerColor = containerColor,
                 authViewModel = authViewModel
             )
 
@@ -132,11 +141,40 @@ fun AppNavigation(
         composable(
             route = AppScreen.ProfileMainScreen.route,
             enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None }
+            exitTransition = { ExitTransition.None },
         ) {
+            if (authState.currentUser!=null)
             ProfileMainScreen(
                 navController = navController,
-                containerColor = containerColor
+                containerColor = containerColor,
+                authViewModel = authViewModel,
+                uid = ""
+            )
+            else
+                LaunchedEffect(Unit) {
+                    navController.navigate(AppScreen.LoginScreen.route) {
+                        popUpTo(AppScreen.ProfileMainScreen.route) { inclusive = true }
+                    }
+                }
+        }
+
+        composable(
+            route = AppScreen.CommunityProfileMainScreen.route,
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            arguments = listOf(
+                navArgument("uid"){
+                    type=NavType.StringType
+                    nullable=true
+                }
+            )
+        ) { navBackStackEntry->
+            val uid = navBackStackEntry.arguments?.getString("uid")
+            ProfileMainScreen(
+                navController = navController,
+                containerColor = containerColor,
+                authViewModel = authViewModel,
+                uid = uid?:""
             )
         }
 
@@ -302,6 +340,35 @@ fun AppNavigation(
                             address = address
                         ))
                 }
+            )
+        }
+
+        composable(
+            route = AppScreen.ObservationDetailScreen.route,
+            arguments = listOf(
+                navArgument("observationId"){
+                    type = NavType.StringType;
+                    nullable = false
+                }
+            )
+        ){backStackEntry ->
+            val observationViewModel : ObservationDetailViewModel = hiltViewModel()
+            val observationId = backStackEntry.arguments?.getString("observationId")
+            ObservationDetailView(
+
+                navController,
+                observationId,
+                observationViewModel,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable(
+            route = AppScreen.NotificationScreen.route,
+        ){
+            NotificationView(
+                navController = navController,
+                authViewModel = authViewModel
             )
         }
 

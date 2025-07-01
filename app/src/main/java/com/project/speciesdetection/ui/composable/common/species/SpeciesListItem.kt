@@ -19,11 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -38,14 +41,24 @@ import com.project.speciesdetection.data.model.species.DisplayableSpecies
 fun SpeciesListItem(
     species: DisplayableSpecies,
     observationState : Boolean = false,
-    onClick : () -> Unit
+    onClick : () -> Unit,
+    showObservationState : Boolean = true,
     ) {
+    val color = MaterialTheme.colorScheme.outline.copy(0.5f)
+
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         modifier = Modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                shadowElevation = 4.dp.toPx()
+                ambientShadowColor =  color// Màu của bóng (phát sáng)
+                spotShadowColor = color
+                clip=true
+                shape = RoundedCornerShape(20.dp)
+            }
             /*.shadow(
                 elevation = MaterialTheme.spacing.m,
                 shape = RoundedCornerShape(percent = 10),
@@ -80,32 +93,46 @@ fun SpeciesListItem(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.tertiary
                 )
-                Row(){
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = stringResource(R.string.species_family_description)+" ",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                    Text(
-                        text = species.localizedFamily,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.outline
+                        text = buildAnnotatedString {
+                            // Mô tả với style bình thường
+                            withStyle(style = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(
+                                color = MaterialTheme.colorScheme.outline
+                            )) {
+                                append(stringResource(R.string.species_family_description) + " ")
+                            }
+
+                            // Family name với style đậm
+                            withStyle(style = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.outline
+                            )) {
+                                append(species.localizedFamily)
+                            }
+                        },
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
 
                 Text(
-                    text = species.getScientificName()!!,
+                    text = species.getScientificName()?:"",
                     style = MaterialTheme.typography.bodyMedium,
                     fontStyle = FontStyle.Italic,
                     color = MaterialTheme.colorScheme.outline
                 )
             }
-            Image(
-                painter = if (observationState) painterResource(R.drawable.butterfly_net) else painterResource(R.drawable.butterfly_net_disabeld),
-                contentDescription = null,
-                modifier = Modifier.size(45.dp).padding(horizontal = 5.dp)
-            )
+            if (showObservationState){
+                Image(
+                    painter = if (observationState) painterResource(R.drawable.butterfly_net) else painterResource(R.drawable.butterfly_net_disabeld),
+                    contentDescription = null,
+                    modifier = Modifier.size(45.dp).padding(horizontal = 5.dp)
+                )
+            }
         }
     }
 }

@@ -21,22 +21,21 @@ class GetLocalizedSpeciesClassUseCase @Inject constructor(
 ){
     fun getAll() : Flow<DataResult<List<DisplayableSpeciesClass>>> {
         val languageCode = languageProvider.getCurrentLanguageCode()
+
+        // Chỉ cần gọi và map kết quả thành công
         return remoteSpeciesClassRepository.getAllSpeciesClass().map { result ->
             when (result) {
                 is DataResult.Success -> {
-
-                    DataResult.Success(result.data.map {
-                        it.toDisplayable(languageCode)
-
+                    val displayableList = result.data.map { speciesClass ->
+                        speciesClass.toDisplayable(languageCode)
                     }
-
-                    )
+                    DataResult.Success(displayableList)
                 }
-                is DataResult.Error -> DataResult.Error(result.exception)
-                is DataResult.Loading -> DataResult.Loading
+                // Giữ nguyên các trường hợp khác
+                is DataResult.Error -> result
+                is DataResult.Loading -> result
             }
         }
-
     }
 
 

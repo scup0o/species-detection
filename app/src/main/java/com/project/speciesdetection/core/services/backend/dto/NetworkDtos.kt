@@ -30,6 +30,13 @@ data class ApiSingleResponse<T>(
     @SerialName("data") val data: T
 )
 
+@Serializable
+data class ApiListResponse<T>(
+    @SerialName("success") val success: Boolean,
+    @SerialName("message") val message: String? = null, // Có thể null
+    @SerialName("data") val data: List<T>
+)
+
 /*@Serializable
 data class ApiSpeciesClassDto(
     @SerialName("id") val id: String,

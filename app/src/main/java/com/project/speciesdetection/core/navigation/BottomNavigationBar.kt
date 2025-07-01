@@ -49,11 +49,11 @@ fun BottomNavigationBar(
     showNavBar : Boolean = true,
     showNetworkNotification: Boolean = true,
 ) {
-    val focusManager = LocalFocusManager.current
+    /*val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
     val screenHeight = configuration.screenHeightDp.dp
     val scaledHeight = screenHeight * 0.1f
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp*/
 
     val screens = listOf(
         AppScreen.EncyclopediaMainScreen,
@@ -63,9 +63,9 @@ fun BottomNavigationBar(
     )
     val navBarItemColors = NavigationBarItemColors(
         selectedIndicatorColor = Color.Transparent,
-        selectedIconColor = MaterialTheme.colorScheme.primary,
-        selectedTextColor = MaterialTheme.colorScheme.primary,
-        unselectedIconColor = MaterialTheme.colorScheme.inversePrimary,
+        selectedIconColor = MaterialTheme.colorScheme.tertiary,
+        selectedTextColor = MaterialTheme.colorScheme.tertiary,
+        unselectedIconColor = MaterialTheme.colorScheme.tertiary.copy(0.5f),
         unselectedTextColor = MaterialTheme.colorScheme.outlineVariant,
         disabledIconColor = MaterialTheme.colorScheme.outlineVariant,
         disabledTextColor = MaterialTheme.colorScheme.outlineVariant
@@ -97,7 +97,7 @@ fun BottomNavigationBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(75.dp)
+                    .height(70.dp)
                     .padding(horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -116,8 +116,8 @@ fun BottomNavigationBar(
                     )
                 }
                 Surface(
-                    shadowElevation = 30.dp,
-                    tonalElevation = 0.dp,
+                    shadowElevation = 10.dp,
+                    //tonalElevation = 2.dp,
                     color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(
                         topStart = 25.dp,
@@ -125,7 +125,7 @@ fun BottomNavigationBar(
                         bottomStart = 25.dp,
                         bottomEnd = 25.dp
                     ),
-                    modifier = Modifier.padding(start = 10.dp)
+                    modifier = Modifier.padding(start = 10.dp).height(70.dp)
                 ) {
                     NavigationBar(
                         modifier = Modifier
@@ -137,6 +137,7 @@ fun BottomNavigationBar(
                                     bottomEnd = 0.dp
                                 )
                             )
+                            .height(70.dp)
                         //
                         ,
                         containerColor = containerColor,
@@ -148,7 +149,7 @@ fun BottomNavigationBar(
                         screens.forEach { screen ->
                             val selected =
                                 currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                            val isSelectedColor = MaterialTheme.colorScheme.primary
+                            val isSelectedColor = MaterialTheme.colorScheme.tertiary
 
                             NavigationBarItem(
                                 modifier = Modifier

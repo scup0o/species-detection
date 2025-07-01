@@ -43,30 +43,34 @@ fun AuthTextField(
 
         onValueChange = onValueChange,
         placeholder = {
-            Text(label) },
+            Text(label)
+        },
         supportingText = {
             if (error?.contains("empty") == true && value.isEmpty())
-                ErrorText("$label "+ stringResource(R.string.empty_label_message))
+                ErrorText("$label " + stringResource(R.string.empty_label_message))
             if (label == "Email" && error?.contains("formatted") == true)
                 ErrorText(stringResource(R.string.bad_formated))
-            if (label == "Email" && (error=="Email_already_registered_with_password"
-                        || error=="Email_already_registered_with_google_or_password")) {
+            if (label == "Email" && (error == "Email_already_registered_with_password"
+                        || error == "Email_already_registered_with_google_or_password")
+            ) {
                 ErrorText(stringResource(R.string.email_in_use))
             }
 
         },
-        modifier = Modifier.fillMaxWidth().padding(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(),
         shape = MaterialTheme.shapes.extraLarge,
 
         isError = error?.contains("empty") == true && value.isEmpty()
-                || error?.contains("formatted") == true && label.equals("email",true)
+                || error?.contains("formatted") == true && label.equals("email", true)
                 || error?.contains("incorrect") == true
                 || label == "Email" &&
-                (error=="Email_already_registered_with_password"
-                        || error=="Email_already_registered_with_google_or_password")
+                (error == "Email_already_registered_with_password"
+                        || error == "Email_already_registered_with_google_or_password")
                 || error?.contains("disabled") == true,
         paddingValues = 15.dp,
 
-    )
+        )
 
 }
