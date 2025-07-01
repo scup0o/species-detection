@@ -18,10 +18,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,6 +31,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -48,6 +53,7 @@ import androidx.paging.compose.itemKey
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.project.speciesdetection.R
+import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.ui.composable.common.AppSearchBar
 import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
@@ -103,28 +109,112 @@ fun SpeciesPickerView(
                 //DialogHeader(onDismissRequest = onDismissRequest)
 
                 // --- Thanh tìm kiếm ---
-                AppSearchBar(
-                    query = searchQuery,
-                    onQueryChanged = { viewModel.onSearchQueryChanged(it) },
-                    onSearchAction = {
-                        keyboardController?.hide()
-                        focusManager.clearFocus()
-                    },
-                    onClearQuery = { viewModel.onSearchQueryChanged("") },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    hint = stringResource(R.string.species_search_hint)
-                )
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 15.dp)){
+                    AppSearchBar(
+                        query = searchQuery,
+                        onQueryChanged = { viewModel.onSearchQueryChanged(it) },
+                        onSearchAction = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                        },
+                        onClearQuery = { viewModel.onSearchQueryChanged("") },
+                        modifier = Modifier.fillMaxWidth(),
+                        hint = stringResource(R.string.species_search_hint)
+                    )
+                }
 
-                HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
                 // --- Khu vực nội dung chính ---
                 // Ưu tiên hiển thị kết quả tìm kiếm nếu searchQuery có giá trị
                 if (searchQuery.isNotBlank()) {
-                    SearchContent(
-                        lazyPagingItems = lazyPagingItems,
-                        onSpeciesSelected = { onSpeciesSelected(it) },
-                        onDismissRequest = onDismissRequest
-                    )
+                    var hasStartedLoading by remember(searchQuery) { mutableStateOf(false) }
+
+                    val loadState = lazyPagingItems.loadState
+                    val isLoading = loadState.refresh is LoadState.Loading
+
+// Đánh dấu là đã bắt đầu loading sau khi query thay đổi và refresh bắt đầu
+                    LaunchedEffect(isLoading) {
+                        if (isLoading) hasStartedLoading = true
+                    }
+
+                    val shouldShowEmptyState = !isLoading &&
+                            hasStartedLoading &&
+                            loadState.append !is LoadState.Loading &&
+                            loadState.prepend !is LoadState.Loading &&
+                            lazyPagingItems.itemCount == 0
+                    when {
+                        loadState.refresh is LoadState.Error -> {
+                            ErrorScreenPlaceholder(
+                                onClick = { lazyPagingItems.refresh() }
+                            )
+                        }
+                        loadState.refresh is LoadState.Loading -> {
+                            LazyColumn(
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(7) { ListItemPlaceholder() }
+                            }
+                        }
+                        loadState.refresh is LoadState.NotLoading && lazyPagingItems.itemCount == 0 -> {
+                            if (shouldShowEmptyState){
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "No species found.", // String resource
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(bottom = MaterialTheme.spacing.m)
+                                    )
+                                    Button(onClick = { lazyPagingItems.refresh() }) {
+                                        Text(stringResource(R.string.try_again))
+                                    }
+                                }
+                            }
+                            else{
+                                LazyColumn(
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(7) { ListItemPlaceholder() }
+                                }
+                            }
+                        }
+                        else -> {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(
+                                    count = lazyPagingItems.itemCount,
+                                    key = lazyPagingItems.itemKey { it.id }
+                                ) { index ->
+                                    val species = lazyPagingItems[index]
+                                    species?.let {
+                                        SpeciesListItem(
+                                            observationState = species.haveObservation,
+                                            species = it, onClick = {
+                                                onSpeciesSelected(it)
+                                                onDismissRequest()
+                                            })
+                                    }
+                                }
+                                item {
+                                    when (val appendState = lazyPagingItems.loadState.append) {
+                                        is LoadState.Loading -> ListItemPlaceholder(modifier = Modifier.padding(vertical = 8.dp))
+                                        is LoadState.Error -> ItemErrorPlaceholder(onClick = { lazyPagingItems.retry() })
+                                        else -> Unit
+                                    }
+                                }
+                            }
+                        }
+                    }
                 } else {
                     // Nếu không, hiển thị kết quả phân tích hoặc màn hình chờ
                     AnalysisContent(
@@ -166,7 +256,7 @@ private fun DialogHeader(onDismissRequest: () -> Unit) {
     }
 }*/
 
-@Composable
+/*@Composable
 private fun SearchContent(
     lazyPagingItems: LazyPagingItems<DisplayableSpecies>,
     onSpeciesSelected: (DisplayableSpecies) -> Unit,
@@ -196,10 +286,14 @@ private fun SearchContent(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "empty",//stringResource(R.string.no_search_results_found, ""),
+                    text = "No species found.", // String resource
+                    style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge
+                    modifier = Modifier.padding(bottom = MaterialTheme.spacing.m)
                 )
+                Button(onClick = { lazyPagingItems.refresh() }) {
+                    Text(stringResource(R.string.try_again))
+                }
             }
         }
         else -> {
@@ -232,7 +326,7 @@ private fun SearchContent(
             }
         }
     }
-}
+}*/
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -263,11 +357,11 @@ private fun AnalysisContent(
 
         when (analysisState) {
             is AnalysisUiState.ClassifierInitializing, is AnalysisUiState.ImageProcessing -> {
-                CircularProgressIndicator()
+                LinearProgressIndicator()
                 val text = if (analysisState is AnalysisUiState.ImageProcessing)
-                    "Loading..."//stringResource(R.string.processing_image)
+                    "Analyzing your first image..."//stringResource(R.string.processing_image)
                 else
-                    "Loading..."//stringResource(R.string.initializing_engine)
+                    "Analyzing your first image..."//stringResource(R.string.initializing_engine)
                 Text(
                     text = text,
                     style = MaterialTheme.typography.bodyLarge,
@@ -315,7 +409,7 @@ private fun AnalysisContent(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "startSearching...",//stringResource(R.string.start_searching_prompt),
+                            text = "Your search query is empty, please type something...",//stringResource(R.string.start_searching_prompt),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.titleMedium
                         )

@@ -11,6 +11,8 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.project.speciesdetection.core.services.backend.message.MessageApiService
 import com.project.speciesdetection.core.services.backend.species.SpeciesApiService
+import com.project.speciesdetection.core.services.backend.user.UserApiService
+import com.project.speciesdetection.core.services.content_moderation.SightengineApi
 import com.project.speciesdetection.domain.provider.image_classifier.EnetB0ImageClassifier
 import com.project.speciesdetection.domain.provider.image_classifier.EnetLite0ImageClassifier
 import com.project.speciesdetection.domain.provider.image_classifier.ImageClassifierProvider
@@ -19,14 +21,8 @@ import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import com.project.speciesdetection.domain.provider.network.ConnectivityObserver
 import com.project.speciesdetection.domain.provider.network.NetworkConnectivityObserver
 import dagger.Binds
-import dagger.hilt.android.components.ViewModelComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.android.scopes.ViewModelScoped
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import javax.inject.Named
-import javax.inject.Qualifier
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -141,6 +137,12 @@ object NetworkModule {
     fun provideMessageApiService(retrofit: Retrofit): MessageApiService {
         return retrofit.create(MessageApiService::class.java)
     }
+    @Provides
+    @Singleton
+    fun provideUserApiService(retrofit: Retrofit): UserApiService {
+        return retrofit.create(UserApiService::class.java)
+    }
+
 
     @Provides
     @Singleton
@@ -154,10 +156,29 @@ object NetworkModule {
 
 }
 
+@Module
+@InstallIn(SingletonComponent::class)
+object ModerationModule {
+    @Provides
+    @Singleton
+    fun provideSightengineApi(okHttpClient: OkHttpClient, json: Json): SightengineApi {
+        val contentType = "application/json".toMediaType()
+        return Retrofit.Builder()
+            .baseUrl("https://api.sightengine.com/")
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+            .create(SightengineApi::class.java)
+    }
+}
+
+
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+
     @Provides
     @Singleton
     fun provideFirebaseMessaging(): FirebaseMessaging = FirebaseMessaging.getInstance()

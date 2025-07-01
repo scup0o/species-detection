@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
+    id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     id("com.google.gms.google-services")
     id("org.jetbrains.kotlin.plugin.serialization")
@@ -34,6 +35,8 @@ android {
         //manifestPlaceholders["MAPS_API_KEY"] = "\"${localProperties.getProperty("MAPS_API_KEY")}\""
 
         // Tạo các trường trong BuildConfig
+        buildConfigField ("String", "SIGHTENGINE_API_USER", "\"${localProperties.getProperty("SIGHTENGINE_API_USER")}\"")
+        buildConfigField ("String", "SIGHTENGINE_API_SECRET", "\"${localProperties.getProperty("SIGHTENGINE_API_SECRET")}\"")
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"${localProperties.getProperty("CLOUDINARY_CLOUD_NAME")}\"")
         buildConfigField("String", "CLOUDINARY_UPLOAD_PRESET", "\"${localProperties.getProperty("CLOUDINARY_UPLOAD_PRESET")}\"")
         //buildConfigField("String", "MAPS_API_KEY", "\"${localProperties.getProperty("MAPS_API_KEY")}\"")
@@ -83,6 +86,7 @@ dependencies {
     implementation(libs.googleid)
     implementation(libs.play.services.auth)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.room.common.jvm)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -167,8 +171,24 @@ dependencies {
 
     implementation ("com.google.android.gms:play-services-location:21.0.1")
 
+    // Hilt cho WorkManager
+    implementation(libs.androidx.hilt.work) // Kiểm tra phiên bản mới nhất
+    kapt(libs.androidx.hilt.compiler) // Kiểm tra phiên bản mới nhất
 
-    implementation("com.google.accompanist:accompanist-swiperefresh:0.34.0")
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler) // <-- DEPENDENCY QUAN TRỌNG NHẤT
+    // Tùy chọn - cho Paging 3
+    implementation(libs.androidx.room.paging)
+
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.1")
+    implementation(libs.zoomable.image.glide)
+
+
 
     configurations.all {
         exclude(group = "com.google.ai.edge.litert", module = "litert-api")

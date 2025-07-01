@@ -42,8 +42,8 @@ fun AnalysisResultPBS(
     navController: NavHostController,
     onDismiss: () -> Unit,
     analysisImage: Uri,
-    analysisViewModel: AnalysisViewModel = hiltViewModel(),)
-{
+    analysisViewModel: AnalysisViewModel = hiltViewModel(),
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val currentAnalysisState by analysisViewModel.uiState.collectAsState() // Lấy state từ ViewModel
 
@@ -54,20 +54,23 @@ fun AnalysisResultPBS(
         sheetState = sheetState,
         onDismissRequest = {
             analysisViewModel.resetState()
-            onDismiss()},
+            onDismiss()
+        },
         //modifier = Modifier.defaultMinSize(minHeight = 200.dp)
     ) {
-        Row(){
+        Row() {
             IconButton(
                 onClick = onDismiss
             ) {
                 Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,null
+                    Icons.AutoMirrored.Filled.ArrowBack, null
                 )
             }
         }
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             //Text("Analysis Result", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 16.dp))
@@ -75,34 +78,41 @@ fun AnalysisResultPBS(
             GlideImage(
                 model = analysisImage,
                 contentDescription = "Analyzed Image",
-                modifier = Modifier.fillMaxWidth().height(200.dp).padding(bottom = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(bottom = 16.dp),
                 contentScale = ContentScale.Fit
             )
 
             when (val state = currentAnalysisState) {
                 AnalysisUiState.ClassifierInitializing -> {
-                    CircularProgressIndicator()
+                    LinearProgressIndicator()
                 }
+
                 AnalysisUiState.ImageProcessing -> {
-                    CircularProgressIndicator()
+                    LinearProgressIndicator()
                 }
+
                 is AnalysisUiState.Success -> {
                     if (state.recognitions.isNotEmpty()) {
                         Text(
                             stringResource(R.string.top_suggestion),
                             style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(bottom = 8.dp))
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
                         LazyColumn(
                             modifier = Modifier.weight(1f),
                             contentPadding =
                                 PaddingValues(
-                                    vertical = MaterialTheme.spacing.xxxs),
+                                    vertical = MaterialTheme.spacing.xxxs
+                                ),
                             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
                         ) {
                             items(state.recognitions, key = { it.id }) { species ->
                                 SpeciesListItem(
-                                    observationState = speciesObservationState[species.id]!=null,
-                                    species=species,
+                                    observationState = speciesObservationState[species.id] != null,
+                                    species = species,
                                     onClick = {
                                         navController.popBackStack(
                                             AppScreen.EncyclopediaDetailScreen.createRoute(
@@ -110,7 +120,8 @@ fun AnalysisResultPBS(
                                                 imageUri = analysisImage
                                             ),
                                             inclusive = true,
-                                            saveState = false)
+                                            saveState = false
+                                        )
                                         navController.navigate(
                                             AppScreen.EncyclopediaDetailScreen.createRoute(
                                                 species = species,
@@ -126,17 +137,36 @@ fun AnalysisResultPBS(
                         //Spacer(modifier = Modifier.height(MaterialTheme.spacing.m))
 
                     } else {
-                        ItemErrorPlaceholder(onClick ={analysisViewModel.startImageAnalysis(analysisImage)})
+                        ItemErrorPlaceholder(onClick = {
+                            analysisViewModel.startImageAnalysis(
+                                analysisImage
+                            )
+                        })
                     }
                 }
+
                 is AnalysisUiState.Error -> {
-                    ItemErrorPlaceholder(onClick ={analysisViewModel.startImageAnalysis(analysisImage)})
+                    ItemErrorPlaceholder(onClick = {
+                        analysisViewModel.startImageAnalysis(
+                            analysisImage
+                        )
+                    })
                 }
+
                 AnalysisUiState.NoResults -> {
-                    ItemErrorPlaceholder(onClick ={analysisViewModel.startImageAnalysis(analysisImage)})
+                    ItemErrorPlaceholder(onClick = {
+                        analysisViewModel.startImageAnalysis(
+                            analysisImage
+                        )
+                    })
                 }
+
                 AnalysisUiState.Initial -> {
-                    ItemErrorPlaceholder(onClick ={analysisViewModel.startImageAnalysis(analysisImage)})
+                    ItemErrorPlaceholder(onClick = {
+                        analysisViewModel.startImageAnalysis(
+                            analysisImage
+                        )
+                    })
                 }
             }
         }

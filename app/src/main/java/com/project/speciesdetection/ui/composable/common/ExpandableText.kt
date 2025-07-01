@@ -24,10 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.project.speciesdetection.R // Giả sử bạn có string resource
 
-// Các hằng số để code dễ đọc hơn
 private const val DEFAULT_COLLAPSED_LINES = 3
-const val SEE_MORE_TEXT = "... See More"
-const val SEE_LESS_TEXT = " See Less"
 
 @Composable
 fun ExpandableText(
@@ -41,8 +38,8 @@ fun ExpandableText(
     var hasOverflow by remember { mutableStateOf(false) }
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
-    val seeMore = " ...See More"
-    val seeLess = " See Less"
+    val seeMore = " "+stringResource(R.string.see_more)
+    val seeLess = " "+stringResource(R.string.see_less)
 
     val annotatedText = buildAnnotatedString {
         if (isExpanded) {
@@ -51,14 +48,10 @@ fun ExpandableText(
                 append(seeLess)
             }
         } else {
-            // Chỉ thêm "See More" nếu thực sự bị tràn
             if (hasOverflow) {
-                // Lấy vị trí cắt của dấu "..."
                 val lastCharIndex = textLayoutResult?.getLineEnd(collapsedMaxLines - 1) ?: 0
-                // Cắt văn bản gốc để chừa chỗ cho "... See More"
-                // Cần tính toán cẩn thận để không bị cắt mất chữ
                 val adjustedText = text.take(lastCharIndex)
-                    .dropLast(seeMore.length) // Bỏ bớt ký tự để chừa chỗ
+                    .dropLast(seeMore.length)
                     .dropLastWhile { it.isWhitespace() }
 
                 append(adjustedText)
@@ -81,9 +74,8 @@ fun ExpandableText(
             text = annotatedText,
             style = style,
             maxLines = if (isExpanded) Int.MAX_VALUE else collapsedMaxLines,
-            overflow = TextOverflow.Clip, // Dùng Clip thay vì Ellipsis để chúng ta tự kiểm soát
+            overflow = TextOverflow.Clip,
             onTextLayout = { result ->
-                // Chỉ gán lần đầu để xác định có bị tràn hay không
                 if (textLayoutResult == null) {
                     hasOverflow = result.hasVisualOverflow
                     textLayoutResult = result

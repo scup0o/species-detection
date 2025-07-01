@@ -23,13 +23,13 @@ data class EditImageUiState(
     val isLoading: Boolean = true,
     val saveSuccess: Boolean? = null,
     val error: String? = null,
-    val showAnalysisPopup: Boolean = false, // Chỉ quản lý việc hiển thị popup
+    val showAnalysisPopup: Boolean = false,
     val isSaving: Boolean = false,
 )
 
 @HiltViewModel
 class EditImageForIdentificationViewModel @Inject constructor(
-    @ApplicationContext private val applicationContext: Context, // Hoặc Application nếu MediaFileUseCase cần
+    @ApplicationContext private val applicationContext: Context,
     private val savedStateHandle: SavedStateHandle,
     private val mediaFileUseCase: MediaFileUseCase
 ) : ViewModel() {
@@ -41,21 +41,21 @@ class EditImageForIdentificationViewModel @Inject constructor(
 
     init {
         val encodedImageUriString = savedStateHandle.get<String>("imageUri")
-        Log.d(TAG, "Received encodedImageUriString: $encodedImageUriString")
+        //Log.d(TAG, "Received encodedImageUriString: $encodedImageUriString")
         if (encodedImageUriString != null) {
             try {
-                val receivedUri = Uri.decode(encodedImageUriString).toUri() // Đảm bảo parse đúng
+                val receivedUri = Uri.decode(encodedImageUriString).toUri()
                 _uiState.value = EditImageUiState(
                     originalImageUri = receivedUri,
                     currentImageUri = receivedUri,
                     isLoading = false
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Error parsing received URI: $encodedImageUriString", e)
+                //Log.e(TAG, "Error parsing received URI: $encodedImageUriString", e)
                 _uiState.value = EditImageUiState(isLoading = false, error = "Invalid image link.")
             }
         } else {
-            Log.e(TAG, "Image URI is null. This screen needs an image URI.")
+            //Log.e(TAG, "Image URI is null. This screen needs an image URI.")
             _uiState.value = EditImageUiState(isLoading = false, error = "No image provided.")
         }
     }
@@ -63,9 +63,9 @@ class EditImageForIdentificationViewModel @Inject constructor(
     fun onImageCropped(croppedUri: Uri?) {
         if (croppedUri != null) {
             _uiState.value = _uiState.value.copy(currentImageUri = croppedUri, error = null)
-            Log.d(TAG, "Image cropped. New URI: $croppedUri")
+            //Log.d(TAG, "Image cropped. New URI: $croppedUri")
         } else {
-            Log.w(TAG, "Image cropping cancelled or failed.")
+            //Log.w(TAG, "Image cropping cancelled or failed.")
         }
     }
 
@@ -79,10 +79,10 @@ class EditImageForIdentificationViewModel @Inject constructor(
             try {
                 val savedUri = mediaFileUseCase.saveMediaToGallery(imageUriToSave)
                 _uiState.value = _uiState.value.copy(isSaving = false, saveSuccess = true)
-                Log.i(TAG, "Image saved via UseCase. Output URI: $savedUri")
+                //Log.i(TAG, "Image saved via UseCase. Output URI: $savedUri")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isSaving = false, saveSuccess = false, error = "Save failed: ${e.localizedMessage}")
-                Log.e(TAG, "Error saving image via UseCase", e)
+                //Log.e(TAG, "Error saving image via UseCase", e)
             }
         }
     }

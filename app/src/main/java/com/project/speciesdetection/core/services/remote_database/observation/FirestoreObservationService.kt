@@ -7,6 +7,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import com.project.speciesdetection.core.services.backend.message.MessageApiService
 import com.project.speciesdetection.core.services.remote_database.ObservationDatabaseService
 import com.project.speciesdetection.data.model.observation.Comment
 import com.project.speciesdetection.data.model.observation.Observation
@@ -22,51 +23,91 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class FirestoreObservationService @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val messageApiService: MessageApiService
+
 ) : ObservationDatabaseService {
 
     private val observationCollection = firestore.collection("observations")
 
     override suspend fun createObservation(observation: Observation): Result<String> {
         return try {
-            // Lấy speciesName từ collection "species"
-            val speciesSnapshot = FirebaseFirestore.getInstance()
-                .collection("species")
-                .document(observation.speciesId)
-                .get()
-                .await()
+            var observationToSave = observation
 
-            val speciesNameMap = speciesSnapshot.get("name") as? Map<String, String>
-            val updatedObservation = observation.copy(
-                speciesName = speciesNameMap ?: observation.speciesName
-            )
+            // CHỈ thực hiện truy vấn khi speciesId có giá trị hợp lệ.
+            if (!observation.speciesId.isNullOrBlank()) {
+                // Lấy speciesName chính thức từ collection "species" để đảm bảo đồng bộ
+                val speciesSnapshot = FirebaseFirestore.getInstance()
+                    .collection("species")
+                    .document(observation.speciesId)
+                    .get()
+                    .await()
 
-            val documentReference = observationCollection.add(updatedObservation).await()
+                // Nếu tìm thấy document loài, cập nhật lại tên cho chính xác
+                if (speciesSnapshot.exists()) {
+                    val officialSpeciesNameMap = speciesSnapshot.get("name") as? Map<String, String>
+                    if (officialSpeciesNameMap != null) {
+                        observationToSave = observation.copy(
+                            speciesName = officialSpeciesNameMap
+                        )
+                    }
+                }
+                // Nếu không tìm thấy (ví dụ: species đã bị xóa), chúng ta vẫn giữ nguyên
+                // tên mà người dùng đã nhập, không làm gì cả.
+            }
+
+            // Nếu speciesId rỗng, toàn bộ khối if ở trên sẽ được bỏ qua,
+            // và `observationToSave` sẽ chính là `observation` ban đầu.
+
+            // Lưu đối tượng observation cuối cùng vào Firestore.
+            val documentReference = observationCollection.add(observationToSave).await()
             Result.success(documentReference.id)
         } catch (e: Exception) {
+            // Bắt các lỗi khác như không có kết nối mạng, v.v.
             Result.failure(e)
         }
     }
 
-    override suspend fun updateObservation(observation: Observation): Result<Unit> {
+    override suspend fun updateObservation(observation: Observation, baseObservation: Observation): Result<Unit> {
         return try {
+            // Đảm bảo observation.id không null khi cập nhật
             requireNotNull(observation.id) { "Observation ID cannot be null for an update." }
 
-            val speciesSnapshot = FirebaseFirestore.getInstance()
-                .collection("species")
-                .document(observation.speciesId)
-                .get()
-                .await()
+            var observationToSave = observation
 
-            val speciesNameMap = speciesSnapshot.get("name") as? Map<String, String>
-            val updatedObservation = observation.copy(
-                speciesName = speciesNameMap ?: observation.speciesName
-            )
+            // Logic tương tự như createObservation: chỉ truy vấn khi có speciesId.
+            if (!observation.speciesId.isNullOrBlank()) {
+                val speciesSnapshot = FirebaseFirestore.getInstance()
+                    .collection("species")
+                    .document(observation.speciesId)
+                    .get()
+                    .await()
 
+                if (speciesSnapshot.exists()) {
+                    val officialSpeciesNameMap = speciesSnapshot.get("name") as? Map<String, String>
+                    // Nếu lấy được map tên chính thức, cập nhật lại observation.
+                    if (officialSpeciesNameMap != null) {
+                        observationToSave = observation.copy(
+                            speciesName = officialSpeciesNameMap
+                        )
+                    }
+                }
+            }
+
+            // Cập nhật document với dữ liệu đã được xử lý.
             observationCollection
-                .document(observation.id!!)
-                .set(updatedObservation, SetOptions.merge())
+                .document(observation.id?:"") // không cần !! vì đã có requireNotNull
+                .set(observationToSave, SetOptions.merge())
                 .await()
+
+            if (baseObservation.privacy!=observation.privacy){
+                if (observation.privacy=="Private"){
+                    messageApiService.updateNotificationState(postId = observation.id, state="hide")
+                }
+                if (observation.privacy=="Public"){
+                    messageApiService.updateNotificationState(postId = observation.id, state="show")
+                }
+            }
 
             Result.success(Unit)
         } catch (e: Exception) {

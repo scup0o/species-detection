@@ -48,6 +48,7 @@ fun LanguagePickerDialog(
     val supportedLanguages = viewModel.supportedLanguages
     val context = LocalContext.current
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = {viewModel.onCloseLanguagePicker()},
         confirmButton = {
             TextButton(
@@ -60,7 +61,7 @@ fun LanguagePickerDialog(
         title = {
             Text(
                 stringResource(R.string.language),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold
             )
         },
@@ -81,11 +82,11 @@ fun LanguagePickerDialog(
                                 onBackPressed(true)
                                 viewModel.onLanguageSelected(languageItem.code)
                                 setLanguage(context, languageItem.code)
-                                /*(context as? Activity)?.recreate()
+                                (context as? Activity)?.recreate()
                                 val intent = Intent(context, MainActivity::class.java) // Hoặc (context as Activity).javaClass
                                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                 (context as? Activity)?.startActivity(intent)
-                                (context as? Activity)?.finishAffinity()*/
+                                (context as? Activity)?.finishAffinity()
                             }
                         }
                     )
@@ -111,7 +112,7 @@ fun LanguageRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = languageItem.displayName)
+        Text(text = languageItem.displayName, style = MaterialTheme.typography.bodyLarge)
         if (isSelected) {
             Icon(
                 imageVector = Icons.Filled.Check,

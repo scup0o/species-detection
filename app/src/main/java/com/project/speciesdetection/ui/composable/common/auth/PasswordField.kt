@@ -39,26 +39,29 @@ fun PasswordField(
     onPasswordChange: (String) -> Unit,
     passwordVisible: Boolean,
     onToggleVisibility: () -> Unit,
-    error: String?
+    error: String?,
+    label: String = stringResource(R.string.password_label)
 ) {
-
 
     CustomTextField(
         value = password,
         onValueChange = onPasswordChange,
         placeholder = {
             Text(
-                stringResource(R.string.password_label),
-            ) },
+                label,
+            )
+        },
         supportingText = {
             if (error?.contains("empty") == true && password.isEmpty())
                 ErrorText(stringResource(R.string.empty_password_message))
             if (error?.contains("incorrect") == true)
                 ErrorText(stringResource(R.string.invalid_email_password_message))
-            if (error?.contains("invalid")==true)
+            if (error?.contains("invalid") == true && label != stringResource(R.string.change_password_current))
                 ErrorText(stringResource(R.string.invalid_password_message))
-            if (error?.contains("disabled")==true)
+            if (error?.contains("disabled") == true)
                 ErrorText(stringResource(R.string.account_disabled_message))
+            if (error?.contains("mismatch") == true && (label == stringResource(R.string.change_password_confirm)))
+                ErrorText(stringResource(R.string.change_password_confirm_mismatch))
         },
         visualTransformation =
             if (passwordVisible)
@@ -89,10 +92,11 @@ fun PasswordField(
         modifier = Modifier.fillMaxWidth(),
         isError = error?.contains("empty") == true && password.isEmpty()
                 || error?.contains("incorrect") == true
-                || error?.contains("invalid")==true
-                || error?.contains("disabled") == true,
+                || (error?.contains("invalid") == true && label != stringResource(R.string.change_password_current))
+                || error?.contains("disabled") == true
+                || (error?.contains("mismatch") == true && (label == stringResource(R.string.change_password_confirm) || label == stringResource(R.string.change_password_new))),
 
         paddingValues = 15.dp,
 
-    )
+        )
 }

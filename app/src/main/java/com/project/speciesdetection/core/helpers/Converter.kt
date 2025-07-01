@@ -1,11 +1,69 @@
 package com.project.speciesdetection.core.helpers
 
+import androidx.room.TypeConverter
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.GeoPoint
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
+import kotlinx.serialization.json.Json
 import java.util.Date
+
+class Converters {
+
+    @TypeConverter
+    fun fromStringMap(value: String?): Map<String, String> {
+        return if (value.isNullOrEmpty()) {
+            emptyMap()
+        } else {
+            Json.decodeFromString(value)
+        }
+    }
+
+    @TypeConverter
+    fun toStringMap(map: Map<String, String>?): String {
+        return if (map.isNullOrEmpty()) {
+            ""
+        } else {
+            Json.encodeToString(map)
+        }
+    }
+
+    // --- Converter cho List<String> ---
+
+    @TypeConverter
+    fun fromStringList(value: String?): List<String> {
+        return if (value.isNullOrEmpty()) {
+            emptyList()
+        } else {
+            Json.decodeFromString(value)
+        }
+    }
+
+    @TypeConverter
+    fun toStringList(list: List<String>?): String {
+        return if (list.isNullOrEmpty()) {
+            ""
+        } else {
+            Json.encodeToString(list)
+        }
+    }
+
+    @TypeConverter
+    fun fromTimestamp(timestamp: Timestamp?): Long? {
+        return timestamp?.toDate()?.time
+    }
+
+    @TypeConverter
+    fun toTimestamp(value: Long?): Timestamp? {
+        return value?.let {
+            // Chuyển đổi mili-giây sang giây và nano-giây cho constructor của Timestamp
+            val seconds = it / 1000
+            val nanoseconds = ((it % 1000) * 1_000_000).toInt()
+            Timestamp(seconds, nanoseconds)
+        }
+    }
+}
 
 // Tạo custom TimestampSerializer
 object TimestampSerializer : KSerializer<Timestamp> {

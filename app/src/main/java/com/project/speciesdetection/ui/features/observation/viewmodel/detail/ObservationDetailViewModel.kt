@@ -1,10 +1,13 @@
 package com.project.speciesdetection.ui.features.observation.viewmodel.detail
 
+import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.project.speciesdetection.core.services.backend.message.MessageApiService
 import com.project.speciesdetection.core.services.backend.message.NotificationTriggerRequest
+import com.project.speciesdetection.core.services.content_moderation.ContentModerationService
 import com.project.speciesdetection.core.services.map.GeocodingService
 import com.project.speciesdetection.data.model.observation.Comment
 import com.project.speciesdetection.data.model.observation.Observation
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -48,6 +52,7 @@ class ObservationDetailViewModel @Inject constructor(
     private val messageApiService: MessageApiService,
     private val geocodingService: GeocodingService,
     private val userRepository: UserRepository,
+    private val contentModerationService: ContentModerationService,
     @Named("language_provider") languageProvider: LanguageProvider
 ) : ViewModel() {
 
@@ -171,6 +176,52 @@ class ObservationDetailViewModel @Inject constructor(
         sortCommentsByTimestamp()
     }*/
 
+    fun startListeningToObservation(observationId: String) {
+        if (_uiState.value !is UiState.Init) return
+        if (observationId.isEmpty()) {
+            _uiState.value = UiState.Error("empty_id")
+            return
+        }
+        _uiState.value = UiState.Loading
+        observationListenerJob?.cancel()
+        observationListenerJob = viewModelScope.launch {
+            observationRepository.observeObservation(observationId).collect { observation ->
+                if (observation == null) {
+                    _uiState.value = UiState.Error("not_found")
+                    _observationState.value = null
+                    return@collect
+                }
+                // Lấy tên vị trí nếu cần (có thể cache để tránh gọi lại)
+                var locationName = _observationState.value?.locationName ?: ""
+                if (locationName.isEmpty() && observation.location != null) {
+                    locationName = geocodingService.reverseSearch(
+                        observation.location.latitude,
+                        observation.location.longitude
+                    )?.displayName ?: ""
+                }
+                _observationState.value = observation.copy(locationName = locationName)
+                _uiState.value = UiState.Success
+            }
+        }
+    }
+
+    /**
+     * Hàm này được gọi bởi ObservationCommentsSheet để lắng nghe comment.
+     */
+    fun startListeningToComments(observationId: String) {
+        commentListenerJob?.cancel()
+        commentListenerJob = viewModelScope.launch {
+            observationRepository.observeCommentUpdates(observationId).collect { update ->
+                processCommentUpdate(update)
+                getSpeciesForNewComment(update)
+            }
+        }
+    }
+
+
+
+    //old
+
     fun startListening(observationId: String) {
         if (_uiState.value !is UiState.Init) return // Chỉ chạy nếu đang ở trạng thái ban đầu
 
@@ -194,7 +245,14 @@ class ObservationDetailViewModel @Inject constructor(
                 }
 
                 if (observation.state == "violated") {
+                    _observationState.value = observation
                     _uiState.value = UiState.Error("violated")
+
+                    return@collect
+                }
+
+                if (observation.privacy=="Private" && currentUser?.uid!=observation.uid){
+                    _uiState.value = UiState.Error("private")
                     return@collect
                 }
                 var locationName = ""
@@ -332,38 +390,102 @@ class ObservationDetailViewModel @Inject constructor(
             }
         }
     }
-
-    fun postComment(comment: Comment) {
+    fun postCommentForList(observationId: String, authorId: String, comment: Comment) {
         viewModelScope.launch {
-            val observation = _observationState.value
-            val postId = observation?.id ?: return@launch
-            val postAuthorId = observation.uid
-
-            val result = observationRepository.postComment(postId, comment)
+            // Gọi thẳng đến repository với các tham số đã được cung cấp
+            val result = observationRepository.postComment(observationId, comment)
             result.onSuccess {
-                _toastMessage.emit("Đăng bình luận thành công")
+                //_toastMessage.emit("Đăng bình luận thành công")
                 _eventFlow.emit(UiEvent.PostCommentSuccess)
                 // Nếu người bình luận khác người đăng bài => gửi thông báo
-                if (comment.userId != postAuthorId) {
+                if (comment.userId != authorId) {
                     val request = NotificationTriggerRequest(
                         actorUserId = comment.userId,
-                        targetUserId = postAuthorId,
-                        postId = postId,
+                        targetUserId = authorId,
+                        postId = observationId,
                         actionType = "comment",
-                        commentId = it.id?:"", // trả về từ postComment nếu có
+                        commentId = it.id ?: "", // `it` là comment được trả về từ repository
                         content = comment.content,
-                        actorUsername = "actorUsername"
+                        actorUsername = "actorUsername" // Nên lấy từ authState
                     )
-
                     try {
                         messageApiService.sendNotificationTrigger(request)
                     } catch (e: Exception) {
                         _toastMessage.emit("Lỗi khi gửi thông báo: ${e.message}")
                     }
                 }
-
             }.onFailure {
                 _toastMessage.emit("Lỗi: ${it.message}")
+            }
+        }
+    }
+    private val _isPostingComment = MutableStateFlow(false)
+    val isPostingComment: StateFlow<Boolean> = _isPostingComment.asStateFlow()
+    fun postComment(comment: Comment) {
+        if (_isPostingComment.value) return
+        viewModelScope.launch(Dispatchers.IO) {
+            try{
+                _isPostingComment.value=true
+                val observation = _observationState.value
+                val postId = observation?.id ?: return@launch
+                val postAuthorId = observation.uid
+
+                // --- 1. KIỂM DUYỆT VĂN BẢN ---
+                if (comment.content.isNotBlank()) {
+                    val textResult = contentModerationService.isTextAppropriate(comment.content, _currentLanguage.value)
+                    if (textResult.isFailure || !textResult.getOrDefault(false)) {
+                        val errorMessage = if(textResult.isFailure) "moderation_error" else "comment_inappropriate"
+                        withContext(Dispatchers.Main) { _eventFlow.emit(UiEvent.ShowSnackbar(errorMessage)) }
+                        return@launch
+                    }
+                }
+
+                // --- 2. KIỂM DUYỆT HÌNH ẢNH (NẾU CÓ URI) ---
+                val imageUri = comment.imageUrl
+                if (imageUri.isNotEmpty()) {
+                    val imageResult = contentModerationService.isImageAppropriate(Uri.decode(imageUri).toUri())
+                    if (imageResult.isFailure || !imageResult.getOrDefault(false)) {
+                        val errorMessage = if(imageResult.isFailure) "moderation_error" else "image_inappropriate"
+                        withContext(Dispatchers.Main) { _eventFlow.emit(UiEvent.ShowSnackbar(errorMessage)) }
+                        return@launch
+                    }
+                }
+
+                // --- 3. NẾU MỌI THỨ HỢP LỆ, GỌI REPOSITORY ---
+                // Repository sẽ tự xử lý việc tải ảnh lên từ comment.imageUri
+                val result = observationRepository.postComment(postId, comment)
+
+                result.onSuccess { newComment ->
+                    withContext(Dispatchers.Main) {
+                        //_toastMessage.emit("Đăng bình luận thành công")
+                        _eventFlow.emit(UiEvent.PostCommentSuccess)
+                    }
+
+                    // Gửi thông báo
+                    if (comment.userId != postAuthorId) {
+                        val request = NotificationTriggerRequest(
+                            actorUserId = comment.userId,
+                            targetUserId = postAuthorId,
+                            postId = postId,
+                            actionType = "comment",
+                            commentId = newComment.id ?: "",
+                            content = comment.content,
+                            actorUsername = "actorUsername"
+                        )
+                        try {
+                            messageApiService.sendNotificationTrigger(request)
+                        } catch (e: Exception) {
+                            Log.e("NotificationError", "Lỗi khi gửi thông báo: ${e.message}")
+                        }
+                    }
+                }.onFailure {
+                    withContext(Dispatchers.Main) {
+                        _toastMessage.emit("Lỗi: ${it.message}")
+                    }
+                }
+            }
+            finally {
+                _isPostingComment.value = false
             }
         }
     }
@@ -372,7 +494,8 @@ class ObservationDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val result = observationRepository.deleteComment(observationId, commentId)
             result.onSuccess {
-                _toastMessage.emit("Đã xoá bình luận")
+                //_toastMessage.emit("Đã xoá bình luận")
+                messageApiService.updateNotificationState(commentId = commentId, state = "hide")
             }.onFailure {
                 _toastMessage.emit("Lỗi khi xoá: ${it.message}")
             }
@@ -408,11 +531,9 @@ class ObservationDetailViewModel @Inject constructor(
                 likeCount = commentToUpdate.likeCount + pointChange
             )
 
-            // Tạo một danh sách mới với comment đã được cập nhật
             val newCommentList = originalComments.toMutableList().also { it[commentIndex] = updatedComment }
             _commentsState.value = newCommentList
 
-            // 3. Gọi đến repository
             try {
                 observationRepository.toggleLikeComment(observationId, commentId, userId)
                 if (!hasLiked) {
@@ -487,7 +608,7 @@ class ObservationDetailViewModel @Inject constructor(
     }
 
     fun likeObservation(observationId: String, userId: String) {
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch(Dispatchers.IO) {
             val current = _observationState.value ?: return@launch
 
             val hasLiked = userId in current.likeUserIds
@@ -598,12 +719,12 @@ class ObservationDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 observationRepository.deleteObservation(observationId)
-                _toastMessage.emit("Bản ghi quan sát đã được chuyển vào hộp lưu trữ")
                 _eventFlow.emit(UiEvent.DeleteSuccess)
                 // Optional: Reset UI state nếu cần
                 _observationState.value = null
                 _commentsState.value = emptyList()
                 _uiState.value = UiState.Success
+                messageApiService.updateNotificationState(postId = observationId, state = "hide")
             } catch (e: Exception) {
                 _toastMessage.emit("Lỗi khi xoá: ${e.message}")
             }
@@ -621,7 +742,16 @@ class ObservationDetailViewModel @Inject constructor(
 
 
     suspend fun getLocationName(lat: Double, lon: Double): String {
-        return geocodingService.reverseSearch(lat, lon)?.displayName ?: ""
+        // Bọc toàn bộ hàm trong withContext
+        return withContext(Dispatchers.IO) {
+            // Có thể thêm try-catch ở đây để xử lý lỗi mạng một cách mượt mà
+            try {
+                geocodingService.reverseSearch(lat, lon)?.displayName ?: ""
+            } catch (e: Exception) {
+                Log.e("GeocodingError", "Failed to get location name", e)
+                "" // Trả về chuỗi rỗng nếu có lỗi
+            }
+        }
     }
 
     override fun onCleared() {

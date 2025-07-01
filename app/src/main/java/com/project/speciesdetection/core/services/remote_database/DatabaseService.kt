@@ -59,6 +59,6 @@ interface ObservationDatabaseService {
 
     fun listenToUserObservations(uid: String, onDataChanged: (ObservationChange) -> Unit): ListenerRegistration
     suspend fun createObservation(observation: Observation): Result<String>
-    suspend fun updateObservation(observation: Observation): Result<Unit>
+    suspend fun updateObservation(observation: Observation, baseObservation: Observation): Result<Unit>
     suspend fun checkUserObservationState(uid: String, speciesId: String, onDataChanged: (Timestamp?) -> Unit): ListenerRegistration
 }

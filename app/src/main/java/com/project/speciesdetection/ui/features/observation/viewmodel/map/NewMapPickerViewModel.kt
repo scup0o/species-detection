@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.project.speciesdetection.core.services.map.GeocodingService
 import com.project.speciesdetection.core.services.map.NominatimPlace
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,7 @@ class NewMapPickerViewModel @Inject constructor(
 
     data class MapPickerUiState(
         val selectedGeoPoint: GeoPoint? = null,
-        val selectedAddress: String = "Đang tìm vị trí của bạn...",
+        val selectedAddress: String = "loading",
         val selectedDisplayName: String = "",
         val cameraPosition: GeoPoint? = null,
         val searchQuery: String = "",
@@ -47,7 +48,7 @@ class NewMapPickerViewModel @Inject constructor(
 
     fun reverseGeocode(geoPoint: GeoPoint){
         _uiState.update { it.copy(isLoading = true) }
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
 
 
             Log.i("a", geoPoint.toString())
@@ -55,7 +56,7 @@ class NewMapPickerViewModel @Inject constructor(
             val name = if (selectedAddress != null) {if (selectedAddress.name!="") selectedAddress.name else selectedAddress.displayName} else "Khong"
             val displayName = if (selectedAddress != null) {if (selectedAddress.name!="") selectedAddress.displayName else ""}else ""
             val address = geocodingService.reverseSearch(geoPoint.latitude, geoPoint.longitude, "en")?.address?: emptyMap()
-            val geoPoint : GeoPoint = GeoPoint(
+            val geoPoint = GeoPoint(
                 selectedAddress?.lat?.toDouble() ?: 0.0,
                 selectedAddress?.lon?.toDouble() ?: 0.0
             )
@@ -75,7 +76,7 @@ class NewMapPickerViewModel @Inject constructor(
         _searchQuery.value = query
         searchJob?.cancel()
         _uiState.update { it.copy(isSearching = true) }
-        searchJob = viewModelScope.launch {
+        searchJob = viewModelScope.launch(Dispatchers.IO) {
             delay(500)
             val results = geocodingService.search(query)
             _searchResults.value = results

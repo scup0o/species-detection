@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 interface SpeciesRepository {
     // Lấy tất cả species (có thể kèm searchQuery), trả về Flow của PagingData
     fun getAll(
+        sortByDesc: Boolean=false,
         uid : String?,
         searchQuery: List<String>?, // List các token tìm kiếm
         languageCode: String        // Mã ngôn ngữ hiện tại
@@ -16,6 +17,7 @@ interface SpeciesRepository {
 
     // Lấy species theo classId (có thể kèm searchQuery), trả về Flow của PagingData
     fun getSpeciesByClassPaged(
+        sortByDesc: Boolean=false,
         uid : String?,
         searchQuery: List<String>?,
         classIdValue: String,       // ID của class để lọc

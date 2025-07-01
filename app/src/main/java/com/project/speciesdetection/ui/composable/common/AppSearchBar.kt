@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -35,7 +36,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.project.speciesdetection.core.theme.spacing
 
-@OptIn(ExperimentalMaterial3Api::class) // Cần thiết cho TextFieldDefaults.colors
 @Composable
 fun AppSearchBar(
     query: String,
@@ -44,47 +44,45 @@ fun AppSearchBar(
     onClearQuery: () -> Unit,
     modifier: Modifier = Modifier,
     hint: String = "search",
-    // Thêm các tham số tùy chỉnh màu sắc và hình dạng nếu cần
-    backgroundColor: Color = MaterialTheme.colorScheme.surface, // Màu nền tùy chỉnh (điều chỉnh alpha nếu cần)
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant, // Màu chữ và icon
-    cornerRadiusPercent: Int = 50, // 50% để tạo hình viên thuốc,
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    cornerRadiusPercent: Int = 50,
     elevation: Dp = 5.dp
 ) {
-    val scaledHeight = LocalConfiguration.current.screenHeightDp.dp
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
-    TextField(
+    val color = MaterialTheme.colorScheme.primary
+
+    CustomTextField(
         textStyle = MaterialTheme.typography.bodyMedium,
         value = query,
         onValueChange = onQueryChanged,
         modifier = modifier
-            .fillMaxWidth()
             .graphicsLayer {
-                shadowElevation = 5.dp.toPx()
-                shape = RoundedCornerShape(100.dp)
+                shadowElevation = 1.dp.toPx()
+                ambientShadowColor = color
+                spotShadowColor = color
                 clip = true
-                ambientShadowColor = Color.Gray // Màu của bóng (phát sáng)
-                spotShadowColor = Color.Gray
+                shape = RoundedCornerShape(20.dp)
             }
-            .heightIn(max = 50.dp) // Đặt chiều cao tối thiểu, Figma thường dùng 56dp hoặc tương tự
-            .clip(RoundedCornerShape(percent = 90)) // Bo tròn góc
-            .background(backgroundColor), // Đặt màu nền cho vùng TextField
+            .heightIn(max = 56.dp)
+            .background(backgroundColor),
         placeholder = {
             Text(
                 hint,
                 color = contentColor.copy(alpha = 0.7f),
                 fontStyle = FontStyle.Italic,
-                style = MaterialTheme.typography.bodyMedium)
-                      }, // Placeholder text
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
         leadingIcon = {
             Box(
                 modifier = Modifier
                     .clickable(onClick = onSearchAction)
                     .padding(MaterialTheme.spacing.xs)
-            ){
+            ) {
                 Icon(
                     Icons.Filled.Search,
-                    contentDescription =null,
+                    contentDescription = null,
                     tint = contentColor,
                 )
             }
@@ -98,7 +96,7 @@ fun AppSearchBar(
                     Icon(
                         Icons.Filled.Clear,
                         contentDescription = null,
-                        tint = contentColor // Màu cho icon
+                        tint = contentColor
                     )
                 }
             }
@@ -112,19 +110,13 @@ fun AppSearchBar(
                 onSearchAction()
             }
         ),
-        colors = TextFieldDefaults.colors( // Sử dụng TextFieldDefaults.colors
-            focusedTextColor = contentColor,
-            unfocusedTextColor = contentColor,
-            disabledTextColor = contentColor.copy(alpha = 0.5f),
-            cursorColor = contentColor,
-            focusedIndicatorColor = Color.Transparent, // Loại bỏ đường gạch chân khi focus
-            unfocusedIndicatorColor = Color.Transparent, // Loại bỏ đường gạch chân khi không focus
-            disabledIndicatorColor = Color.Transparent,
-            focusedContainerColor = Color.Transparent, // Màu nền container của TextField, chúng ta đã dùng .background() bên ngoài
-            unfocusedContainerColor = Color.Transparent,
-            disabledContainerColor = Color.Transparent,
-            // Thêm các tùy chỉnh khác nếu cần
-        ),
-        shape = MaterialTheme.shapes.large
+        focusedTextColor = contentColor,
+        unfocusedTextColor = contentColor,
+        disabledTextColor = contentColor.copy(alpha = 0.5f),
+        cursorColor = contentColor,
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent,
+        disabledContainerColor = Color.Transparent,
+        shape = RoundedCornerShape(20.dp)
     )
 }

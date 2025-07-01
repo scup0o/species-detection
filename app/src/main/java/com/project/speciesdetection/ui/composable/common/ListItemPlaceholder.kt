@@ -25,11 +25,11 @@ import com.valentinilk.shimmer.shimmer
 fun ListItemPlaceholder(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // Shimmer thường không có đổ bóng
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
-                .shimmer() // <<<<< ÁP DỤNG SHIMMER
+                .shimmer()
                 .padding(MaterialTheme.spacing.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {

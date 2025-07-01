@@ -8,8 +8,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.project.speciesdetection.core.helpers.LocaleHelper.setLanguage
 import com.project.speciesdetection.core.navigation.AppNavigation
+import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.theme.SpeciesDetectionTheme
 import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,24 +23,30 @@ import javax.inject.Named
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private lateinit var navController: NavHostController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+
 
 
         val languageCode = getLanguagePreference(this)
         setLanguage(this, languageCode)
 
         super.onCreate(savedInstanceState)
-        handleIntent(intent)
+        //WindowCompat.setDecorFitsSystemWindows(window, false)
         enableEdgeToEdge()
         setContent {
+            navController = rememberNavController()
             SpeciesDetectionTheme {
                 AppNavigation(
                     activity = this,
-
+                    navController = navController
                 )
             }
+
+            handleIntent(intent)
+
         }
     }
 
@@ -50,9 +60,8 @@ class MainActivity : ComponentActivity() {
         val postId = intent?.getStringExtra("notification_post_id")
         if (postId != null) {
             Log.d("DeepLink", "Cần điều hướng đến bài viết ID: $postId")
-            // TODO: Dùng NavController để điều hướng đến màn hình chi tiết bài viết
-            // Ví dụ: navController.navigate("postDetail/$postId")
-            // Quan trọng: Xóa extra để không bị xử lý lại khi xoay màn hình
+            navController.navigate(AppScreen.ObservationDetailScreen.createRoute(postId))
+
             intent.removeExtra("notification_post_id")
         }
     }

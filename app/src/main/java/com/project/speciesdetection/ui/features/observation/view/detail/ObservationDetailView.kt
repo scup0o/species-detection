@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.features.observation.view.detail
 
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -18,8 +19,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -31,20 +34,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -52,10 +50,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -64,7 +60,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,16 +75,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
@@ -99,7 +92,6 @@ import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.data.model.observation.Comment
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
-import com.project.speciesdetection.data.model.user.User
 import com.project.speciesdetection.ui.composable.common.CustomTextField
 import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
 import com.project.speciesdetection.ui.composable.common.ExpandableText
@@ -107,8 +99,6 @@ import com.project.speciesdetection.ui.composable.common.species.SpeciesListItem
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.identification_image_source.view.ImageSourceSelectionBottomSheet
 import com.project.speciesdetection.ui.features.observation.view.species_picker.SpeciesPickerView
-import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationEvent
-import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationViewModel
 import com.project.speciesdetection.ui.features.observation.viewmodel.detail.ObservationDetailViewModel
 import com.project.speciesdetection.ui.features.observation.viewmodel.detail.UiEvent
 import com.project.speciesdetection.ui.features.observation.viewmodel.detail.UiState
@@ -152,21 +142,25 @@ fun ObservationDetailView(
     var selectedComment by remember { mutableStateOf("") }
     var showSpeciesPicker by remember { mutableStateOf(false) }
     var showImagePicker by remember { mutableStateOf(false) }
-
+    val isPostingComment by observationDetailViewModel.isPostingComment.collectAsStateWithLifecycle()
 
 
     LaunchedEffect(key1 = true) {
         if (uiState === UiState.Init) {
-            Log.i("a", "im running again")
             observationDetailViewModel.startListening(observationId ?: "")
         }
     }
 
-    LaunchedEffect(key1 = true) { // key1 = true để effect này chỉ chạy một lần
+    val deleteMessage = stringResource(R.string.obs_delete_success)
+    val moderation_error = stringResource(R.string.moderation_error)
+    val comment_inappropriate = stringResource(R.string.comment_inappropriate)
+    val image_inappropriate = stringResource(R.string.image_inappropriate)
+
+    LaunchedEffect(key1 = true) {
         observationDetailViewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is UiEvent.DeleteSuccess -> {
-                    // ===> CHỈ NAVIGATE KHI NHẬN ĐƯỢC SỰ KIỆN THÀNH CÔNG <===
+                    Toast.makeText(context, deleteMessage,Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 }
 
@@ -186,8 +180,13 @@ fun ObservationDetailView(
                 }
 
                 is UiEvent.ShowSnackbar -> {
-                    // Hiển thị SnackBar hoặc Toast với thông báo lỗi
-                    // scaffoldState.snackbarHostState.showSnackbar(event.message)
+                    val message = when (event.message) {
+                        "image_inappropriate" -> image_inappropriate
+                        "moderation_error" -> moderation_error
+                        "comment_inappropriate" -> comment_inappropriate
+                        else -> ""
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -204,15 +203,18 @@ fun ObservationDetailView(
                         observationId ?: "",
                         selectedComment
                     )
-                    selectedComment =""
-                }
+                    selectedComment = ""
+                },
+                contentPadding = PaddingValues(10.dp)
             ) {
                 Icon(
-                    Icons.Default.Close, null,
-                    tint = MaterialTheme.colorScheme.error
+                    painterResource(R.drawable.trash_can_solid), null,
+                    tint = MaterialTheme.colorScheme.error.copy(0.8f),
+                    modifier = Modifier.size(24.dp)
                 )
                 Text(
-                    "Xóa bình luận"
+                    stringResource(R.string.delete_comment),
+                    modifier = Modifier.padding(start=20.dp)
                 )
             }
         }
@@ -222,26 +224,25 @@ fun ObservationDetailView(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text(text = "Xác nhận xoá") },
-            text = { Text(text = "Bản ghi quan sát sẽ được chuyển vào hộp lưu trữ và xóa trong 30 ngày") },
+            title = { Text(text = stringResource(R.string.confirm_delete_obs)) },
+            text = { Text(text = stringResource(R.string.confirm_delete_obs_body)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        // Xác nhận và gọi deleteObservation
                         showDialog = false
                         coroutineScope.launch {
                             observationDetailViewModel.deleteObservation(observationId!!)
                         }
                     }
                 ) {
-                    Text("Xoá")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 Button(
                     onClick = { showDialog = false }
                 ) {
-                    Text("Huỷ")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -269,17 +270,16 @@ fun ObservationDetailView(
 
     when (uiState) {
         UiState.Loading -> {
-            Scaffold { innerPadding ->
-                Box(
-                    Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize()
-                ) {
-                    Row(modifier = Modifier.align(Alignment.Center)) {
-                        CircularProgressIndicator()
-                    }
-                }
+
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
+
 
         }
 
@@ -292,8 +292,10 @@ fun ObservationDetailView(
             }
 
             Scaffold(
+                modifier = Modifier.navigationBarsPadding(),
                 topBar = {
                     TopAppBar(
+                        modifier = Modifier.statusBarsPadding(),
                         title = {},
                         navigationIcon = {
 
@@ -327,7 +329,7 @@ fun ObservationDetailView(
                                                 onDismissRequest = { expanded = false }
                                             ) {
                                                 DropdownMenuItem(
-                                                    text = { Text("Chỉnh sửa") },
+                                                    text = { Text(stringResource(R.string.edit)) },
                                                     onClick = {
                                                         navController.navigate(
                                                             AppScreen.UpdateObservationScreen.buildRouteForEdit(
@@ -338,7 +340,7 @@ fun ObservationDetailView(
                                                     }
                                                 )
                                                 DropdownMenuItem(
-                                                    text = { Text("Xóa bản ghi") },
+                                                    text = { Text(stringResource(R.string.delete_obs)) },
                                                     onClick = {
                                                         showDialog = true
                                                     }
@@ -361,14 +363,19 @@ fun ObservationDetailView(
                             value = newCommentContent,
                             onValueChange = { newCommentContent = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Nhập mô tả", fontStyle = FontStyle.Italic) },
+                            placeholder = {
+                                Text(
+                                    stringResource(R.string.comment_placeholder),
+                                    fontStyle = FontStyle.Italic
+                                )
+                            },
                             minLines = 1,
                             unfocusedBorderColor = Color.Transparent,
                             focusedBorderColor = Color.Transparent,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                            focusedPlaceholderColor = MaterialTheme.colorScheme.outlineVariant,
-                            unfocusedPlaceholderColor = MaterialTheme.colorScheme.outlineVariant,
+                            focusedPlaceholderColor = Color.Transparent,
+                            unfocusedPlaceholderColor = MaterialTheme.colorScheme.primary.copy(0.8f),
                             paddingValues = 15.dp,
                             shape = RoundedCornerShape(10.dp)
                         )
@@ -401,7 +408,7 @@ fun ObservationDetailView(
                                 }
                             }
                             IconButton(
-                                enabled = newCommentSpecies.id != "" || newCommentContent.isNotEmpty() || newCommentImage.isNotEmpty(),
+                                enabled = (newCommentSpecies.id.isNotEmpty() || newCommentContent.isNotEmpty() || newCommentImage.isNotEmpty()) && !isPostingComment,
                                 onClick = {
                                     observationDetailViewModel.postComment(
                                         comment = Comment(
@@ -416,11 +423,23 @@ fun ObservationDetailView(
                                     )
                                 }
                             ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Send, null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                Box(
+                                    contentAlignment = Alignment.Center,
                                     modifier = Modifier.size(24.dp)
-                                )
+                                ) {
+                                    if (isPostingComment) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.5.dp
+                                        )
+                                    } else {
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.Send,
+                                            contentDescription = null,
+                                            tint = if ((newCommentSpecies.id.isNotEmpty() || newCommentContent.isNotEmpty() || newCommentImage.isNotEmpty()) && !isPostingComment) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                                        )
+                                    }
+                                }
                             }
                         }
                         if (newCommentImage.isNotEmpty()) {
@@ -485,7 +504,18 @@ fun ObservationDetailView(
                             Box {
                                 SpeciesListItem(
                                     newCommentSpecies,
-                                    onClick = {}
+                                    newCommentSpecies.haveObservation,
+                                    onClick = {
+                                        navController.navigate(
+                                            AppScreen.EncyclopediaDetailScreen.createRoute(
+                                                species = commentSpecies[newCommentSpecies.id]
+                                                    ?: DisplayableSpecies(),
+                                                imageUri = null
+                                            )
+                                        ) {
+                                            launchSingleTop = true
+                                        }
+                                    }
                                 )
                                 IconButton(
                                     onClick = {
@@ -537,14 +567,29 @@ fun ObservationDetailView(
                                     contentDescription = null,
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(100))
-                                        .size(40.dp),
+                                        .size(40.dp)
+                                        .clickable {
+                                            navController.navigate(
+                                                AppScreen.CommunityProfileMainScreen.createRoute(
+                                                    uid = observation?.uid ?: ""
+                                                )
+                                            )
+
+                                        },
                                     loading = placeholder(R.drawable.error_image),
                                     failure = placeholder(R.drawable.error_image)
                                 )
                                 Column {
                                     Text(
                                         observation?.userName ?: "Unknown User",
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.clickable {
+                                            navController.navigate(
+                                                AppScreen.CommunityProfileMainScreen.createRoute(
+                                                    uid = observation?.uid ?: ""
+                                                )
+                                            )
+                                        }
                                     )
                                     if (observation?.dateUpdated != null)
                                         Row(
@@ -571,14 +616,13 @@ fun ObservationDetailView(
                                                 }
                                             }
                                             Text(
-                                                "Updated on ${
-                                                    SimpleDateFormat(
-                                                        "dd/MM/yy",
-                                                        Locale.getDefault()
-                                                    ).format(
-                                                        observation?.dateUpdated?.toDate() ?: 0
-                                                    )
-                                                }",
+                                                stringResource(R.string.updated_on) + " " +
+                                                        SimpleDateFormat(
+                                                            "dd/MM/yy",
+                                                            Locale.getDefault()
+                                                        ).format(
+                                                            observation?.dateUpdated?.toDate() ?: 0
+                                                        ),
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = MaterialTheme.colorScheme.outline
                                             )
@@ -590,12 +634,14 @@ fun ObservationDetailView(
 
                         }
                     }
-                    item {
-                        Row(modifier = Modifier.padding(horizontal = 15.dp)) {
-                            ExpandableText(
-                                Modifier,
-                                observation?.content ?: ""
-                            )
+                    if (observation?.content?.isNotEmpty() == true) {
+                        item {
+                            Row(modifier = Modifier.padding(horizontal = 15.dp)) {
+                                ExpandableText(
+                                    Modifier,
+                                    observation?.content ?: ""
+                                )
+                            }
                         }
                     }
                     if (pagerState.pageCount > 0)
@@ -604,29 +650,47 @@ fun ObservationDetailView(
                             Row(modifier = Modifier.padding(horizontal = 15.dp)) {
                                 Box(Modifier.fillMaxWidth()) {
                                     HorizontalPager(pagerState) { page ->
-                                        GlideImage(
-                                            model = CloudinaryImageURLHelper.restoreCloudinaryOriginalUrl(
-                                                observation?.imageURL?.get(page) ?: ""
-                                            ),
-                                            contentDescription = null,
-                                            failure = placeholder(R.drawable.image_not_available),
-                                            loading = placeholder(R.drawable.image_not_available),
-                                            contentScale = ContentScale.Crop, // Crop hoặc ContentScale.Fit/Inside tùy bạn
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(300.dp) // 👈 Giới hạn chiều cao tại đây
-                                                .clickable {
-                                                    navController.navigate(
-                                                        AppScreen.FullScreenImageViewer.createRoute(
-                                                            observation?.imageURL?.get(page) ?: ""
-                                                        )
-                                                    ) {
-                                                        launchSingleTop = true
-                                                        restoreState = true
+                                        Box {
+                                            GlideImage(
+                                                model = CloudinaryImageURLHelper.restoreCloudinaryOriginalUrl(
+                                                    observation?.imageURL?.get(page) ?: ""
+                                                ),
+                                                contentDescription = null,
+                                                failure = placeholder(R.drawable.image_not_available),
+                                                loading = placeholder(R.drawable.image_not_available),
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(300.dp)
+                                                    .clickable {
+                                                        navController.navigate(
+                                                            AppScreen.FullScreenImageViewer.createRoute(
+                                                                observation?.imageURL?.get(page)
+                                                                    ?: ""
+                                                            )
+                                                        ) {
+                                                            launchSingleTop = true
+                                                            restoreState = true
+                                                        }
                                                     }
-                                                }
-                                                .clip(RoundedCornerShape(10.dp))
-                                        )
+                                                    .clip(RoundedCornerShape(10.dp))
+                                            )
+                                            if (observation?.imageURL?.get(page)
+                                                    ?.contains("/video/") == true
+                                            ) {
+
+                                                Icon(
+                                                    imageVector = Icons.Default.PlayArrow,
+                                                    contentDescription = "Play",
+                                                    tint = Color.White,
+                                                    modifier = Modifier
+                                                        .size(48.dp)
+                                                        .align(Alignment.Center)
+                                                )
+
+                                            }
+                                        }
+
 
                                     }
                                     if (pagerState.pageCount > 1) {
@@ -669,8 +733,27 @@ fun ObservationDetailView(
                         }
 
                     item {
-                        if (observation?.location != null)
-                            LazyRow(modifier = Modifier.padding(horizontal = 15.dp)) {
+                        if (observation?.location != null) {
+                            val gmmIntentUri =
+                                "geo:${observation?.location?.latitude},${observation?.location?.longitude}?q=${
+                                    Uri.encode(observation?.locationName)
+                                }".toUri()
+                            LazyRow(modifier = Modifier
+                                .padding(horizontal = 15.dp)
+                                .clickable {
+                                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+
+                                    // Chỉ định rõ ràng mở bằng Google Maps
+                                    // Nếu không set, hệ thống sẽ hỏi người dùng chọn ứng dụng bản đồ nào
+                                    //mapIntent.setPackage("com.google.android.apps.maps")
+
+                                    // Kiểm tra xem có ứng dụng nào có thể xử lý Intent này không
+                                    // để tránh bị crash app
+                                    if (mapIntent.resolveActivity(context.packageManager) != null) {
+                                        context.startActivity(mapIntent)
+                                    } else {
+                                    }
+                                }) {
                                 item {
                                     Icon(
                                         Icons.Default.LocationOn, null,
@@ -687,6 +770,8 @@ fun ObservationDetailView(
 
                                 }
                             }
+                        }
+
 
                     }
 
@@ -705,14 +790,14 @@ fun ObservationDetailView(
                                         .padding(end = 5.dp)
                                 )
                                 Text(
-                                    SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(
+                                    SimpleDateFormat("HH:mm, dd/MM/yy", Locale.getDefault()).format(
                                         observation?.dateFound?.toDate() ?: 0
                                     ),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.outline
                                 )
                             }
-                            Row {
+                            Row() {
                                 Icon(
                                     painterResource(R.drawable.otter_solid), null,
                                     tint = MaterialTheme.colorScheme.outlineVariant,
@@ -807,7 +892,7 @@ fun ObservationDetailView(
                                 )
                             }
                             val isSaved =
-                                observation?.saveUserIds?.containsKey(authState.currentUser?.uid) == true
+                                observation?.savedBy?.contains(authState.currentUser?.uid) == true
                             var isSaving by remember { mutableStateOf(false) }
 
                             Row(
@@ -848,7 +933,7 @@ fun ObservationDetailView(
                                 }
 
                                 Text(
-                                    "Save",
+                                    stringResource(R.string.save),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = if (!isSaved) MaterialTheme.colorScheme.outline
                                     else Color(212, 145, 30),
@@ -872,7 +957,7 @@ fun ObservationDetailView(
                                         }
                                         .padding(horizontal = 15.dp)) {
                                     Text(
-                                        if (commentSortState) "Newest" else "Oldest",
+                                        if (commentSortState) stringResource(R.string.newest) else stringResource(R.string.oldest),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -888,8 +973,8 @@ fun ObservationDetailView(
 
 
                         items(
-                            items = comment, // <--- THAY ĐỔI 1: Truyền thẳng danh sách vào đây
-                            key = { commentItem -> commentItem.id!! } // <--- THAY ĐỔI 2: Key dựa trên chính item
+                            items = comment,
+                            key = { commentItem -> commentItem.id!! }
                         ) { currentComment ->
 
                             Row(
@@ -911,7 +996,15 @@ fun ObservationDetailView(
                                         contentDescription = null,
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(100))
-                                            .size(40.dp),
+                                            .size(40.dp)
+                                            .clickable {
+                                                navController.navigate(
+                                                    AppScreen.CommunityProfileMainScreen.createRoute(
+                                                        uid = currentComment.userId ?: ""
+                                                    )
+                                                )
+
+                                            },
                                         loading = placeholder(R.drawable.error_image),
                                         failure = placeholder(R.drawable.error_image)
                                     )
@@ -930,7 +1023,14 @@ fun ObservationDetailView(
                                             Row() {
                                                 Text(
                                                     currentComment.userName ?: "Unknown User",
-                                                    fontWeight = FontWeight.Bold
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.clickable {
+                                                        navController.navigate(
+                                                            AppScreen.CommunityProfileMainScreen.createRoute(
+                                                                uid = currentComment.userId ?: ""
+                                                            )
+                                                        )
+                                                    }
                                                 )
                                             }
                                             if (currentComment.content.isNotEmpty()) {
@@ -944,19 +1044,37 @@ fun ObservationDetailView(
 
                                         if (currentComment.speciesId != "") {
                                             Text(
-                                                "is suggested this species",
+                                                stringResource(R.string.comment_species_suggestion),
                                                 color = MaterialTheme.colorScheme.outline,
                                                 style = MaterialTheme.typography.bodyMedium
                                             )
                                             if (commentSpecies[currentComment.id] == null) {
-                                                CircularProgressIndicator()
+                                                Row(
+                                                    Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.Center
+                                                ) {
+                                                    CircularProgressIndicator(
+                                                        strokeWidth = 4.dp
+                                                    )
+                                                }
+
                                             } else {
                                                 SpeciesListItem(
                                                     observationState = commentSpecies[currentComment.id]?.haveObservation
                                                         ?: false,
                                                     species = commentSpecies[currentComment.id]
                                                         ?: DisplayableSpecies(),
-                                                    onClick = {}
+                                                    onClick = {
+                                                        navController.navigate(
+                                                            AppScreen.EncyclopediaDetailScreen.createRoute(
+                                                                species = commentSpecies[currentComment.id]
+                                                                    ?: DisplayableSpecies(),
+                                                                imageUri = null
+                                                            )
+                                                        ) {
+                                                            launchSingleTop = true
+                                                        }
+                                                    }
                                                 )
                                             }
                                         }
@@ -1076,11 +1194,19 @@ fun ObservationDetailView(
 
                     } else {
                         item {
-                            Text(
-                                "No comment",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center
-                            )
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    stringResource(R.string.comment_empty),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            }
                         }
 
                     }
@@ -1091,6 +1217,40 @@ fun ObservationDetailView(
         }
 
         UiState.Error("violated") -> {
+            if (authState.currentUser?.uid != observation?.uid) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = {},
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        navController.popBackStack()
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Default.ArrowBack, null
+                                    )
+                                }
+                            }
+                        )
+                    }
+                ) { innerPadding ->
+                    Box(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize()
+                    ) {
+                        Row(modifier = Modifier.align(Alignment.Center)) {
+                            ErrorScreenPlaceholder {
+                                observationDetailViewModel.startListening(observationId ?: "")
+                            }
+                        }
+                    }
+                }
+            } else {
+
+            }
 
         }
 

@@ -1,38 +1,11 @@
 package com.project.speciesdetection.ui.features.encyclopedia_main_screen.view
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.GenericShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import com.project.speciesdetection.R
-import com.project.speciesdetection.core.theme.spacing
-import com.project.speciesdetection.core.theme.strokes
 import com.project.speciesdetection.data.model.species_class.DisplayableSpeciesClass
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import com.project.speciesdetection.ui.composable.common.CustomChip
 
-fun customCardShape() = GenericShape { size, _ ->
+/*fun customCardShape() = GenericShape { size, _ ->
     val width = size.width
     val height = size.height
 
@@ -47,7 +20,12 @@ fun customCardShape() = GenericShape { size, _ ->
 
     // Tiếp tục vẽ phần thân lá
     moveTo(width * 0.05f, 0f) // Trở lại góc trên trái
-    quadraticBezierTo(width * 0.2f, height * 0.1f, width * 0.5f, height * 0.0f) // Vẽ đường cong trên bên trái
+    quadraticBezierTo(
+        width * 0.2f,
+        height * 0.1f,
+        width * 0.5f,
+        height * 0.0f
+    ) // Vẽ đường cong trên bên trái
     quadraticBezierTo(width * 0.8f, height * 0.1f, width, height * 0.5f) // Đường cong bên phải
 
     // Tạo phần đáy của chiếc lá
@@ -104,7 +82,7 @@ class LeafClippingShape : Shape {
 
         return Outline.Generic(path)
     }
-}
+}*/
 
 @Composable
 fun SpeciesClassChip(

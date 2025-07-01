@@ -1,6 +1,7 @@
 package com.project.speciesdetection.core.services.authentication
 
 import android.content.Context
+import android.net.Uri
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -9,10 +10,12 @@ import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.project.speciesdetection.data.model.user.User
 import kotlinx.coroutines.tasks.await
@@ -26,6 +29,61 @@ class FirebaseAuthService @Inject constructor(
 
     private val webClientId = "1012000261168-h55p7b5hpoe3ub4v7ovoa0s2361j8qon.apps.googleusercontent.com" // Chỉ cần webClientId để tạo GetGoogleIdOption
 
+    override suspend fun updateAuthProfile(newName: String?, newPhotoUrl: String?): Result<Unit> {
+        // Lấy người dùng hiện tại, nếu chưa đăng nhập thì không thể thực hiện.
+        val user = auth.currentUser ?: return Result.failure(Exception("User not logged in."))
+
+        return try {
+            // Sử dụng UserProfileChangeRequest.Builder để tạo đối tượng cập nhật
+            val profileUpdates = UserProfileChangeRequest.Builder().apply {
+                // Chỉ thêm vào builder nếu giá trị không phải là null
+                newName?.let { displayName = it }
+                newPhotoUrl?.let { photoUri = Uri.parse(it) }
+            }.build()
+
+            // Gọi hàm updateProfile của FirebaseUser và chờ hoàn tất
+            user.updateProfile(profileUpdates).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateAuthPassword(newPassword: String): Result<Unit> {
+        val user = auth.currentUser ?: return Result.failure(Exception("User not logged in."))
+
+        return try {
+            user.updatePassword(newPassword).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            // Bắt lỗi, thường là do chưa xác thực lại.
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Xác thực lại người dùng bằng mật khẩu hiện tại của họ.
+     * Đây là bước bắt buộc trước khi thực hiện các hành động nhạy cảm như đổi mật khẩu hoặc xóa tài khoản.
+     * @param password Mật khẩu hiện tại của người dùng.
+     * @return Result<Unit> cho biết thành công hay thất bại.
+     */
+    override suspend fun reauthenticateUser(password: String): Result<Unit> {
+        val user = auth.currentUser ?: return Result.failure(Exception("User not logged in."))
+        // Lấy email của người dùng để tạo credential
+        val email = user.email ?: return Result.failure(Exception("Cannot re-authenticate user without an email."))
+
+        return try {
+            // Tạo một credential từ email và mật khẩu được cung cấp
+            val credential = EmailAuthProvider.getCredential(email, password)
+
+            // Gọi hàm reauthenticate và chờ hoàn tất
+            user.reauthenticate(credential).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            // Bắt lỗi, thường là do sai mật khẩu.
+            Result.failure(e)
+        }
+    }
 
     override fun createGoogleSignInRequest(): GetCredentialRequest {
         /*val googleIdOption: GetGoogleIdOption = GetGoogleIdOption.Builder()

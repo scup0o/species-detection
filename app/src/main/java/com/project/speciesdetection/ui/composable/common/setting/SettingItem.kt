@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
@@ -43,19 +44,23 @@ fun SettingItem(
     ){
         Column(verticalArrangement = Arrangement.spacedBy(15.dp)) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 if (vectorIcon!=null)
                     Icon(
                         vectorIcon,
-                        null
+                        null,
+                        modifier = Modifier.size(30.dp),
+                        tint = MaterialTheme.colorScheme.tertiary,
                     )
                 else
                     if (painterIcon!=null)
                         Icon(
                             painterResource(painterIcon),
                             null,
-                            tint = MaterialTheme.colorScheme.tertiary
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(30.dp)
                         )
 
                 Text(
@@ -70,7 +75,6 @@ fun SettingItem(
 
             }
 
-            if (divider) HorizontalDivider()
         }
 
     }

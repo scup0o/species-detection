@@ -29,7 +29,7 @@ import com.project.speciesdetection.ui.features.identification_analysis.viewmode
 fun AnalysisButton(
     modifier: Modifier = Modifier,
     currentImageUriToAnalyze: Uri?,
-    onAnalysisActionTriggered: () -> Unit, // Callback khi nút được nhấn và action bắt đầu
+    onAnalysisActionTriggered: () -> Unit,
     viewModel: AnalysisViewModel = hiltViewModel()
 ) {
     val analysisUiState by viewModel.uiState.collectAsState()
@@ -42,7 +42,7 @@ fun AnalysisButton(
     ExtendedFloatingActionButton(
         onClick = {
             if (isButtonClickable) {
-                onAnalysisActionTriggered() // Thông báo cho parent Composable (EditImageScreen)
+                onAnalysisActionTriggered()
                 viewModel.startImageAnalysis(currentImageUriToAnalyze)
             }
         },

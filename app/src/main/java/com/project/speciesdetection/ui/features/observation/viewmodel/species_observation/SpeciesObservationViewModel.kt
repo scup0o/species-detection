@@ -11,6 +11,7 @@ import com.project.speciesdetection.core.services.map.GeocodingService
 import com.project.speciesdetection.data.model.observation.Observation
 import com.project.speciesdetection.data.model.observation.repository.ObservationChange
 import com.project.speciesdetection.data.model.observation.repository.ObservationRepository
+import com.project.speciesdetection.domain.provider.language.LanguageProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -32,11 +33,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import javax.inject.Named
 
 @HiltViewModel
 class SpeciesObservationViewModel @Inject constructor(
-    private val mapService : GeocodingService,
-    private val repository: ObservationRepository // Giả sử tên là repository
+    private val mapService: GeocodingService,
+    @Named("language_provider") languageProvider: LanguageProvider,
+    private val repository: ObservationRepository
 ) : ViewModel() {
 
     enum class ViewMode {
@@ -44,51 +47,49 @@ class SpeciesObservationViewModel @Inject constructor(
         MAP
     }
 
-    // --- State quản lý các bộ lọc và tab ---
-
-    // State để lưu tab đang được chọn (0: Tất cả, 1: Của tôi)
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
 
-    // <-- THAY ĐỔI: Tên biến rõ ràng hơn
     private val _viewMode = MutableStateFlow(ViewMode.LIST)
     val viewMode: StateFlow<ViewMode> = _viewMode.asStateFlow()
 
-    // State để lưu các tham số lọc (speciesId và userId)
     private val _filterParams = MutableStateFlow<Pair<String, String?>>(Pair("", null))
 
-    // --- State quản lý các thay đổi real-time ---
-
-    // Map để lưu trữ các observation đã được cập nhật, thêm, hoặc xóa.
-    // Key là ID, Value là Observation. Nếu value là null, nghĩa là nó đã bị xóa.
     private val _updatedObservations = MutableStateFlow<Map<String, Observation?>>(emptyMap())
-    val updatedObservations: StateFlow<Map<String, Observation?>> = _updatedObservations.asStateFlow()
+    val updatedObservations: StateFlow<Map<String, Observation?>> =
+        _updatedObservations.asStateFlow()
 
+    private val _sortByDesc = MutableStateFlow(true)
+    val sortByDesc = _sortByDesc.asStateFlow()
 
-    // --- Flow chính cung cấp dữ liệu Paging cho UI ---
+    fun updateSortDirection() {
+        _sortByDesc.value = !_sortByDesc.value
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val observationPagingData: Flow<PagingData<Observation>> = combine(
         _filterParams,
-        _selectedTab
-    ) { params, tabIndex ->
+        _selectedTab,
+        _sortByDesc
+    ) { params, tabIndex, sortByDesc ->
         val speciesId = params.first
         val currentUserId = params.second
         val queryUid = if (tabIndex == 1) currentUserId else null
-        Pair(speciesId, queryUid)
+        Triple(speciesId, queryUid, sortByDesc)
     }
-        .filter { it.first.isNotBlank() } // Chỉ bắt đầu khi có speciesId
-        .distinctUntilChanged() // Chỉ trigger khi filter hoặc tab thực sự thay đổi
-        .flatMapLatest { (speciesId, uid) ->
-            Log.d("ViewModel", "Tab/Filter changed. Clearing updatedObservations.")
+        .filter { it.first.isNotBlank() }
+        .distinctUntilChanged()
+        .flatMapLatest { (speciesId, uid, sortByDesc) ->
+            //Log.d("ViewModel", "Tab/Filter changed. Clearing updatedObservations.")
             _updatedObservations.value = emptyMap()
-            // flatMapLatest sẽ tự động hủy và tạo PagingSource cũ, tạo cái mới
-            // khi tab hoặc filter thay đổi.
-            repository.getObservationPager(speciesId = speciesId, uid = uid) // Giả sử có một hàm chung này
+            repository.getObservationPager(
+                speciesId = speciesId,
+                uid = uid,
+                queryByDesc = sortByDesc
+            ) // Giả sử có một hàm chung này
 
-        }.cachedIn(viewModelScope) // cacheIn là bắt buộc!
+        }.cachedIn(viewModelScope)
 
-    // --- Luồng dữ liệu cho chế độ MAP (Tải tất cả) ---
     @OptIn(ExperimentalCoroutinesApi::class)
     val allObservationsForMap: StateFlow<List<Observation>> = combine(
         _filterParams,
@@ -98,7 +99,6 @@ class SpeciesObservationViewModel @Inject constructor(
         Triple(params, tabIndex, mode)
     }
         .filter { (params, _, mode) ->
-            // Chỉ kích hoạt luồng này khi ở chế độ MAP và có speciesId
             params.first.isNotBlank() && mode == ViewMode.MAP
         }
         .distinctUntilChanged()
@@ -120,12 +120,11 @@ class SpeciesObservationViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList() // Giá trị ban đầu là danh sách rỗng
+            initialValue = emptyList()
         )
+
     init {
-        // <-- THAY ĐỔI: Chuyển toàn bộ logic lắng nghe vào đây
         viewModelScope.launch {
-            // Luồng này sẽ quyết định cần lắng nghe những gì
             combine(_filterParams, _selectedTab) { params, tabIndex ->
                 Pair(params, tabIndex)
             }
@@ -133,44 +132,37 @@ class SpeciesObservationViewModel @Inject constructor(
                 .collect { (params, tabIndex) ->
                     val (speciesId, currentUserId) = params
 
-                    // DỌN DẸP TRẠNG THÁI CŨ KHI CHUYỂN TAB
                     _updatedObservations.value = emptyMap()
 
                     if (speciesId.isNotBlank()) {
                         if (tabIndex == 1 && currentUserId != null) {
-                            // --- Chế độ "CỦA TÔI": Lắng nghe tất cả thay đổi ---
-                            Log.d("ViewModel", "Listening for MY observations. UID: $currentUserId")
+                            //Log.d("ViewModel", "Listening for MY observations. UID: $currentUserId")
                             startListeningForChanges(speciesId, currentUserId)
                         } else {
-                            // --- Chế độ "TẤT CẢ": Chỉ lắng nghe Sửa/Xóa, KHÔNG Thêm ---
-                            Log.d("ViewModel", "Listening for ALL observations (Modify/Remove only).")
-                            // Chúng ta sẽ có một hàm mới để làm việc này
-                            // Hiện tại, chúng ta có thể tạm thời không làm gì để ngăn lỗi
-                            // Hoặc triển khai logic chỉ lắng nghe Sửa/Xóa (phức tạp hơn)
+                            //Log.d("ViewModel", "Listening for ALL observations (Modify/Remove only).")
 
-                            // GIẢI PHÁP ĐƠN GIẢN NHẤT: Không lắng nghe real-time ở tab "Tất cả"
-                            // Nếu muốn có listener, xem phần nâng cao bên dưới.
                         }
                     }
                 }
         }
     }
 
-    // Hàm trợ giúp để lắng nghe thay đổi (Thêm/Sửa/Xóa)
     private var currentListenerJob: Job? = null
     private fun startListeningForChanges(speciesId: String, uid: String?) {
-        currentListenerJob?.cancel() // Hủy job listener cũ
+        currentListenerJob?.cancel()
         currentListenerJob = viewModelScope.launch {
             repository.listenToObservationChanges(speciesId, uid)
                 .collect { changes ->
-                    // Logic xử lý `_updatedObservations` của bạn giữ nguyên
                     _updatedObservations.update { currentMap ->
                         val newMap = currentMap.toMutableMap()
                         changes.forEach { change ->
                             when (change) {
                                 //is ObservationChange.Added -> newMap[change.observation.id!!] = change.observation
-                                is ObservationChange.Modified -> newMap[change.observation.id!!] = change.observation
-                                is ObservationChange.Removed -> newMap[change.observationId] = null // Đánh dấu là đã xóa
+                                is ObservationChange.Modified -> newMap[change.observation.id!!] =
+                                    change.observation
+
+                                is ObservationChange.Removed -> newMap[change.observationId] =
+                                    null // Đánh dấu là đã xóa
                                 else -> {}
                             }
                         }
@@ -180,34 +172,14 @@ class SpeciesObservationViewModel @Inject constructor(
         }
     }
 
-    /*init {
-        // Bắt đầu lắng nghe các thay đổi real-time ngay khi ViewModel được tạo
-
-        //listenForRealtimeUpdates()
-
-
-
-
-
-    }*/
-
-    // --- Các hàm được gọi từ UI ---
-
-    /**
-     * Được gọi từ UI khi màn hình được tạo hoặc khi tham số thay đổi.
-     */
     fun setFilters(speciesId: String, currentUserId: String?) {
         _filterParams.value = Pair(speciesId, currentUserId)
     }
 
-    /**
-     * Được gọi từ UI khi người dùng chuyển tab.
-     */
     fun selectTab(index: Int) {
         _selectedTab.value = index
     }
 
-    // <-- THAY ĐỔI: Hàm chọn chế độ xem
     fun setViewMode(mode: ViewMode) {
         _viewMode.value = mode
     }
@@ -218,13 +190,10 @@ class SpeciesObservationViewModel @Inject constructor(
     }
 
 
-    // --- Logic lắng nghe và xử lý thay đổi ---
-
     /*@OptIn(ExperimentalCoroutinesApi::class)
     fun listenForRealtimeUpdates() {
         viewModelScope.launch {
-            // Kết hợp các filter để biết cần lắng nghe câu truy vấn nào
-            combine(_filterParams, _selectedTab) { params, tabIndex ->
+                       combine(_filterParams, _selectedTab) { params, tabIndex ->
                 val speciesId = params.first
                 val currentUserId = params.second
                 Log.i("che", speciesId)
@@ -243,7 +212,6 @@ class SpeciesObservationViewModel @Inject constructor(
                     repository.listenToObservationChanges(speciesId, uid)
                 }
                 .collect { changes ->
-                    // Xử lý các thay đổi nhận được từ Flow
                     Log.d("ViewModel", "Received ${changes.size} changes from Firestore.")
                     _updatedObservations.update { currentMap ->
                         val newMap = currentMap.toMutableMap()

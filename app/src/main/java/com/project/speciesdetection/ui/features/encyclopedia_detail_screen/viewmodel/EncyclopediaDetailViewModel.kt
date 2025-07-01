@@ -21,7 +21,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
-// Data class đã định nghĩa ở Bước 1
 data class SourceInfoItem(
     val firstValue: String,
     val secondValue: String,
@@ -31,7 +30,7 @@ data class SourceInfoItem(
 
 @HiltViewModel
 class EncyclopediaDetailViewModel @Inject constructor(
-    private val observationRepository : ObservationRepository,
+    private val observationRepository: ObservationRepository,
     private val savedStateHandle: SavedStateHandle,
     private val getLocalizedSpeciesUseCase: GetLocalizedSpeciesUseCase,
     private val userRepository: UserRepository
@@ -43,22 +42,20 @@ class EncyclopediaDetailViewModel @Inject constructor(
         data class Error(val message: String) : UiState()
     }
 
-    // Biến Json nên là private hoặc internal nếu không cần truy cập từ bên ngoài
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val _speciesDateFound = MutableStateFlow<Timestamp?>(null) // Map để lưu trữ dateFound theo speciesId
+    private val _speciesDateFound =
+        MutableStateFlow<Timestamp?>(null)
     val speciesDateFound: StateFlow<Timestamp?> = _speciesDateFound.asStateFlow()
 
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    // Thay đổi kiểu của _sourceList thành List<SourceInfoItem>
     private val _sourceList = MutableStateFlow<List<SourceInfoItem>>(emptyList())
     val sourceList: StateFlow<List<SourceInfoItem>> = _sourceList.asStateFlow()
 
-    // Biến đếm để theo dõi thứ tự thêm vào
-    private var sourceOrderCounter = 0 // Bắt đầu từ 0 hoặc 1 tùy bạn muốn
+    private var sourceOrderCounter = 0
     private var observationListener: ListenerRegistration? = null
 
     init {
@@ -73,7 +70,11 @@ class EncyclopediaDetailViewModel @Inject constructor(
             try {
                 json.decodeFromString<DisplayableSpecies>(it)
             } catch (e: Exception) {
-                Log.e("EncyclopediaDetailVM", "Error decoding baseSpeciesJson", e) // Log lỗi rõ ràng hơn
+                /*Log.e(
+                    "EncyclopediaDetailVM",
+                    "Error decoding baseSpeciesJson",
+                    e
+                )*/
                 null
             }
         }
@@ -92,22 +93,21 @@ class EncyclopediaDetailViewModel @Inject constructor(
                             localizedClass = baseSpecies.localizedClass,
                             //haveObservation = baseSpecies.haveObservation,
                             //firstFound = baseSpecies.firstFound
-                            // Bạn có thể muốn copy thêm các trường khác từ baseSpecies nếu cần
                         )
                     )
 
                     val currentUser = userRepository.getCurrentUser()
-                    if (currentUser!=null){
+                    if (currentUser != null) {
                         observeDateFoundForUidAndSpecies(detailedSpecies.id, currentUser.uid)
                     }
 
 
-                    // Reset bộ đếm và sourceList trước khi thêm mới (nếu hàm này có thể được gọi lại)
                     sourceOrderCounter = 0
-                    _sourceList.value = emptyList() // Xóa danh sách cũ
-                    addInfoPairsToSourceList() // Gọi sau khi UiState.Success được thiết lập
+                    _sourceList.value = emptyList()
+                    addInfoPairsToSourceList()
                 } else {
-                    _uiState.value = UiState.Error("Could not fetch species details for ID: ${baseSpecies.id}")
+                    _uiState.value =
+                        UiState.Error("Could not fetch species details for ID: ${baseSpecies.id}")
                 }
             } catch (e: Exception) {
                 Log.e("EncyclopediaDetailVM", "Error fetching species details", e)
@@ -116,22 +116,21 @@ class EncyclopediaDetailViewModel @Inject constructor(
         }
     }
 
-    fun observeDateFoundForUidAndSpecies(speciesId: String, uid : String) {
+    fun observeDateFoundForUidAndSpecies(speciesId: String, uid: String) {
         if (uid.isNotEmpty())
             viewModelScope.launch {
             }
-            viewModelScope.launch {
-                observationListener?.remove()
+        viewModelScope.launch {
+            observationListener?.remove()
 
-                // Bắt đầu lắng nghe và lưu lại listener registration
-                observationListener =
-                observationRepository.checkUserObservationState(uid,speciesId) { dateFound ->
+            observationListener =
+                observationRepository.checkUserObservationState(uid, speciesId) { dateFound ->
 
-                        Log.i("obs", dateFound.toString())
-                        _speciesDateFound.value = dateFound
+                    Log.i("obs", dateFound.toString())
+                    _speciesDateFound.value = dateFound
 
                 }
-            }
+        }
 
     }
 
@@ -144,7 +143,6 @@ class EncyclopediaDetailViewModel @Inject constructor(
 
             fun processList(list: List<String>, listNameForLog: Int) {
                 if (list.size >= 2) {
-                    // Duyệt ngược từ phần tử gần cuối (list.size - 2) đến index = 1
                     for (i in list.size - 2 downTo 1 step 2) {
                         val first = list.getOrNull(i)
                         val second = list.getOrNull(i + 1)
@@ -158,11 +156,14 @@ class EncyclopediaDetailViewModel @Inject constructor(
                                 orderAdded = sourceOrderCounter
                             )
                             newSourceItems.add(newItem)
-                            Log.d("AddInfoPairs", "Prepared item for $listNameForLog: $newItem")
+                            //Log.d("AddInfoPairs", "Prepared item for $listNameForLog: $newItem")
                         }
                     }
                 } else {
-                    Log.w("AddInfoPairs", "$listNameForLog does not have enough elements. Size: ${list.size}")
+                    /*Log.w(
+                        "AddInfoPairs",
+                        "$listNameForLog does not have enough elements. Size: ${list.size}"
+                    )*/
                 }
             }
 
@@ -176,17 +177,19 @@ class EncyclopediaDetailViewModel @Inject constructor(
                 _sourceList.update { currentList ->
                     currentList + newSourceItems
                 }
-                Log.i("AddInfoPairs", "Updated _sourceList with ${newSourceItems.size} new items. Total size: ${_sourceList.value.size}")
+                /*Log.i(
+                    "AddInfoPairs",
+                    "Updated _sourceList with ${newSourceItems.size} new items. Total size: ${_sourceList.value.size}"
+                )*/
             } else {
-                Log.i("AddInfoPairs", "No new items to add to _sourceList.")
+                //Log.i("AddInfoPairs", "No new items to add to _sourceList.")
             }
         }
     }
 
-    fun updateSaveStated(imageUri : Uri?){
+    fun updateSaveStated(imageUri: Uri?) {
         val currentState = _uiState.value
-        if (currentState is UiState.Success)
-        {
+        if (currentState is UiState.Success) {
             savedStateHandle["speciesId"] = currentState.species.id
             savedStateHandle["speciesName"] = currentState.species.localizedName
             savedStateHandle["speciesSN"] = currentState.species.getScientificName()
@@ -195,20 +198,13 @@ class EncyclopediaDetailViewModel @Inject constructor(
 
     }
 
-    fun clearObservationState(){
+    fun clearObservationState() {
         _speciesDateFound.value = null
     }
 
     override fun onCleared() {
-        super.onCleared() // Luôn gọi super.onCleared()
-
-        // 3. Gỡ bỏ listener để tránh memory leak.
-        // Kiểm tra null để đảm bảo an toàn.
+        super.onCleared()
         observationListener?.remove()
-
-        // Log để xác nhận việc dọn dẹp đã xảy ra
         Log.d("ViewModelLifecycle", "SpeciesDetailViewModel cleared and listener removed.")
     }
-
-
 }

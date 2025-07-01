@@ -51,14 +51,13 @@ class AnalysisViewModel @Inject constructor(
     private var currentAnalysisJob: Job? = null
     private var isClassifierReadyInternal = false
 
-    // Map để quản lý các listener đang hoạt động. Key là speciesId.
     private val activeListeners = mutableMapOf<String, ListenerRegistration>()
 
-    // StateFlow để giữ trạng thái quan sát của các loài đang hiển thị.
     private val _speciesDateFound = MutableStateFlow<Map<String, Timestamp?>>(emptyMap())
     val speciesDateFound: StateFlow<Map<String, Timestamp?>> = _speciesDateFound.asStateFlow()
 
     val currentUser = userRepository.getCurrentUser()?.uid
+
     companion object {
         private const val TAG = "AnalysisViewModel"
     }
@@ -69,14 +68,14 @@ class AnalysisViewModel @Inject constructor(
             return
         }
 
-        currentAnalysisJob?.cancel() // Hủy job phân tích cũ nếu có
+        currentAnalysisJob?.cancel() // Hủy job phân tích cũ
         currentAnalysisJob = viewModelScope.launch {
             try {
-                // Khởi tạo classifier nếu cần
                 if (!isClassifierReadyInternal) {
                     _uiState.value = AnalysisUiState.ClassifierInitializing
                     if (!classifier.setup()) {
-                        _uiState.value = AnalysisUiState.Error("Failed to initialize analysis engine.")
+                        _uiState.value =
+                            AnalysisUiState.Error("Failed to initialize analysis engine.")
                         isClassifierReadyInternal = false
                         return@launch
                     }
@@ -89,7 +88,6 @@ class AnalysisViewModel @Inject constructor(
                 if (bitmap != null) {
                     val results = classifier.classify(bitmap)
                     if (results.isNotEmpty()) {
-                        // Lấy thông tin chi tiết của các loài từ kết quả phân loại
                         val speciesMap = getLocalizedSpeciesUseCase.getById(
                             results.map { result -> result.id }, currentUser
 
@@ -99,10 +97,8 @@ class AnalysisViewModel @Inject constructor(
                             speciesMap[recognition.id]
                         }
 
-                        // 1. Cập nhật UI với danh sách kết quả ngay lập tức
                         _uiState.value = AnalysisUiState.Success(orderedSpecies)
 
-                        // 2. Bắt đầu lắng nghe trạng thái quan sát cho các kết quả này
                         currentUser?.let { userId ->
                             startListeningForResults(orderedSpecies, userId)
                         }
@@ -114,18 +110,14 @@ class AnalysisViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 _uiState.value = AnalysisUiState.Initial
-                Log.i(TAG, "Analysis job was cancelled.")
+                //Log.i(TAG, "Analysis job was cancelled.")
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during analysis process", e)
+                //Log.e(TAG, "Exception during analysis process", e)
                 _uiState.value = AnalysisUiState.Error("Analysis error: ${e.localizedMessage}")
             }
         }
     }
 
-    /**
-     * Bắt đầu lắng nghe trạng thái quan sát cho một danh sách các loài.
-     * Hàm này sẽ gỡ bỏ các listener cũ không cần thiết và thêm các listener mới.
-     */
     private fun startListeningForResults(speciesList: List<DisplayableSpecies>, userId: String) {
         val newSpeciesIds = speciesList.map { it.id }.toSet()
 
@@ -161,7 +153,6 @@ class AnalysisViewModel @Inject constructor(
         }
 
 
-
     }
 
     fun isProcessing(): Boolean {
@@ -185,23 +176,20 @@ class AnalysisViewModel @Inject constructor(
     private suspend fun loadBitmapFromUriForClassification(imageUri: Uri): Bitmap? =
         withContext(Dispatchers.IO) {
             try {
-                val inputStream = getApplication<Application>().contentResolver.openInputStream(imageUri)
+                val inputStream =
+                    getApplication<Application>().contentResolver.openInputStream(imageUri)
                 BitmapFactory.decodeStream(inputStream).also { inputStream?.close() }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load bitmap", e)
+                //Log.e(TAG, "Failed to load bitmap", e)
                 null
             }
         }
 
-    /**
-     * Được hệ thống gọi khi ViewModel bị hủy.
-     * Đây là nơi dọn dẹp tất cả các listener để tránh memory leak.
-     */
     override fun onCleared() {
         super.onCleared()
         currentAnalysisJob?.cancel() // Hủy job đang chạy nếu có
 
-        Log.d(TAG, "AnalysisViewModel cleared. Removing ${activeListeners.size} active listeners.")
+        //Log.d(TAG, "AnalysisViewModel cleared. Removing ${activeListeners.size} active listeners.")
         // Lặp qua tất cả listener trong map và gỡ bỏ chúng
         activeListeners.values.forEach { listener ->
             listener.remove()

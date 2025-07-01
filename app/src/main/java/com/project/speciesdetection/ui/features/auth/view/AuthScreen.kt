@@ -42,6 +42,7 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.navigation.BottomNavigationBar
+import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
 import com.project.speciesdetection.ui.composable.common.ErrorText
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.auth.viewmodel.UiEvent
@@ -54,9 +55,18 @@ fun AuthScreen(
     authViewModel: AuthViewModel
 ) {
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (authState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.surface)) {
+        if (authState.isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            if (authState.error.equals("network")) {
+                Column(modifier = Modifier.align(Alignment.Center)) {
+                    ErrorScreenPlaceholder {
+                        authViewModel.checkCurrentUser()
+                    }
+                }
             } else {
                 GlideImage(
                     model = R.drawable.login_background,
@@ -168,17 +178,17 @@ fun AuthScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(100.dp))
-
-
                 }
             }
 
-            Row(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)
-            ) {
-                BottomNavigationBar(navController)
-            }
-
-
         }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp)
+        ) {
+            BottomNavigationBar(navController)
+        }
+    }
 }

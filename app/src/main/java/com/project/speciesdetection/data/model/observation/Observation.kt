@@ -37,7 +37,10 @@ data class Observation(
     val dislikeUserIds : List<String> = emptyList(),
     val saveUserIds : Map<String, String> = emptyMap(),
 
+    val hotScore : Double = 0.0,
     val state: String = "normal",
+    val savedBy: List<String> = emptyList(),
+
 
     @ServerTimestamp
     @Serializable(with = TimestampSerializer::class)

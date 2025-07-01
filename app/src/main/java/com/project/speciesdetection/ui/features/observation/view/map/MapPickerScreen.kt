@@ -1,35 +1,49 @@
 package com.project.speciesdetection.ui.features.observation.view.map
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import android.util.Log
-import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,32 +51,24 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.traversalIndex
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.google.android.gms.location.LocationServices
-import com.project.speciesdetection.core.navigation.AppScreen
+import com.project.speciesdetection.R
 import com.project.speciesdetection.ui.composable.common.AppSearchBar
-import com.project.speciesdetection.ui.composable.common.CustomTextField
 import com.project.speciesdetection.ui.features.observation.viewmodel.map.NewMapPickerViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,10 +119,15 @@ fun MapPickerScreen(
                     }
                 }
             } catch (e: SecurityException) {
-                Toast.makeText(context, "Không thể truy cập vị trí: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    "Không thể truy cập vị trí: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         } else {
-            Toast.makeText(context, "Bạn cần cấp quyền vị trí để dùng bản đồ", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Bạn cần cấp quyền vị trí để dùng bản đồ", Toast.LENGTH_LONG)
+                .show()
         }
     }
 
@@ -181,7 +192,7 @@ fun MapPickerScreen(
                             ) {
                                 item {
                                     Text(
-                                        uiState.selectedAddress,
+                                        if (uiState.selectedAddress != "loading") uiState.selectedAddress else stringResource(R.string.location_init),
                                         //maxLines = 1,
                                         //overflow = TextOverflow.Ellipsis,
                                         style = MaterialTheme.typography.bodyLarge
@@ -267,7 +278,9 @@ fun MapPickerScreen(
                     .size(48.dp)
             )
 
-            Row(modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp)){
+            Row(modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(10.dp)) {
                 IconButton(
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(0.8f),
@@ -285,10 +298,13 @@ fun MapPickerScreen(
                                     }
                                 }
                             } catch (e: SecurityException) {
-                                Toast.makeText(context, "Không thể truy cập vị trí: ${e.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Không thể truy cập vị trí: ${e.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
-                        }
-                        else{
+                        } else {
                             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                         }
                     }
@@ -312,59 +328,31 @@ fun MapPickerScreen(
                     .padding(top = 10.dp)
                     .semantics { isTraversalGroup = true }
             ) {
-                Surface(
-                    shadowElevation = 30.dp,
-                    tonalElevation = 0.dp,
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(25
-                    ),
-                    modifier = Modifier.padding(start = 10.dp)
-                ) {
-                OutlinedTextField(
+                AppSearchBar(
+                    query = searchQuery,
+                    onQueryChanged = { viewModel.onQueryChanged(it) },
+                    onClearQuery = { viewModel.onQueryChanged("") },
+                    onSearchAction = {
+                        viewModel.onQueryChanged(searchQuery)
+                    },
+                    hint = stringResource(R.string.enter_address),
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { focusState ->
                             if (focusState.isFocused) expanded = true
                         },
-                    value = searchQuery,
-                    onValueChange = {
-                        viewModel.onQueryChanged(it)
-                    },
-                    placeholder = {
-                        Text(
-                            "Nhap dia chi",
-                            color = MaterialTheme.colorScheme.outline,
-                            fontStyle = FontStyle.Italic
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, null)
-                        /*if (expanded)
-                            Icon(
-                                Icons.AutoMirrored.Default.ArrowBack, null,
-                                Modifier.clickable {
-                                    expanded = false
-                                    keyboardController?.hide()
-                                    focusManager.clearFocus()
-                                })
-                        else
-                            Icon(Icons.Default.Search, null)*/
-                    },
-                    shape = RoundedCornerShape(25),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedBorderColor = Color.Transparent
-                    )
-                    )}
+                    backgroundColor = MaterialTheme.colorScheme.surface
+                )
                 AnimatedVisibility(
-                    expanded && searchQuery.isNotEmpty()
+                    expanded && searchQuery.isNotEmpty(),
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                        .clip(RoundedCornerShape(10.dp, 10.dp, 10.dp, 10.dp))
                 ) {
                     Box(
                         modifier = Modifier
-                            .background(Color.White)
-                            .clip(RoundedCornerShape(0, 0, 10, 10))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clip(RoundedCornerShape(10.dp, 10.dp, 10.dp, 10.dp))
                     ) {
                         if (uiState.isSearching) {
                             Row(
@@ -393,9 +381,10 @@ fun MapPickerScreen(
                                                 mapView.controller.setCenter(geoPoint)  // Di chuyển bản đồ đến vị trí này
                                                 mapView.controller.setZoom(15.0)
                                                 //onResultClick(resultText)
-                                                expanded = false
+
                                                 keyboardController?.hide()
                                                 focusManager.clearFocus()
+                                                expanded = false
                                             }
                                             .fillMaxWidth()
                                             .padding(horizontal = 16.dp, vertical = 4.dp)
@@ -451,10 +440,11 @@ fun MapPickerScreen(
 
             Button(
                 onClick = {
-                    var tempAddress = "${if (uiState.address["city"]==null)
-                        removeLastWord(uiState.address["state"]?:"")
-                    else uiState.address["city"]
-                    }"+", ${uiState.address["country_code"]?.uppercase()?:""}"
+                    var tempAddress = "${
+                        if (uiState.address["city"] == null)
+                            removeLastWord(uiState.address["state"] ?: "")
+                        else uiState.address["city"]
+                    }" + ", ${uiState.address["country_code"]?.uppercase() ?: ""}"
                     Log.i("sa", tempAddress)
                     onLocationPicked(
                         uiState.selectedGeoPoint?.latitude ?: 0.0,
@@ -468,9 +458,9 @@ fun MapPickerScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp),
-                enabled = uiState.selectedAddress!="Đang tìm vị trí của bạn..."
+                enabled = uiState.selectedAddress != "Đang tìm vị trí của bạn..."
             ) {
-                Text("Xác nhận vị trí")
+                Text(stringResource(R.string.select_location))
             }
         }
     }

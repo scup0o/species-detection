@@ -1,7 +1,6 @@
 package com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,41 +27,31 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Updater
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -77,23 +66,19 @@ import com.bumptech.glide.integration.compose.placeholder
 import com.project.speciesdetection.R
 import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.theme.spacing
-import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import com.project.speciesdetection.ui.composable.common.CustomActionButton
-import com.project.speciesdetection.ui.composable.common.CustomChip
 import com.project.speciesdetection.ui.composable.common.ErrorScreenPlaceholder
 import com.project.speciesdetection.ui.composable.common.HyperlinkText
 import com.project.speciesdetection.ui.composable.common.species.IUCNConservationStatusView
 import com.project.speciesdetection.ui.composable.common.species.SpeciesClassification
 import com.project.speciesdetection.ui.features.auth.viewmodel.AuthViewModel
 import com.project.speciesdetection.ui.features.encyclopedia_detail_screen.viewmodel.EncyclopediaDetailViewModel
-import com.project.speciesdetection.ui.features.observation.view.UpdateObservation
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @OptIn(
     ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class,
-    ExperimentalFoundationApi::class
 )
 @Composable
 fun EncyclopediaDetailScreen(
@@ -124,33 +109,37 @@ fun EncyclopediaDetailScreen(
         stringResource(R.string.species_detail_source) + " & " + stringResource(R.string.species_detail_more_info) to 6,
     )
 
-    val detailedDescriptionContainer: Color = MaterialTheme.colorScheme.surfaceContainer
+    //val detailedDescriptionContainer: Color = MaterialTheme.colorScheme.surfaceContainer
 
-    LaunchedEffect(authState.currentUser){
-        if (authState.currentUser==null){
+    LaunchedEffect(authState.currentUser) {
+        if (authState.currentUser == null) {
             speciesDetailViewModel.clearObservationState()
-        }
-        else{
+        } else {
             if (uiState is EncyclopediaDetailViewModel.UiState.Success)
-                speciesDetailViewModel.observeDateFoundForUidAndSpecies((uiState as EncyclopediaDetailViewModel.UiState.Success).species.id, authState.currentUser?.uid?:"")
+                speciesDetailViewModel.observeDateFoundForUidAndSpecies(
+                    (uiState as EncyclopediaDetailViewModel.UiState.Success).species.id,
+                    authState.currentUser?.uid ?: ""
+                )
         }
     }
 
 
-    LaunchedEffect(listCurrentState) {
+    /*LaunchedEffect(listCurrentState) {
         Log.i("check chekc", listCurrentState.toString())
-        if (listCurrentState == 3 || listCurrentState == 6)
+        if (listCurrentState == 3 || listCurrentState == 6 || listCurrentState==0)
             coroutineScope.launch {
                 chipListState.animateScrollToItem(index = listCurrentState)
             }
 
-    }
+    }*/
 
     when (uiState) {
         EncyclopediaDetailViewModel.UiState.Loading -> {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .background(containerColor)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(containerColor)
+            ) {
                 Row(modifier = Modifier.align(Alignment.Center)) {
                     CircularProgressIndicator()
                 }
@@ -165,7 +154,7 @@ fun EncyclopediaDetailScreen(
             Scaffold(
                 containerColor = containerColor,
             ) { innerPadding ->
-                Box{
+                Box {
                     LazyColumn(
                         modifier = Modifier.padding(innerPadding),
                         state = listState
@@ -182,9 +171,13 @@ fun EncyclopediaDetailScreen(
                                             .fillMaxWidth()                    // Điền hết chiều rộng
                                             .height(300.dp)
                                             .clickable {
-                                                navController.navigate(AppScreen.FullScreenImageViewer.createRoute(species.imageURL[page]))
+                                                navController.navigate(
+                                                    AppScreen.FullScreenImageViewer.createRoute(
+                                                        species.imageURL[page]
+                                                    )
+                                                )
                                             }
-                                            .clip(RoundedCornerShape(0,0,60,0))
+                                            .clip(RoundedCornerShape(0, 0, 60, 0))
                                     )
 
                                 }
@@ -205,17 +198,23 @@ fun EncyclopediaDetailScreen(
                                 IconButton(
                                     onClick = {
                                         navController.navigate(
-                                            AppScreen.SpeciesObservationMainScreen.createRoute(species)
+                                            AppScreen.SpeciesObservationMainScreen.createRoute(
+                                                species
+                                            )
                                         )
                                     },
-                                    modifier = Modifier.padding(5.dp).align(Alignment.BottomEnd).size(48.dp),
+                                    modifier = Modifier
+                                        .padding(5.dp)
+                                        .align(Alignment.BottomEnd)
+                                        .size(48.dp),
                                     colors = IconButtonDefaults.iconButtonColors(
                                         containerColor = MaterialTheme.colorScheme.tertiary,
                                         contentColor = MaterialTheme.colorScheme.onTertiary
                                     )
                                 ) {
                                     Icon(
-                                        Icons.Default.Star,null,
+                                        painterResource(R.drawable.binoculars), null,
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
 
@@ -285,17 +284,23 @@ fun EncyclopediaDetailScreen(
                             }
 
                             Column(modifier = Modifier.padding(MaterialTheme.spacing.m)) {
-                                if (observationState!= null)
-                                Text("You first observed it on " +
-                                                SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale.getDefault()).format(
+                                if (observationState != null)
+                                    Text(
+                                        stringResource(R.string.obs_detail_state) + " " +
+                                                SimpleDateFormat(
+                                                    "HH:mm, dd/MM/yyyy",
+                                                    Locale.getDefault()
+                                                ).format(
                                                     observationState?.toDate() ?: 0
                                                 ),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                                    color = MaterialTheme.colorScheme.tertiary.copy(0.7f),
-                                    fontStyle = FontStyle.Italic,
-                                    textAlign = TextAlign.End
-                                )
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 10.dp),
+                                        color = MaterialTheme.colorScheme.tertiary.copy(0.8f),
+                                        fontStyle = FontStyle.Italic,
+                                        textAlign = TextAlign.End
+                                    )
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
@@ -367,9 +372,9 @@ fun EncyclopediaDetailScreen(
                                 Box(
                                     modifier = Modifier
                                         .background(
-                                            MaterialTheme.colorScheme.secondaryContainer,
+                                            MaterialTheme.colorScheme.surface,
                                             RoundedCornerShape(15)
-                                        )
+                                        ).fillMaxWidth()
                                 ) {
                                     IUCNConservationStatusView(species.conservation)
                                 }
@@ -382,51 +387,70 @@ fun EncyclopediaDetailScreen(
 
 
                         stickyHeader {
-                            LazyRow(
-                                modifier = Modifier
-                                    .background(
-                                        detailedDescriptionContainer,
-                                        RoundedCornerShape(
-                                            topStartPercent = 50
-                                        )
+                            Surface(
+                                shadowElevation = if (listCurrentState >= 1) 5.dp else 0.dp,
+                                shape =
+                                    RoundedCornerShape(
+                                        topStart = 0.dp,
+                                        bottomStart = 20.dp,
+                                        topEnd = 0.dp,
+                                        bottomEnd = 20.dp
                                     ),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                //contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
-                                state = chipListState
+                                modifier = Modifier.padding(bottom = 10.dp)
                             ) {
-                                items(
-                                    indexList,
-                                    key = { it.second }) { section ->
-                                    CustomChip(
-                                        title = section.first,
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                listState.scrollToItem(
-                                                    index = section.second,
-                                                    scrollOffset = if (section.second == indexList.size - 1) 1000 else 0
+                                LazyRow(
+                                    modifier = Modifier
+                                        .background(
+                                            if (listCurrentState >= 1) MaterialTheme.colorScheme.surfaceContainer.copy(
+                                                0.5f
+                                            ) else MaterialTheme.colorScheme.surface,
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    //contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.m),
+                                    state = chipListState,
+                                ) {
+                                    items(
+                                        indexList,
+                                        key = { it.second }) { section ->
+                                        val isSelected = listCurrentState == section.second
+                                        Text(
+                                            section.first,
+                                            color = if (isSelected) MaterialTheme.colorScheme.onTertiary
+                                            else MaterialTheme.colorScheme.tertiary,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            modifier = Modifier
+                                                .background(
+                                                    if (isSelected) MaterialTheme.colorScheme.tertiary
+                                                    else MaterialTheme.colorScheme.surfaceContainer,
+                                                    RoundedCornerShape(15.dp)
                                                 )
-                                            }
-                                        },
-                                        isSelected = listCurrentState == section.second,
-                                        containerColor = detailedDescriptionContainer,
-                                        contentColor = MaterialTheme.colorScheme.tertiary,
-                                        unSelectedContentColor = MaterialTheme.colorScheme.onTertiary,
-                                        unSelectedContainerColor = MaterialTheme.colorScheme.tertiary
-                                    )
-                                }
+                                                .clickable {
+                                                    coroutineScope.launch {
+                                                        listState.scrollToItem(
+                                                            index = section.second,
+                                                            scrollOffset = if (section.second == indexList.size - 1) 1000 else 0
+                                                        )
+                                                    }
+                                                }
+                                                .padding(horizontal = 20.dp, vertical = 8.dp)
 
+                                        )
+
+
+                                    }
+
+                                }
                             }
                         }
 
                         items(6) { index ->
                             Box(
                                 modifier = Modifier
-                                    .background(detailedDescriptionContainer)
                             ) {
                                 Column(
                                     modifier = Modifier
                                         .padding(horizontal = MaterialTheme.spacing.m)
-                                        .background(detailedDescriptionContainer)
                                 ) {
                                     if (index > 0)
                                         HorizontalDivider(
@@ -447,10 +471,10 @@ fun EncyclopediaDetailScreen(
                                     if (indexList[index + 1].first == stringResource(R.string.species_detail_classification)) {
                                         Box(
                                             modifier = Modifier
-                                                .background(
-                                                    MaterialTheme.colorScheme.secondaryContainer,
-                                                    RoundedCornerShape(15)
-                                                )
+                                            /*.background(
+                                                MaterialTheme.colorScheme.tertiaryContainer,
+                                                RoundedCornerShape(15)
+                                            )*/
                                         ) { SpeciesClassification(species) }
                                     } else {
                                         if (indexList[index + 1].first == stringResource(R.string.species_detail_source) + " & " + stringResource(
@@ -481,31 +505,11 @@ fun EncyclopediaDetailScreen(
                                                 )
 
                                                 species.info.forEach { info ->
-                                                    when (info.key) {
-                                                        "wikipedia" -> {
                                                             HyperlinkText(
-                                                                fullText = "Wikipedia: " + info.value,
+                                                                fullText = info.key+": " + info.value,
                                                                 linkText = info.value,
                                                                 url = info.value,
                                                             )
-                                                        }
-
-                                                        "adw" -> {
-                                                            HyperlinkText(
-                                                                fullText = "ADW: " + info.value,
-                                                                linkText = info.value,
-                                                                url = info.value,
-                                                            )
-                                                        }
-
-                                                        "worldlandtrust" -> {
-                                                            HyperlinkText(
-                                                                fullText = "World Land Trust: " + info.value,
-                                                                linkText = info.value,
-                                                                url = info.value,
-                                                            )
-                                                        }
-                                                    }
                                                 }
                                             }
 
@@ -559,15 +563,26 @@ fun EncyclopediaDetailScreen(
                             }
 
                         }
-
+                        item {
+                            Spacer(Modifier.height(80.dp))
+                        }
 
 
                     }
-                    Row(modifier = Modifier.align(Alignment.BottomCenter)) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(vertical = 20.dp, horizontal = 10.dp)
+                    ) {
                         if (authState.currentUser != null) {
                             CustomActionButton(
                                 onClick = {
-                                    navController.navigate(AppScreen.UpdateObservationScreen.buildRouteForCreate(species, observationImage))
+                                    navController.navigate(
+                                        AppScreen.UpdateObservationScreen.buildRouteForCreate(
+                                            species,
+                                            observationImage
+                                        )
+                                    )
                                 },
                                 text =
                                     if (observationImage != null) stringResource(R.string.species_detail_record)
@@ -576,13 +591,14 @@ fun EncyclopediaDetailScreen(
                             )
 
                         } else {
+
                             CustomActionButton(
                                 onClick = {
-                                    navController.popBackStack(
+                                    /*navController.popBackStack(
                                         AppScreen.LoginScreen.route,
                                         inclusive = true,
                                         saveState = false
-                                    )
+                                    )*/
                                     navController.navigate(AppScreen.LoginScreen.route) {
                                         launchSingleTop = true
                                     }
@@ -592,6 +608,7 @@ fun EncyclopediaDetailScreen(
                                     else stringResource(R.string.species_detail_login_to_add),
 
                                 )
+
                         }
                     }
                 }
@@ -612,12 +629,13 @@ fun EncyclopediaDetailScreen(
                         }
                     )
                 }
-            ) {
-                innerPadding ->
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .background(containerColor)
-                    .padding(innerPadding)) {
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(containerColor)
+                        .padding(innerPadding)
+                ) {
                     Row(modifier = Modifier.align(Alignment.Center)) {
                         ErrorScreenPlaceholder(
                             onClick = {
