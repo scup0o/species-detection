@@ -127,7 +127,7 @@ fun IUCNConservationStatusView(
                         }
                         pop()
                     }
-                    ClickableText(
+                    /*ClickableText(
                         text = annotatedLinkString,
                         style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
                         onClick = { offset ->
@@ -141,7 +141,7 @@ fun IUCNConservationStatusView(
                                 }
                         },
                         modifier = Modifier.padding(start = 2.dp)
-                    )
+                    )*/
                 }
             } else if (currentStatusCode != null && currentStatusCode.isNotBlank()){
                 Text(

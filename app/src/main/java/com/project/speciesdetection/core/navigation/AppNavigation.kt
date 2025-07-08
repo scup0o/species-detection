@@ -263,10 +263,12 @@ fun AppNavigation(
 
             val imageUriEncoded = backStackEntry.arguments?.getString("imageUri")
             val imageUri = imageUriEncoded?.let { Uri.decode(it).toUri() }
+            val transform = if (imageUriEncoded?.contains("/upload/")==true) true else false
 
             FullScreenImageViewer(
                 image = imageUri!!,
-                onNavigateBack = {navController.popBackStack()}
+                onNavigateBack = {navController.popBackStack()},
+                transform = transform
             )
 
         }

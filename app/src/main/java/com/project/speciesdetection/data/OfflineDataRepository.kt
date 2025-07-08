@@ -41,9 +41,15 @@ class OfflineDataRepository @Inject constructor(
         private const val OFFLINE_IMAGES_DIR = "offline_species_images"
     }
 
+    /**
+     * Tải xuống tất cả dữ liệu (loài, lớp) cho một ngôn ngữ cụ thể và lưu vào cơ sở dữ liệu cục bộ.
+     * Hàm này sẽ tự động tải các ảnh liên quan và lưu chúng vào bộ nhớ trong của ứng dụng.
+     * Nếu ảnh đã tồn tại, nó sẽ không được tải lại.
+     */
     suspend fun downloadAllDataForLanguage(languageCode: String): DataResult<Unit> = coroutineScope {
         Log.d(TAG, "Starting download for language: $languageCode")
         try {
+            // Lấy dữ liệu loài và lớp từ API song song
             val speciesDeferred = async { speciesApiService.getAllSpeciesForLanguage(languageCode) }
             val speciesClassDeferred = async { speciesClassRepository.getAll() }
 
@@ -58,29 +64,33 @@ class OfflineDataRepository @Inject constructor(
                 return@coroutineScope DataResult.Error(Exception(errorMsg))
             }
 
-            cleanupOldData(languageCode)
+            // Xóa dữ liệu cũ của ngôn ngữ này trong DB trước khi thêm dữ liệu mới.
+            // Việc này đảm bảo dữ liệu luôn được cập nhật và không bị trùng lặp.
+            // Lưu ý: Chỉ xóa dữ liệu trong DB, không xóa file ảnh ở bước này.
+            speciesDao.deleteByLanguage(languageCode)
+            speciesClassDao.deleteByLanguage(languageCode)
 
+            // Xử lý và chuyển đổi dữ liệu loài
             val localSpeciesList = speciesResponse.data.map { displayableSpecies ->
                 val localThumbnailsImage = downloadAndSaveImage(
                     speciesId = displayableSpecies.id,
                     remoteUrl = displayableSpecies.thumbnailImageURL,
-                    imageIndex = "thumbnail" // Sử dụng index đặc biệt cho thumbnail
+                    imageIndex = "thumbnail"
                 )
                 val localImagePaths = downloadImagesForSpecies(displayableSpecies.id, displayableSpecies.imageURL)
-                displayableSpecies.toLocal(languageCode).copy(imageURL = localImagePaths, thumbnailImageURL = localThumbnailsImage ?: "")
+                displayableSpecies.toLocal(languageCode).copy(
+                    imageURL = localImagePaths,
+                    thumbnailImageURL = localThumbnailsImage ?: ""
+                )
             }
 
+            // Xử lý và chuyển đổi dữ liệu lớp
             val localSpeciesClassList = speciesClassResponse.mapNotNull { sClass ->
-                val nameToUse = sClass.name[languageCode] ?: sClass.name["en"]
+                val nameToUse = sClass.name[languageCode] ?: sClass.name["en"] // Ưu tiên ngôn ngữ yêu cầu, fallback về tiếng Anh
                 nameToUse?.let { localizedName ->
                     LocalSpeciesClass(id = sClass.id, languageCode = languageCode, localizedName = localizedName)
                 }
-
             }
-            Log.i("localspecies", localSpeciesList.toString())
-            Log.i("localspeciesclass", localSpeciesClassList.toString())
-
-            Log.d(TAG, "Prepared to insert ${localSpeciesList.size} species and ${localSpeciesClassList.size} classes.")
 
             if (localSpeciesClassList.isEmpty()) {
                 val errorMessage = "No valid species class names found for language '$languageCode' or fallback 'en'."
@@ -88,6 +98,9 @@ class OfflineDataRepository @Inject constructor(
                 return@coroutineScope DataResult.Error(Exception(errorMessage))
             }
 
+            Log.d(TAG, "Prepared to insert ${localSpeciesList.size} species and ${localSpeciesClassList.size} classes.")
+
+            // Chèn dữ liệu mới vào cơ sở dữ liệu
             speciesDao.insertAll(localSpeciesList)
             speciesClassDao.insertAll(localSpeciesClassList)
 
@@ -100,65 +113,62 @@ class OfflineDataRepository @Inject constructor(
         }
     }
 
-    // --- HÀM NÀY ĐÃ ĐƯỢC SỬA LẠI ---
+    /**
+     * Tải một danh sách các ảnh cho một loài cụ thể.
+     */
     private suspend fun downloadImagesForSpecies(speciesId: String, remoteUrls: List<String>): List<String> = coroutineScope {
-        val downloadJobs = remoteUrls.mapIndexed { index, url ->
-            // Mỗi ảnh sẽ được download song song trong một coroutine riêng
+        remoteUrls.mapIndexed { index, url ->
             async {
                 downloadAndSaveImage(speciesId, url, index.toString())
             }
-        }
-        // Chờ tất cả các tác vụ tải ảnh hoàn thành và lọc ra những đường dẫn không null
-        downloadJobs.awaitAll().filterNotNull()
+        }.awaitAll().filterNotNull()
     }
 
-    // --- TÁCH RA HÀM RIÊNG ĐỂ TẢI VÀ LƯU 1 ẢNH ---
+    /**
+     * Tải và lưu một ảnh duy nhất.
+     * KIỂM TRA NẾU ẢNH ĐÃ TỒN TẠI, SẼ BỎ QUA VIỆC TẢI LẠI.
+     */
     private suspend fun downloadAndSaveImage(speciesId: String, remoteUrl: String, imageIndex: String): String? {
         if (remoteUrl.isBlank()) return null
 
-        // Lấy Bitmap từ URL bằng coroutine
+        val imageDir = File(context.filesDir, OFFLINE_IMAGES_DIR)
+        if (!imageDir.exists()) imageDir.mkdirs()
+
+        val fileName = "${speciesId}_$imageIndex.jpg"
+        val outputFile = File(imageDir, fileName)
+
+        // 1. Kiểm tra xem ảnh đã tồn tại và có nội dung hay chưa
+        if (outputFile.exists() && outputFile.length() > 0) {
+            Log.d(TAG, "Image already exists, skipping download: ${outputFile.path}")
+            return outputFile.path
+        }
+
+        Log.d(TAG, "Image not found locally, starting download: $remoteUrl")
+
+        // 2. Tải ảnh bằng Glide nếu chưa có
         val bitmap = suspendCancellableCoroutine<Bitmap?> { continuation ->
             val target = object : CustomTarget<Bitmap>() {
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                    if (continuation.isActive) {
-                        continuation.resume(resource)
-                    }
+                    if (continuation.isActive) continuation.resume(resource)
                 }
 
                 override fun onLoadFailed(errorDrawable: Drawable?) {
-                    if (continuation.isActive) {
-                        continuation.resume(null)
-                    }
+                    if (continuation.isActive) continuation.resume(null)
                 }
 
-                override fun onLoadCleared(placeholder: Drawable?) {
-                    // Không cần làm gì ở đây
-                }
+                override fun onLoadCleared(placeholder: Drawable?) {}
             }
-
-            // Bắt đầu tải ảnh
             Glide.with(context).asBitmap().load(remoteUrl).into(target)
-
-            // Nếu coroutine bị hủy, hủy luôn tác vụ của Glide
-            continuation.invokeOnCancellation {
-                Glide.with(context).clear(target)
-            }
+            continuation.invokeOnCancellation { Glide.with(context).clear(target) }
         }
 
-        // Nếu lấy bitmap thành công, tiến hành lưu file
-        // Phần code này đang chạy trên `Dispatchers.IO` nên rất an toàn
+        // 3. Lưu bitmap vào file
         return if (bitmap != null) {
-            val imageDir = File(context.filesDir, OFFLINE_IMAGES_DIR)
-            if (!imageDir.exists()) imageDir.mkdirs()
-
-            val fileName = "${speciesId}_$imageIndex.jpg"
-            val outputFile = File(imageDir, fileName)
-
             try {
                 FileOutputStream(outputFile).use { fos ->
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fos)
                 }
-                outputFile.path // Trả về đường dẫn file đã lưu
+                outputFile.path
             } catch (e: IOException) {
                 Log.e(TAG, "Failed to save image to file: ${outputFile.path}", e)
                 null
@@ -169,28 +179,60 @@ class OfflineDataRepository @Inject constructor(
         }
     }
 
-    private suspend fun cleanupOldData(languageCode: String) {
-        val oldLocalSpecies = speciesDao.getAllByLanguage(languageCode)
-        // Lấy tất cả các đường dẫn ảnh, bao gồm cả ảnh thumbnail và ảnh trong list
-        val oldImagePaths = oldLocalSpecies.flatMap { it.imageURL + it.thumbnailImageURL }.filter { it.isNotBlank() }
+    /**
+     * Xóa tất cả dữ liệu liên quan đến một ngôn ngữ.
+     * THỰC HIỆN XÓA ẢNH THÔNG MINH: CHỈ XÓA FILE ẢNH NẾU KHÔNG CÒN NGÔN NGỮ NÀO KHÁC SỬ DỤNG NÓ.
+     */
+    suspend fun removeAllDataForLanguage(languageCode: String) {
+        Log.d(TAG, "Starting removal process for language: $languageCode")
 
+        // 1. Lấy danh sách ảnh của ngôn ngữ sắp bị xóa
+        val speciesForLanguageToRemove = speciesDao.getAllByLanguage(languageCode)
+        val imagePathsToRemove = speciesForLanguageToRemove
+            .flatMap { it.imageURL + it.thumbnailImageURL }
+            .filter { it.isNotBlank() }
+            .toSet()
+
+        // 2. Xóa dữ liệu text (loài và lớp) của ngôn ngữ đó khỏi DB
         speciesDao.deleteByLanguage(languageCode)
         speciesClassDao.deleteByLanguage(languageCode)
+        Log.d(TAG, "Deleted species and class entries for language '$languageCode' from database.")
 
-        oldImagePaths.forEach { path ->
-            if (path.startsWith(context.filesDir.path)) {
-                try {
-                    File(path).takeIf { it.exists() }?.delete()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to delete old image file: $path", e)
+        // 3. Lấy danh sách tất cả các ảnh còn lại trong DB (của các ngôn ngữ khác)
+        val allRemainingSpecies = speciesDao.getAllSpecies()
+        val allRemainingImagePaths = allRemainingSpecies
+            .flatMap { it.imageURL + it.thumbnailImageURL }
+            .filter { it.isNotBlank() }
+            .toSet()
+
+        Log.d(TAG, "Found ${imagePathsToRemove.size} images to potentially remove.")
+        Log.d(TAG, "Found ${allRemainingImagePaths.size} images that are still in use by other languages.")
+
+        // 4. Lặp qua danh sách ảnh cần xóa và kiểm tra xem có nên xóa file vật lý không
+        var deletedCount = 0
+        imagePathsToRemove.forEach { path ->
+            // Chỉ xóa ảnh nếu nó không còn được sử dụng bởi bất kỳ ngôn ngữ nào khác
+            if (!allRemainingImagePaths.contains(path)) {
+                if (path.startsWith(context.filesDir.path)) {
+                    try {
+                        val fileToDelete = File(path)
+                        if (fileToDelete.exists()) {
+                            if (fileToDelete.delete()) {
+                                deletedCount++
+                            } else {
+                                Log.w(TAG, "Failed to delete file: $path")
+                            }
+                        }
+                    } catch (e: SecurityException) {
+                        Log.e(TAG, "SecurityException: Failed to delete old image file: $path", e)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to delete old image file: $path", e)
+                    }
                 }
+            } else {
+                Log.d(TAG, "Skipping deletion, image is still in use: $path")
             }
         }
-    }
-
-    suspend fun removeAllDataForLanguage(languageCode: String) {
-        Log.d(TAG, "Removing all data for language: $languageCode")
-        cleanupOldData(languageCode)
-        Log.i(TAG, "Successfully removed data for language: $languageCode")
+        Log.i(TAG, "Successfully removed data for language '$languageCode'. Deleted $deletedCount orphan image(s).")
     }
 }

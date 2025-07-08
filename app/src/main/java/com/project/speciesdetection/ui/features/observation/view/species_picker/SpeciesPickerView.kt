@@ -377,11 +377,13 @@ private fun AnalysisContent(
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(
                         analysisState.recognitions.size,
-                        key = { index -> analysisState.recognitions[index].id }) { index ->
+                        key = { index -> analysisState.recognitions[index].species.id }) { index ->
                         SpeciesListItem(
-                            observationState = analysisState.recognitions[index].haveObservation,
-                            species = analysisState.recognitions[index], onClick = {
-                            onSpeciesSelected(analysisState.recognitions[index])
+                            showAnalysisResult = true,
+                            analysisResult = analysisState.recognitions[index].confidence,
+                            observationState = analysisState.recognitions[index].species.haveObservation,
+                            species = analysisState.recognitions[index].species, onClick = {
+                            onSpeciesSelected(analysisState.recognitions[index].species)
                             onDismissRequest()
                         })
                     }
