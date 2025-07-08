@@ -48,4 +48,7 @@ interface SpeciesDao {
 
     @Query("SELECT * FROM species_local WHERE languageCode = :languageCode")
     suspend fun getAllByLanguage(languageCode: String): List<LocalSpecies>
+
+    @Query("SELECT * FROM species_local")
+    suspend fun getAllSpecies(): List<LocalSpecies>
 }

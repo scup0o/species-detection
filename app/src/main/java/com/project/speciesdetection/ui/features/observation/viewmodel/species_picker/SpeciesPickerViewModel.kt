@@ -32,11 +32,23 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Named
 
+// --- THAY ĐỔI 1: Tạo data class mới để chứa kết quả nhận dạng ---
+/**
+ * Đại diện cho một kết quả nhận dạng, bao gồm thông tin loài và điểm tin cậy.
+ * @param species Thông tin chi tiết của loài.
+ * @param confidence Điểm tin cậy của kết quả (ví dụ: 0.95 cho 95%).
+ */
+data class RecognitionResult(
+    val species: DisplayableSpecies,
+    val confidence: Float
+)
+
 sealed class AnalysisUiState {
     object Initial : AnalysisUiState()
     object ClassifierInitializing : AnalysisUiState()
     object ImageProcessing : AnalysisUiState()
-    data class Success(val recognitions: List<DisplayableSpecies>) : AnalysisUiState()
+    // --- THAY ĐỔI 2: Cập nhật trạng thái Success để dùng RecognitionResult ---
+    data class Success(val recognitions: List<RecognitionResult>) : AnalysisUiState()
     data class Error(val message: String) : AnalysisUiState()
     object NoResults : AnalysisUiState()
 }
@@ -50,7 +62,7 @@ class SpeciesPickerViewModel @Inject constructor(
 ) : AndroidViewModel(application) {
 
     companion object {
-        private const val TAG = "EncyclopediaSearchVM"
+        private const val TAG = "SpeciesPickerViewModel"
         private const val SEARCH_DEBOUNCE_MS = 700L
     }
 
@@ -115,11 +127,18 @@ class SpeciesPickerViewModel @Inject constructor(
                             uid = currentUser?.uid
                         ).associateBy { it.id }
 
-                        val orderedSpecies = results.mapNotNull { recognition ->
-                            speciesMap[recognition.id]
+                        // --- THAY ĐỔI 3: Tạo danh sách RecognitionResult có cả loài và độ tin cậy ---
+                        val recognitionResults = results.mapNotNull { recognition ->
+                            val speciesDetails = speciesMap[recognition.id]
+                            speciesDetails?.let {
+                                RecognitionResult(
+                                    species = it,
+                                    confidence = recognition.confidence // Lấy độ tin cậy từ kết quả classify
+                                )
+                            }
                         }
 
-                        _analysisState.value = AnalysisUiState.Success(orderedSpecies)
+                        _analysisState.value = AnalysisUiState.Success(recognitionResults)
                     } else {
                         _analysisState.value = AnalysisUiState.NoResults
                     }

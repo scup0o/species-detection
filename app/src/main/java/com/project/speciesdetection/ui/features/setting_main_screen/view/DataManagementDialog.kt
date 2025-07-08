@@ -147,8 +147,6 @@ private fun LanguageRow(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Sử dụng AnimatedContent để tạo hiệu ứng chuyển đổi mượt mà
-        // giữa các nút và vòng xoay loading.
         AnimatedContent(
             targetState = state.isProcessing,
             label = "ActionButtonAnimation",
@@ -173,7 +171,6 @@ private fun LanguageRow(
                         tint= MaterialTheme.colorScheme.error.copy(0.8f),
                     )
 
-                    // Nút Remove luôn được bật vì không cần mạng
 
                 } else {
                     Icon(
@@ -183,7 +180,6 @@ private fun LanguageRow(
                         },
                         tint= if(isNetworkAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    // Nút Download sẽ bị disable nếu không có mạng
 
                 }
             }

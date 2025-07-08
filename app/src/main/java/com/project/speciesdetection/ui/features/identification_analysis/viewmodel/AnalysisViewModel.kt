@@ -27,11 +27,23 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Named
 
+// --- THAY ĐỔI 1: Tạo một data class mới để chứa cả loài và điểm tin cậy ---
+/**
+ * Đại diện cho một kết quả nhận dạng duy nhất, bao gồm thông tin loài và điểm tin cậy.
+ * @param species Thông tin chi tiết của loài được hiển thị.
+ * @param confidence Điểm tin cậy của kết quả nhận dạng (ví dụ: 0.95 cho 95%).
+ */
+data class RecognitionResult(
+    val species: DisplayableSpecies,
+    val confidence: Float
+)
+
 sealed class AnalysisUiState {
     object Initial : AnalysisUiState()
     object ClassifierInitializing : AnalysisUiState()
     object ImageProcessing : AnalysisUiState()
-    data class Success(val recognitions: List<DisplayableSpecies>) : AnalysisUiState()
+    // --- THAY ĐỔI 2: Cập nhật trạng thái Success để sử dụng RecognitionResult ---
+    data class Success(val recognitions: List<RecognitionResult>) : AnalysisUiState()
     data class Error(val message: String) : AnalysisUiState()
     object NoResults : AnalysisUiState()
 }
@@ -86,21 +98,31 @@ class AnalysisViewModel @Inject constructor(
                 val bitmap = loadBitmapFromUriForClassification(imageUri)
 
                 if (bitmap != null) {
+                    // `results` bây giờ sẽ là một List<Recognition> với `id` và `confidence`
                     val results = classifier.classify(bitmap)
                     if (results.isNotEmpty()) {
+                        // Lấy thông tin chi tiết của các loài dựa trên ID
                         val speciesMap = getLocalizedSpeciesUseCase.getById(
                             results.map { result -> result.id }, currentUser
-
                         ).associateBy { it.id }
 
-                        val orderedSpecies = results.mapNotNull { recognition ->
-                            speciesMap[recognition.id]
+                        // --- THAY ĐỔI 3: Kết hợp kết quả nhận dạng với thông tin loài ---
+                        val recognitionResults = results.mapNotNull { recognition ->
+                            // Tìm thông tin chi tiết của loài tương ứng với ID
+                            val speciesDetails = speciesMap[recognition.id]
+                            // Nếu tìm thấy, tạo đối tượng RecognitionResult mới
+                            speciesDetails?.let {
+                                RecognitionResult(
+                                    species = it,
+                                    confidence = recognition.confidence // Giả sử thuộc tính này tên là 'confidence'
+                                )
+                            }
                         }
 
-                        _uiState.value = AnalysisUiState.Success(orderedSpecies)
+                        _uiState.value = AnalysisUiState.Success(recognitionResults)
 
                         currentUser?.let { userId ->
-                            startListeningForResults(orderedSpecies, userId)
+                            startListeningForResults(recognitionResults, userId)
                         }
                     } else {
                         _uiState.value = AnalysisUiState.NoResults
@@ -110,16 +132,18 @@ class AnalysisViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 _uiState.value = AnalysisUiState.Initial
-                //Log.i(TAG, "Analysis job was cancelled.")
+                Log.i(TAG, "Analysis job was cancelled.")
             } catch (e: Exception) {
-                //Log.e(TAG, "Exception during analysis process", e)
+                Log.e(TAG, "Exception during analysis process", e)
                 _uiState.value = AnalysisUiState.Error("Analysis error: ${e.localizedMessage}")
             }
         }
     }
 
-    private fun startListeningForResults(speciesList: List<DisplayableSpecies>, userId: String) {
-        val newSpeciesIds = speciesList.map { it.id }.toSet()
+    // --- THAY ĐỔI 4: Cập nhật hàm để nhận List<RecognitionResult> ---
+    private fun startListeningForResults(results: List<RecognitionResult>, userId: String) {
+        // Trích xuất danh sách ID từ List<RecognitionResult>
+        val newSpeciesIds = results.map { it.species.id }.toSet()
 
         // Gỡ bỏ các listener của các loài không còn trong danh sách kết quả mới
         val listenersToRemove = activeListeners.keys - newSpeciesIds
@@ -151,8 +175,6 @@ class AnalysisViewModel @Inject constructor(
                 }
             }
         }
-
-
     }
 
     fun isProcessing(): Boolean {
@@ -180,7 +202,7 @@ class AnalysisViewModel @Inject constructor(
                     getApplication<Application>().contentResolver.openInputStream(imageUri)
                 BitmapFactory.decodeStream(inputStream).also { inputStream?.close() }
             } catch (e: Exception) {
-                //Log.e(TAG, "Failed to load bitmap", e)
+                Log.e(TAG, "Failed to load bitmap", e)
                 null
             }
         }
@@ -189,7 +211,7 @@ class AnalysisViewModel @Inject constructor(
         super.onCleared()
         currentAnalysisJob?.cancel() // Hủy job đang chạy nếu có
 
-        //Log.d(TAG, "AnalysisViewModel cleared. Removing ${activeListeners.size} active listeners.")
+        Log.d(TAG, "AnalysisViewModel cleared. Removing ${activeListeners.size} active listeners.")
         // Lặp qua tất cả listener trong map và gỡ bỏ chúng
         activeListeners.values.forEach { listener ->
             listener.remove()

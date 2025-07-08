@@ -48,4 +48,17 @@ object CloudinaryImageURLHelper{
         return resultUrl
     }
 
+    fun getVideoThumbnailUrl(videoUrl: String): String {
+        // 1. Thay đổi resource_type từ 'image' thành 'video'
+        val withVideoResourceType = videoUrl.replace("/image/upload/", "/video/upload/")
+
+        // 2. Thay đổi đuôi file thành .jpg
+        val lastDotIndex = withVideoResourceType.lastIndexOf('.')
+        // Nếu không tìm thấy dấu chấm, trả về URL đã thay đổi resource_type để tránh lỗi
+        if (lastDotIndex == -1) return withVideoResourceType
+
+        val basePath = withVideoResourceType.substring(0, lastDotIndex)
+        return "$basePath.jpg"
+    }
+
 }

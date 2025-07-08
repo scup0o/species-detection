@@ -109,14 +109,16 @@ fun AnalysisResultPBS(
                                 ),
                             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
                         ) {
-                            items(state.recognitions, key = { it.id }) { species ->
+                            items(state.recognitions, key = { it.species.id }) { recognition ->
                                 SpeciesListItem(
-                                    observationState = speciesObservationState[species.id] != null,
-                                    species = species,
+                                    showAnalysisResult = true,
+                                    analysisResult = recognition.confidence,
+                                    observationState = speciesObservationState[recognition.species.id] != null,
+                                    species = recognition.species,
                                     onClick = {
                                         navController.popBackStack(
                                             AppScreen.EncyclopediaDetailScreen.createRoute(
-                                                species = species,
+                                                species = recognition.species,
                                                 imageUri = analysisImage
                                             ),
                                             inclusive = true,
@@ -124,7 +126,7 @@ fun AnalysisResultPBS(
                                         )
                                         navController.navigate(
                                             AppScreen.EncyclopediaDetailScreen.createRoute(
-                                                species = species,
+                                                species = recognition.species,
                                                 imageUri = analysisImage
                                             )
                                         ) {

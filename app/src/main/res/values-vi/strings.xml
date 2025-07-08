@@ -219,7 +219,7 @@
     <string name="empty_species_profile">Chưa có sinh vật nào được quan sát</string>
     <string name="empty_archived">Hộp lưu trữ đang trống</string>
     <string name="empty_saved">Bạn chưa lưu mục nào</string>
-    <string name="expires_in_days">Hết hạn sau %1$d ngày</string>
+    <string name="expires_in_days">Bị xóa sau %1$d ngày</string>
     <string name="restore">Khôi phục</string>
     <string name="display_name_inappropriate">Tên hiển thị chứa từ ngữ không phù hợp</string>
     <string name="display_name_empty">Tên hiển thị không được để trống</string>
@@ -232,6 +232,6 @@
     <string name="like_dislike_count">và %1$d người khác</string>
     <string name="notification">Thông báo</string>
     <string name="no_species">Không có sinh vật nào</string>
-
-
+    <string name="confidence">Độ tin cậy</string>
+    <string name="set_privacy">Quyền riêng tư:</string>
 </resources>

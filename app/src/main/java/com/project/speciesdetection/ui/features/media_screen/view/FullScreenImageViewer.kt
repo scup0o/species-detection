@@ -42,10 +42,12 @@ import me.saket.telephoto.zoomable.zoomable
 fun FullScreenImageViewer(
     image: Uri,
     onNavigateBack: () -> Unit,
-    viewModel: FullScreenImageViewModel = hiltViewModel()
+    viewModel: FullScreenImageViewModel = hiltViewModel(),
+    transform: Boolean = true,
 ) {
     val imageModel =
-        Uri.decode(CloudinaryImageURLHelper.restoreCloudinaryOriginalUrl(image.toString())).toUri()
+        if (transform) Uri.decode(CloudinaryImageURLHelper.restoreCloudinaryOriginalUrl(image.toString())).toUri()
+    else image
     val context = LocalContext.current
     val mimeType = context.contentResolver.getType(imageModel) ?: ""
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -66,7 +68,7 @@ fun FullScreenImageViewer(
 
                     // Sử dụng Composable chuyên dụng cho Glide từ thư viện Telephoto
                     ZoomableGlideImage(
-                        model = imageModel,
+                        model = if (transform) imageModel else imageModel.toString(),
                         contentDescription = "Full screen zoomable image",
                         modifier = Modifier.fillMaxSize(),
                         state = zoomableState // Truyền state vào
@@ -96,28 +98,30 @@ fun FullScreenImageViewer(
 
 
 
-            IconButton(
-                onClick = {
-                    viewModel.downloadImage(imageModel)
-                },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-            ) {
-                if (uiState.isDownloading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .width(1.dp)
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(R.drawable.download),
-                        contentDescription = "Download",
-                        tint = Color.White
-                    )
-                }
+            if (transform){
+                IconButton(
+                    onClick = {
+                        viewModel.downloadImage(imageModel)
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    if (uiState.isDownloading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .width(1.dp)
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.download),
+                            contentDescription = "Download",
+                            tint = Color.White
+                        )
+                    }
 
+                }
             }
 
         }

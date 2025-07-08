@@ -28,7 +28,8 @@ data class DisplayableSpecies(
     var imageURL: List<String> = emptyList(),
     var haveObservation : Boolean = false,
     @Serializable(with = TimestampSerializer::class)
-    var firstFound : Timestamp? = null
+    var firstFound : Timestamp? = null,
+    var otherConvo : Map<String, String> = emptyMap()
 ){
     fun getScientificName() = this.scientific["name"]
     fun getScientificGenus() = this.scientific["genus"]

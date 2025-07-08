@@ -590,7 +590,7 @@ private fun PrivacySelector(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.End
     ) {
-        Text("Set privacy:", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.set_privacy), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.width(8.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,

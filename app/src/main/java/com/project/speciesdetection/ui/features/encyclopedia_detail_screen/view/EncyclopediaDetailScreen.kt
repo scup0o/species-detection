@@ -1,5 +1,6 @@
 package com.project.speciesdetection.ui.features.encyclopedia_detail_screen.view
 
+import MultiSystemConservationStatusView
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -64,6 +66,8 @@ import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
 import com.project.speciesdetection.R
+import com.project.speciesdetection.core.helpers.CloudinaryImageURLHelper
+import com.project.speciesdetection.core.helpers.MediaHelper
 import com.project.speciesdetection.core.navigation.AppScreen
 import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.ui.composable.common.CustomActionButton
@@ -162,24 +166,57 @@ fun EncyclopediaDetailScreen(
                         item {
                             Box(Modifier.fillMaxWidth()) {
                                 HorizontalPager(pagerState) { page ->
-                                    GlideImage(
-                                        model = species.imageURL[page], null,
-                                        failure = placeholder(R.drawable.image_not_available),
-                                        loading = placeholder(R.drawable.image_not_available),
-                                        contentScale = ContentScale.Crop,  // Cắt ảnh để lấp đầy không gian nhưng giữ tỷ lệ
-                                        modifier = Modifier
-                                            .fillMaxWidth()                    // Điền hết chiều rộng
-                                            .height(300.dp)
-                                            .clickable {
-                                                navController.navigate(
-                                                    AppScreen.FullScreenImageViewer.createRoute(
-                                                        species.imageURL[page]
-                                                    )
-                                                )
-                                            }
-                                            .clip(RoundedCornerShape(0, 0, 60, 0))
-                                    )
+                                    // Lấy URL gốc cho trang hiện tại
+                                    val originalUrl = species.imageURL[page]
 
+                                    // Kiểm tra xem URL có phải là của video hay không
+                                    val isVideo = MediaHelper.isVideoFile(originalUrl)
+
+                                    // Xác định URL sẽ được hiển thị:
+                                    // - Nếu là video, lấy URL thumbnail .jpg
+                                    // - Nếu là ảnh, dùng URL gốc
+                                    val displayUrl = if (isVideo) {
+                                        CloudinaryImageURLHelper.getVideoThumbnailUrl(originalUrl)
+                                    } else {
+                                        originalUrl
+                                    }
+
+                                    // Sử dụng Box để có thể đặt icon Play lên trên ảnh
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(300.dp)
+                                            .clip(RoundedCornerShape(0, 0, 60, 0))
+                                            .clickable {
+                                                // QUAN TRỌNG: Luôn sử dụng URL gốc khi điều hướng
+                                                // để trình xem toàn màn hình nhận được file video .mp4, không phải file ảnh .jpg
+                                                navController.navigate(
+                                                    AppScreen.FullScreenImageViewer.createRoute(displayUrl)
+                                                )
+                                            },
+                                        // Căn giữa mọi thứ bên trong Box theo mặc định
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        // GlideImage luôn được hiển thị, làm nền
+                                        GlideImage(
+                                            model = displayUrl, null,
+                                            failure = placeholder(R.drawable.image_not_available),
+                                            loading = placeholder(R.drawable.image_not_available),
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize() // Điền đầy Box cha
+                                        )
+
+                                        // Nếu là video, hiển thị icon Play lên trên
+                                        if (isVideo) {
+                                            Icon(
+                                                imageVector = Icons.Filled.PlayArrow,
+                                                contentDescription = "Play Video", // Dành cho hỗ trợ tiếp cận
+                                                modifier = Modifier
+                                                    .size(64.dp), // Kích thước của icon
+                                                tint = Color.White.copy(alpha = 0.8f) // Màu trắng với độ trong suốt nhẹ
+                                            )
+                                        }
+                                    }
                                 }
 
                                 IconButton(
@@ -369,7 +406,7 @@ fun EncyclopediaDetailScreen(
                                     )
                                 )
 
-                                Box(
+                               /* Box(
                                     modifier = Modifier
                                         .background(
                                             MaterialTheme.colorScheme.surface,
@@ -377,7 +414,11 @@ fun EncyclopediaDetailScreen(
                                         ).fillMaxWidth()
                                 ) {
                                     IUCNConservationStatusView(species.conservation)
-                                }
+                                }*/
+                                MultiSystemConservationStatusView(
+                                    iucnStatusCode = species.conservation,
+                                    otherSystems = species.otherConvo
+                                )
 
 
                             }

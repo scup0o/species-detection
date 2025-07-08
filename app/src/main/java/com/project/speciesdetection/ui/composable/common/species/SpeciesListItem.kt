@@ -43,6 +43,8 @@ fun SpeciesListItem(
     observationState : Boolean = false,
     onClick : () -> Unit,
     showObservationState : Boolean = true,
+    analysisResult: Float = 0f,
+    showAnalysisResult : Boolean = false,
     ) {
     val color = MaterialTheme.colorScheme.outline.copy(0.5f)
 
@@ -68,71 +70,82 @@ fun SpeciesListItem(
                 onClick = onClick
             ),
     ) {
-        Row(
-            modifier = Modifier.padding(MaterialTheme.spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
-        ) {
-            GlideImage(
-                model = species.thumbnailImageURL,
-                contentDescription = species.localizedName,
-                loading = placeholder(R.drawable.error_image),
-                failure = placeholder(R.drawable.error_image),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(80.dp)
-                    .padding(MaterialTheme.spacing.xxxs)
-                    .clip(MaterialTheme.shapes.small)
-            )
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.padding(MaterialTheme.spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
             ) {
-                Text(
-                    text = species.localizedName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.tertiary
+                GlideImage(
+                    model = species.thumbnailImageURL,
+                    contentDescription = species.localizedName,
+                    loading = placeholder(R.drawable.error_image),
+                    failure = placeholder(R.drawable.error_image),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .padding(MaterialTheme.spacing.xxxs)
+                        .clip(MaterialTheme.shapes.small)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = buildAnnotatedString {
-                            // Mô tả với style bình thường
-                            withStyle(style = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(
-                                color = MaterialTheme.colorScheme.outline
-                            )) {
-                                append(stringResource(R.string.species_family_description) + " ")
-                            }
+                        text = species.localizedName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = buildAnnotatedString {
+                                // Mô tả với style bình thường
+                                withStyle(style = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(
+                                    color = MaterialTheme.colorScheme.outline
+                                )) {
+                                    append(stringResource(R.string.species_family_description) + " ")
+                                }
 
-                            // Family name với style đậm
-                            withStyle(style = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.outline
-                            )) {
-                                append(species.localizedFamily)
-                            }
-                        },
-                        style = MaterialTheme.typography.bodyMedium
+                                // Family name với style đậm
+                                withStyle(style = MaterialTheme.typography.bodyMedium.toSpanStyle().copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.outline
+                                )) {
+                                    append(species.localizedFamily)
+                                }
+                            },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Text(
+                        text = species.getScientificName()?:"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontStyle = FontStyle.Italic,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                    if (showAnalysisResult){
+                        Row(Modifier.fillMaxWidth(),
+                            ) {
+                            Text(stringResource(R.string.confidence)+": %.2f%%".format(analysisResult*100),
+                                style=MaterialTheme.typography.bodyMedium,
+                                color=MaterialTheme.colorScheme.tertiary,
+                                fontStyle = FontStyle.Italic)
+                        }
+                    }
+                }
+                if (showObservationState){
+                    Image(
+                        painter = if (observationState) painterResource(R.drawable.butterfly_net) else painterResource(R.drawable.butterfly_net_disabeld),
+                        contentDescription = null,
+                        modifier = Modifier.size(45.dp).padding(horizontal = 5.dp)
                     )
                 }
+            }
 
-                Text(
-                    text = species.getScientificName()?:"",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontStyle = FontStyle.Italic,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-            if (showObservationState){
-                Image(
-                    painter = if (observationState) painterResource(R.drawable.butterfly_net) else painterResource(R.drawable.butterfly_net_disabeld),
-                    contentDescription = null,
-                    modifier = Modifier.size(45.dp).padding(horizontal = 5.dp)
-                )
-            }
-        }
+
     }
 }

@@ -227,6 +227,8 @@
     <string name="like_dislike_count">and %1$d others</string>
     <string name="notification">Notifications</string>
     <string name="no_species">No species found</string>
+    <string name="confidence">Analysis confidence</string>
 
+    <string name="set_privacy">Set privacy:</string>
 
 </resources>

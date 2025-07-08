@@ -239,7 +239,7 @@ fun SpeciesObservationMainScreen(
                                             }
                                             .padding(horizontal = 15.dp)) {
                                         Text(
-                                            if (observationSortState) "Newest" else "Oldest",
+                                            if (observationSortState) stringResource(R.string.newest) else stringResource(R.string.oldest) ,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.primary
                                         )
