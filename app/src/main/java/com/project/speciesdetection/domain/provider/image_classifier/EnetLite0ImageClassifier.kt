@@ -32,7 +32,7 @@ class EnetLite0ImageClassifier @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ImageClassifierProvider {
 
-    private val modelPath = "organism_classifier_quant.tflite"
+    private val modelPath = ""//"organism_classifier_quant.tflite"
     private val labelPath = "labels.txt"
     private val imageInputWidth = 224
     private val imageInputHeight = 224

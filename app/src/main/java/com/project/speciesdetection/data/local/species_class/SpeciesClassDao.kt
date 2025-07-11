@@ -20,4 +20,7 @@ interface SpeciesClassDao {
 
     @Query("SELECT * FROM species_class_local WHERE languageCode LIKE :languageCode")
     suspend fun getAllByLanguageSuspend(languageCode: String): List<LocalSpeciesClass>
+
+    @Query("SELECT DISTINCT id FROM species_class_local")
+    fun getDistinctClassIds(): Flow<List<String>>
 }

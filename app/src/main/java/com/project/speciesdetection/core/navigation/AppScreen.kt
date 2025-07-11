@@ -14,6 +14,7 @@ import com.project.speciesdetection.data.model.observation.Observation
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.net.URLEncoder
 
 sealed class AppScreen(
     val route: String,
@@ -155,4 +156,6 @@ sealed class AppScreen(
     object NotificationScreen:AppScreen(
         route = "notification"
     )
+
+    data object GeneralMapPickerScreen : AppScreen("general_map_picker_screen")
 }

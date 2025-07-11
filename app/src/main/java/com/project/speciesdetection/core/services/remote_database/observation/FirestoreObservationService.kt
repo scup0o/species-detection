@@ -52,8 +52,17 @@ class FirestoreObservationService @Inject constructor(
                         )
                     }
                 }
+
+
+                //Log.i("speciesName", observation.speciesName.toString())
                 // Nếu không tìm thấy (ví dụ: species đã bị xóa), chúng ta vẫn giữ nguyên
                 // tên mà người dùng đã nhập, không làm gì cả.
+            }
+            else{
+                val firstSpeciesName = observation.speciesName.values.firstOrNull() ?: "Unknown"
+                observationToSave = observation.copy(
+                    speciesName = mapOf("default" to firstSpeciesName)
+                )
             }
 
             // Nếu speciesId rỗng, toàn bộ khối if ở trên sẽ được bỏ qua,
@@ -92,6 +101,13 @@ class FirestoreObservationService @Inject constructor(
                         )
                     }
                 }
+
+            }
+            else{
+                val firstSpeciesName = observation.speciesName.values.firstOrNull() ?: "Unknown"
+                observationToSave = observation.copy(
+                    speciesName = mapOf("default" to firstSpeciesName)
+                )
             }
 
             // Cập nhật document với dữ liệu đã được xử lý.

@@ -4,6 +4,7 @@ import android.app.Application // Sử dụng Application cho MediaFileUseCase n
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import androidx.core.content.FileProvider
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import androidx.core.net.toUri
+import java.io.File
 
 data class EditImageUiState(
     val originalImageUri: Uri? = null,
@@ -62,12 +64,19 @@ class EditImageForIdentificationViewModel @Inject constructor(
 
     fun onImageCropped(croppedUri: Uri?) {
         if (croppedUri != null) {
-            _uiState.value = _uiState.value.copy(currentImageUri = croppedUri, error = null)
-            //Log.d(TAG, "Image cropped. New URI: $croppedUri")
-        } else {
-            //Log.w(TAG, "Image cropping cancelled or failed.")
+            val safeUri = if (croppedUri.scheme == "file") {
+                val file = File(croppedUri.path ?: "")
+                FileProvider.getUriForFile(
+                    applicationContext,
+                    "${applicationContext.packageName}.provider",
+                    file
+                )
+            } else croppedUri
+
+            _uiState.value = _uiState.value.copy(currentImageUri = safeUri, error = null)
         }
     }
+
 
     fun saveCurrentImageToGallery() {
         val imageUriToSave = _uiState.value.currentImageUri ?: run {

@@ -33,7 +33,9 @@ data class LocalSpecies(
     var imageURL: List<String>,
     var haveObservation : Boolean,
     var firstFound : Timestamp?,
-    var classId : String
+    var classId : String,
+    var otherConvo : Map<String, String> = emptyMap()
+
 )
 
 fun LocalSpecies.toDisplayable(): DisplayableSpecies {
@@ -58,7 +60,8 @@ fun LocalSpecies.toDisplayable(): DisplayableSpecies {
         thumbnailImageURL = this.thumbnailImageURL,
         imageURL = this.imageURL,
         haveObservation = this.haveObservation,
-        firstFound = this.firstFound
+        firstFound = this.firstFound,
+        otherConvo = this.otherConvo
     )
 }
 
@@ -86,6 +89,7 @@ fun DisplayableSpecies.toLocal(languageCode: String): LocalSpecies {
         imageURL = this.imageURL,
         haveObservation = false,
         firstFound = this.firstFound,
-        classId = this.getScientificClass()?.lowercase()?:""
+        classId = this.getScientificClass()?.lowercase()?:"",
+        otherConvo = this.otherConvo
     )
 }

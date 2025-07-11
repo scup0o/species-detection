@@ -42,6 +42,7 @@ import com.project.speciesdetection.ui.features.observation.viewmodel.Observatio
 import com.project.speciesdetection.ui.features.observation.viewmodel.ObservationViewModel
 import com.project.speciesdetection.ui.features.observation.viewmodel.detail.ObservationDetailViewModel
 import com.project.speciesdetection.ui.features.setting_main_screen.viewmodel.SettingViewModel
+import java.net.URLDecoder
 
 @Composable
 fun AppNavigation(
@@ -373,6 +374,8 @@ fun AppNavigation(
                 authViewModel = authViewModel
             )
         }
+
+
 
     }
 

@@ -166,7 +166,7 @@ fun SpeciesPickerView(
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = "No species found.", // String resource
+                                        text = stringResource(R.string.no_species), // String resource
                                         style = MaterialTheme.typography.bodyLarge,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.padding(bottom = MaterialTheme.spacing.m)
@@ -359,9 +359,9 @@ private fun AnalysisContent(
             is AnalysisUiState.ClassifierInitializing, is AnalysisUiState.ImageProcessing -> {
                 LinearProgressIndicator()
                 val text = if (analysisState is AnalysisUiState.ImageProcessing)
-                    "Analyzing your first image..."//stringResource(R.string.processing_image)
+                    stringResource(R.string.processing_image)
                 else
-                    "Analyzing your first image..."//stringResource(R.string.initializing_engine)
+                    stringResource(R.string.processing_image)
                 Text(
                     text = text,
                     style = MaterialTheme.typography.bodyLarge,
@@ -393,7 +393,7 @@ private fun AnalysisContent(
                 // Nếu có imageUri, đây là trạng thái lỗi/không có kết quả từ việc phân tích
                 if (imageUri != null) {
                     val errorMessage = (analysisState as? AnalysisUiState.Error)?.message ?: "empty"//stringResource(R.string.no_results_found)
-                    Text(text = errorMessage, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+                    Text(text = stringResource(R.string.no_species), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
                     Spacer(modifier = Modifier.height(16.dp))
                     ItemErrorPlaceholder(onClick = onRetry)
                 } else {
@@ -411,7 +411,7 @@ private fun AnalysisContent(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Your search query is empty, please type something...",//stringResource(R.string.start_searching_prompt),
+                            text = stringResource(R.string.start_searching_prompt),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.titleMedium
                         )

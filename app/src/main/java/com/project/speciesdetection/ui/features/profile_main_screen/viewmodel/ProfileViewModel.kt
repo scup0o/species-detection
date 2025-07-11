@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 import javax.inject.Inject
@@ -87,8 +88,13 @@ class ProfileViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
-            val stableUri = createStableCopy(temporaryUri)
+        viewModelScope.launch { // Không cần chỉ định Dispatchers.IO ở đây, mặc định là Main
+            // Chuyển sang luồng IO chỉ cho tác vụ nặng
+            val stableUri = withContext(Dispatchers.IO) {
+                createStableCopy(temporaryUri)
+            }
+
+            // Dòng này bây giờ được chạy trên luồng Main một cách an toàn
             _newCroppedPhotoUri.value = stableUri
         }
     }

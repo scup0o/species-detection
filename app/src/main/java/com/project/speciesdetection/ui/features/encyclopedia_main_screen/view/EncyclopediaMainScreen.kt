@@ -351,7 +351,13 @@ fun EncyclopediaMainScreen(
                                 }
                                 items(
                                     count = lazyPagingItems.itemCount,
-                                    key = lazyPagingItems.itemKey { it.id }
+                                    // Dùng itemKey nhưng thêm chỉ mục để đảm bảo tính duy nhất
+                                    key = { index ->
+                                        val item = lazyPagingItems.peek(index) // peek() an toàn hơn get() trong trường hợp này
+                                        // Kết hợp id của item với chỉ mục của nó trong danh sách
+                                        // Điều này đảm bảo key là duy nhất ngay cả khi có các item trùng lặp
+                                        if (item != null) "${item.id}_$index" else "placeholder_$index"
+                                    }
                                 ) { index ->
                                     val species = lazyPagingItems[index]
 

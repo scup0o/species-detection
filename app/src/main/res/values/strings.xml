@@ -204,8 +204,8 @@
 
     <string name="moderation_error">Moderation error</string>
     <string name="empty_species">Please select or enter a species</string>
-    <string name="text_unappropriated">Some images may contain inappropriate content</string>
-    <string name="images_unappropriated">The description includes words that may be considered inappropriate</string>
+    <string name="text_unappropriated">The description includes words that may be considered inappropriate</string>
+    <string name="images_unappropriated">Some images may contain inappropriate content</string>
     <string name="select_location">Select location</string>
 
     <string name="update">Update</string>
@@ -230,5 +230,22 @@
     <string name="confidence">Analysis confidence</string>
 
     <string name="set_privacy">Set privacy:</string>
+
+    <!-- In res/values/strings.xml -->
+    <string name="need_another_opinion_try_ai">The result is not accurate? Try identifying with AI</string>
+    <string name="identify_with_ai">Identify with AI</string>
+    <string name="ai_is_thinking">AI is analyzing...</string>
+    <string name="ai_suggestion">AI Suggestion</string>
+    <string name="see_more_at">See more at:</string>
+    <string name="provide_more_info">Provide more information</string>
+    <string name="send">Send</string>
+    <string name="family">Family</string>
+    <string name="class_">Class</string>
+    <string name="analyzing">Analyzing...</string>
+    <string name="ai_will_give_better_results_simple">Provide a detailed description for AI to give more accurate results.</string>
+    <string name="description">Description</string>
+    <string name="description_placeholder_with_location">e.g., Size, color, behavior, location where observed...</string>
+    <string name="processing_image">Analyzing your first image…</string>
+    <string name="start_searching_prompt">Your search query is empty, please type something…</string>
 
 </resources>

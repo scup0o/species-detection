@@ -39,6 +39,8 @@ android {
         buildConfigField ("String", "SIGHTENGINE_API_SECRET", "\"${localProperties.getProperty("SIGHTENGINE_API_SECRET")}\"")
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"${localProperties.getProperty("CLOUDINARY_CLOUD_NAME")}\"")
         buildConfigField("String", "CLOUDINARY_UPLOAD_PRESET", "\"${localProperties.getProperty("CLOUDINARY_UPLOAD_PRESET")}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY")}\"")
+
         //buildConfigField("String", "MAPS_API_KEY", "\"${localProperties.getProperty("MAPS_API_KEY")}\"")
     }
 
@@ -87,6 +89,7 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.room.common.jvm)
+    implementation(libs.generativeai)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -187,7 +190,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.1")
     implementation(libs.zoomable.image.glide)
-
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
 
     configurations.all {

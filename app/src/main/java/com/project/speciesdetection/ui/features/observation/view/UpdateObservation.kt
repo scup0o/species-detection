@@ -229,7 +229,10 @@ fun UpdateObservation(
                     focusedPlaceholderColor = Color.Transparent,
                     unfocusedPlaceholderColor = MaterialTheme.colorScheme.outline,
                     paddingValues = if (uiState.description.isNotEmpty()) 15.dp else 0.dp,
-                    shape = RoundedCornerShape(10)
+                    shape = RoundedCornerShape(10),
+                    focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+
                 )
                 Spacer(Modifier.height(16.dp))
 
@@ -584,7 +587,7 @@ private fun PrivacySelector(
     onPrivacySelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val items = listOf(stringResource(R.string.obs_public), stringResource(R.string.obs_private))
+    val items = listOf("Public", "Private")
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,

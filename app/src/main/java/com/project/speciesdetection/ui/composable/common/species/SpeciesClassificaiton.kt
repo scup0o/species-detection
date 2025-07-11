@@ -18,11 +18,15 @@ import com.project.speciesdetection.R
 import com.project.speciesdetection.core.theme.spacing
 import com.project.speciesdetection.data.model.species.DisplayableSpecies
 
+/**
+ * Phiên bản gốc của Composable, nhận vào một đối tượng DisplayableSpecies hoàn chỉnh.
+ */
 @Composable
 fun SpeciesClassification(
     species: DisplayableSpecies,
     modifier: Modifier = Modifier
 ) {
+    // Phiên bản này xây dựng danh sách dữ liệu từ đối tượng DisplayableSpecies
     val classificationData = listOf(
         Triple(R.string.species_classification_domain, species.localizedDomain, species.getScientificDomain()),
         Triple(R.string.species_classification_kingdom, species.localizedKingdom, species.getScientificKingdom()),
@@ -34,6 +38,55 @@ fun SpeciesClassification(
         Triple(R.string.species_classification_species, null, species.getScientificName())
     )
 
+    // Gọi Composable chung để hiển thị
+    ClassificationLayout(
+        classificationData = classificationData,
+        modifier = modifier
+    )
+}
+
+/**
+ * Phiên bản Overload linh hoạt, nhận các chuỗi riêng lẻ.
+ * Dùng cho kết quả từ AI.
+ */
+@Composable
+fun SpeciesClassification(
+    modifier: Modifier = Modifier,
+    domain: String? = null,
+    kingdom: String? = null,
+    phylum: String? = null,
+    scientificClass: String? = null, // Đã đổi tên để không trùng keyword
+    order: String? = null,
+    scientificFamily: String? = null, // Đã đổi tên để không trùng keyword
+    genus: String? = null,
+    speciesName: String? = null
+) {
+    val classificationData = listOf(
+        Triple(R.string.species_classification_domain, null, domain),
+        Triple(R.string.species_classification_kingdom, null, kingdom),
+        Triple(R.string.species_classification_phylum, null, phylum),
+        Triple(R.string.species_classification_class, null, scientificClass),
+        Triple(R.string.species_classification_order, null, order),
+        Triple(R.string.species_classification_family, null, scientificFamily),
+        Triple(R.string.species_classification_genus, null, genus),
+        Triple(R.string.species_classification_species, null, speciesName)
+    )
+
+    ClassificationLayout(
+        classificationData = classificationData,
+        modifier = modifier
+    )
+}
+
+/**
+ * Composable chung, chịu trách nhiệm hiển thị layout của bảng phân loại.
+ * Được gọi bởi cả hai phiên bản SpeciesClassification.
+ */
+@Composable
+private fun ClassificationLayout(
+    classificationData: List<Triple<Int, String?, String?>>,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -42,11 +95,10 @@ fun SpeciesClassification(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         classificationData.forEach { (labelResId, localizedNameData, scientificNameData) ->
+            // Logic kiểm tra và hiển thị được giữ nguyên
             val finalLocalizedName = localizedNameData?.takeIf { it.isNotBlank() }
             val finalScientificName = scientificNameData?.takeIf { it.isNotBlank() }
 
-            // Chỉ hiển thị dòng nếu có ít nhất một trong hai thông tin
-            // Hoặc bạn có thể bỏ điều kiện if này nếu muốn luôn hiển thị "N/A"
             if (finalLocalizedName != null || finalScientificName != null) {
                 ClassificationDataRow(
                     labelResId = labelResId,
@@ -54,16 +106,14 @@ fun SpeciesClassification(
                     scientificName = finalScientificName
                 )
             }
-            // Nếu bạn muốn hiển thị "N/A" ngay cả khi cả hai đều null:
-            // ClassificationDataRow(
-            // labelResId = labelResId,
-            // localizedName = finalLocalizedName,
-            // scientificName = finalScientificName
-            // )
         }
     }
 }
 
+
+/**
+ * Composable hiển thị một hàng trong bảng phân loại. Không thay đổi.
+ */
 @Composable
 fun ClassificationDataRow(
     labelResId: Int,
@@ -95,7 +145,7 @@ fun ClassificationDataRow(
             val displayScientific = scientificName?.takeIf { it.isNotBlank() }
 
             if (displayLocalized != null) {
-                Row(){
+                Row {
                     Text(
                         text = displayLocalized,
                         style = MaterialTheme.typography.bodyMedium,
