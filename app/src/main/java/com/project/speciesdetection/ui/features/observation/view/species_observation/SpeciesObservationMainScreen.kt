@@ -601,13 +601,13 @@ fun SpeciesObservationMainScreen(
             // Nội dung bên trong BottomSheet
             // Kiểm tra null để đảm bảo an toàn
             selectedObservations?.let { observationsAtPoint ->
-                LazyColumn {
+                LazyColumn() {
                     items(
                         observationsAtPoint.size,
                         key = { index -> observationsAtPoint[index].id ?: "" }
                     ) { index ->
                         val newObservation = selectedObservations!![index]
-                        Box(Modifier.padding(horizontal = 10.dp)) {
+                        Box(Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) {
                             ObservationItem(
                                 observation = newObservation,
                                 onclick = {
@@ -620,7 +620,7 @@ fun SpeciesObservationMainScreen(
                                     else
                                         Toast.makeText(
                                             context,
-                                            "You need to login",
+                                            "Bạn cần đăng nhập",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                 }

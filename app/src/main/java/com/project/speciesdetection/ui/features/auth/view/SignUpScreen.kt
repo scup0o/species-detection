@@ -122,11 +122,11 @@ fun SignupScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
-                Text(
+                /*Text(
                     stringResource(R.string.signup_text),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.outline,
-                )
+                )*/
             }
             Column(
                 modifier = Modifier

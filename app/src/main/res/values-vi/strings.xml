@@ -209,8 +209,8 @@
 
     <string name="moderation_error">Lỗi kiểm duyệt</string>
     <string name="empty_species">Vui lòng chọn hoặc nhập sinh vật</string>
-    <string name="text_unappropriated">Một số hình ảnh có thể chứa nội dung không phù hợp</string>
-    <string name="images_unappropriated">Mô tả có chứa từ ngữ không phù hợp</string>
+    <string name="text_unappropriated">Mô tả có chứa từ ngữ không phù hợp</string>
+    <string name="images_unappropriated">Một số hình ảnh có thể chứa nội dung không phù hợp</string>
     <string name="select_location">Xác nhận vị trí</string>
 
     <string name="update">Cập nhật</string>
@@ -234,4 +234,21 @@
     <string name="no_species">Không có sinh vật nào</string>
     <string name="confidence">Độ tin cậy</string>
     <string name="set_privacy">Quyền riêng tư:</string>
+
+    <!-- In res/values/strings.xml -->
+    <string name="need_another_opinion_try_ai">Kết quả không chính xác? Nhận diện với AI</string>
+    <string name="identify_with_ai">Nhận dạng với AI</string>
+    <string name="ai_is_thinking">AI đang phân tích…</string>
+    <string name="ai_suggestion">Gợi ý từ AI</string>
+    <string name="see_more_at">Xem thêm tại:</string>
+    <string name="provide_more_info">Cung cấp thêm thông tin</string>
+    <string name="send">Gửi</string>
+    <string name="family">Họ</string>
+    <string name="class_">Lớp</string>
+    <string name="analyzing">Đang phân tích…</string>
+    <string name="ai_will_give_better_results_simple">Cung cấp mô tả chi tiết để AI đưa ra kết quả chính xác hơn.</string>
+    <string name="description">Mô tả</string>
+    <string name="description_placeholder_with_location">VD: Kích thước, màu sắc, hành vi, vị trí quan sát thấy…</string>
+    <string name="processing_image">Đang phân tích ảnh đầu tiên…</string>
+    <string name="start_searching_prompt">Nhập nội dung để tìm kiếm…</string>
 </resources>

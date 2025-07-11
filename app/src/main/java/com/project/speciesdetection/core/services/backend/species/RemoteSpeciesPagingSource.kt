@@ -44,6 +44,8 @@ class RemoteSpeciesPagingSource(
 
             )
 
+            Log.i("search_query", searchQuery.toString())
+
             // Kiểm tra response từ API
             if (!response.success) {
                 Log.e(TAG, "API call failed: ${response.message}")

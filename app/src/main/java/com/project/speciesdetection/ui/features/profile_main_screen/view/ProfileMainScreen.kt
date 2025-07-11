@@ -511,22 +511,24 @@ fun ProfileMainScreen(
                             }
 
 
-                            Box(
-                                modifier = Modifier
-                                    .clickable { profileViewModel.onEditProfileDialogOpened() // Chuẩn bị state cho dialog
-                                        showEditDialog = true }
-                                    .background(
-                                        color = MaterialTheme.colorScheme.surfaceContainer,
-                                        shape = CircleShape
+                            if (selfCheckState){
+                                Box(
+                                    modifier = Modifier
+                                        .clickable { profileViewModel.onEditProfileDialogOpened() // Chuẩn bị state cho dialog
+                                            showEditDialog = true }
+                                        .background(
+                                            color = MaterialTheme.colorScheme.surfaceContainer,
+                                            shape = CircleShape
+                                        )
+                                        .padding(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Edit Profile",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
                                     )
-                                    .padding(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Edit Profile",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                                }
                             }
 
 

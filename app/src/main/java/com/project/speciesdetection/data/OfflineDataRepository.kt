@@ -88,7 +88,7 @@ class OfflineDataRepository @Inject constructor(
             val localSpeciesClassList = speciesClassResponse.mapNotNull { sClass ->
                 val nameToUse = sClass.name[languageCode] ?: sClass.name["en"] // Ưu tiên ngôn ngữ yêu cầu, fallback về tiếng Anh
                 nameToUse?.let { localizedName ->
-                    LocalSpeciesClass(id = sClass.id, languageCode = languageCode, localizedName = localizedName)
+                    LocalSpeciesClass(id = (sClass.name["scientific"]?:"").lowercase(), languageCode = languageCode, localizedName = localizedName)
                 }
             }
 
