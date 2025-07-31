@@ -89,7 +89,7 @@ fun DisplayableSpecies.toLocal(languageCode: String): LocalSpecies {
         imageURL = this.imageURL,
         haveObservation = false,
         firstFound = this.firstFound,
-        classId = this.getScientificClass()?.lowercase()?:"",
+        classId = this.getScientificClass()?:"",
         otherConvo = this.otherConvo
     )
 }

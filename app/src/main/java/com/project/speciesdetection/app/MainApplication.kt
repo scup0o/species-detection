@@ -22,7 +22,7 @@ class MainApplication(): Application(){
 
     override fun onCreate() {
         super.onCreate()
-        scheduleDailyDataUpdate()
+        //scheduleDailyDataUpdate()
 
         // Cấu hình User Agent cho osmdroid (nếu bạn vẫn dùng nó ở đâu đó)
          Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
