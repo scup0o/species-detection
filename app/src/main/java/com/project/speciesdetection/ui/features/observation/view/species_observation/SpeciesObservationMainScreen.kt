@@ -682,7 +682,7 @@ fun ObservationItem(
             ),
     ) {
         Row(
-            modifier = Modifier.padding(MaterialTheme.spacing.s),
+            modifier = Modifier.padding(if (observation.imageURL.isNotEmpty()) 0.dp else 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.s)
         ) {
@@ -698,8 +698,7 @@ fun ObservationItem(
                         failure = placeholder(R.drawable.error_image),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(110.dp)
-                            .padding(MaterialTheme.spacing.xxxs)
+                            .size(if (showSpecies) 140.dp else 110.dp)
                             .clip(MaterialTheme.shapes.small)
                     )
                     if (mimeType == "video") {
@@ -718,14 +717,14 @@ fun ObservationItem(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .background(
-                                    MaterialTheme.colorScheme.surface.copy(0.8f),
+                                    MaterialTheme.colorScheme.surface.copy(0.3f),
                                     RoundedCornerShape(20)
                                 )
                         ) {
                             Text(
                                 "+ ${observation.imageURL.size - 1}",
                                 modifier = Modifier.padding(5.dp),
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -734,16 +733,17 @@ fun ObservationItem(
 
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.padding(start = 10.dp)
+                modifier = Modifier.padding(horizontal = 10.dp)
             )
             {
-                Text(
-                    observation.content,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    fontStyle = FontStyle.Italic,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                if (observation.content.isNotEmpty()){
+                    Text(
+                        observation.content,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
 
                 if (observation.location != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -762,7 +762,7 @@ fun ObservationItem(
                         )
                     }
                 }
-                if (showSpecies && observation.speciesId.isNotEmpty()) {
+                if (showSpecies) {
                     Row {
                         Icon(
                             painterResource(R.drawable.otter_solid), null,

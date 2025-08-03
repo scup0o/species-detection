@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SpeciesDetection</string>
+    <string name="app_name">IDmal</string>
     <string name="encyclopedia_title">"ENCYCLOPEDIA"</string>
     <string name="all">All</string>
     <string name="try_again">Try again</string>
@@ -30,8 +30,8 @@
     <string name="no_network_connection">No network connection</string>
 
     <string name="get_started">Get started</string>
-    <string name="get_started_title">Let\'s get started</string>
-    <string name="get_started_text">Share your journey with the community</string>
+    <string name="get_started_title">Welcome to </string>
+    <string name="get_started_text">Join us to identify, look up, and share your creature discovery journey with the community</string>
 
     <string name="login_title">Login</string>
     <string name="login_text">Welcome back to the app</string>

@@ -7,6 +7,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -26,7 +28,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -55,9 +60,11 @@ fun AuthScreen(
     authViewModel: AuthViewModel
 ) {
     val authState by authViewModel.authState.collectAsStateWithLifecycle()
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colorScheme.surface)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+    ) {
         if (authState.isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else {
@@ -69,96 +76,175 @@ fun AuthScreen(
                 }
             } else {
                 GlideImage(
-                    model = R.drawable.login_background,
+                    model = R.drawable.auth_bg,
                     contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                Column(
+
+                Row(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                        .fillMaxWidth().padding(top=50.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(100.dp),
-                        modifier = Modifier
-                            .padding(20.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        Column {
-                            Text(
-                                stringResource(R.string.get_started_title),
-                                style = MaterialTheme.typography.displaySmall.copy(
-                                    color = Color.White,
-                                    shadow = Shadow(
-                                        color = Color.Black,
-                                        offset = Offset(4f, 4f), // Độ lệch của bóng
-                                        blurRadius = 10f,          // Độ mờ của bóng
-                                    ),
-                                    fontWeight = FontWeight.Bold,
-                                )
-                            )
-                            Text(
-                                stringResource(R.string.get_started_text),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = Color.White,
-                                    shadow = Shadow(
-                                        color = Color.Black,
-                                        offset = Offset(4f, 4f), // Độ lệch của bóng
-                                        blurRadius = 10f,          // Độ mờ của bóng
-                                    ),
-                                )
-                            )
-                        }
-
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Button(
-                                onClick = {
-                                    navController.popBackStack(
-                                        AppScreen.LoginScreen.route,
-                                        inclusive = true,
-                                        saveState = false
-                                    )
-                                    navController.navigate(AppScreen.LoginScreen.route) {
-                                        launchSingleTop = true
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    contentColor = MaterialTheme.colorScheme.primary
+                    /*Row(
+                        verticalAlignment = Alignment.CenterVertically,){
+                        GlideImage(
+                            model = R.drawable.logo,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .height(50.dp)
+                                .width(50.dp)
+                        )
+                        Text(
+                            stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.displaySmall.copy(
+                                color = Color.White,
+                                shadow = Shadow(
+                                    color = Color.Black,
+                                    offset = Offset(4f, 4f), // Độ lệch của bóng
+                                    blurRadius = 10f,          // Độ mờ của bóng
                                 ),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier
-                                    .graphicsLayer {
-                                        shadowElevation = 10.dp.toPx()
-                                        shape = RoundedCornerShape(10.dp)
-                                        clip = true
-                                        ambientShadowColor = Color.White // Màu của bóng (phát sáng)
-                                        spotShadowColor = Color.White
+                                fontWeight = FontWeight.Bold,
+                            )
+                        )
+                    }*/
+
+                }
+
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter),
+                        verticalArrangement = Arrangement.spacedBy(15.dp)
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(50.dp),
+                            modifier = Modifier
+                                .padding(20.dp)
+                                .fillMaxWidth(),
+                        ) {
+                            Column {
+                                val annotatedString = buildAnnotatedString {
+                                    // Phần 1: "Chào mừng bạn đến với "
+                                    append(stringResource(id = R.string.get_started_title))
+                                    append("  ") // Thêm khoảng trắng
+
+                                    // Đánh dấu vị trí sẽ chèn logo
+                                    appendInlineContent("logo", "[logo]")
+
+                                    // Phần 2: " IDmal"
+                                    append(" ") // Thêm khoảng trắng
+                                    append(stringResource(id = R.string.app_name)+"!")
+                                }
+
+                                // Map để định nghĩa nội dung cho "logo" đã đánh dấu ở trên
+                                val inlineContent = mapOf(
+                                    "logo" to InlineTextContent(
+                                        // Placeholder định nghĩa kích thước cho logo trong dòng văn bản
+                                        placeholder = Placeholder(
+                                            width = 34.sp, // Kích thước logo, có thể điều chỉnh
+                                            height = 34.sp,
+                                            placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter // Căn logo theo giữa dòng chữ
+                                        )
+                                    ) {
+                                        Box(
+                                           Modifier.background(
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(25)
+                                            ).padding(4.dp)
+                                        ){
+                                            GlideImage(
+                                                model = R.drawable.logo,
+                                                contentDescription = "Logo", // Thêm mô tả cho accessibility
+                                                modifier = Modifier.fillMaxSize()
+
+                                            )
+                                        }
+                                        // Đây là Composable thực tế sẽ được hiển thị
+
                                     }
-                            ) {
+                                )
+
+                                // Hiển thị Text đã được xây dựng
                                 Text(
-                                    stringResource(R.string.get_started).uppercase(),
+                                    text = annotatedString,
+                                    inlineContent = inlineContent, // Áp dụng nội dung inline
+                                    style = MaterialTheme.typography.displaySmall.copy(
+                                        color = Color.White,
+                                        shadow = Shadow(
+                                            color = Color.Black,
+                                            offset = Offset(4f, 4f),
+                                            blurRadius = 10f,
+                                        ),
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                )
+
+                                Text(
+                                    stringResource(R.string.get_started_text),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        color = Color.White,
+                                        shadow = Shadow(
+                                            color = Color.Black,
+                                            offset = Offset(4f, 4f), // Độ lệch của bóng
+                                            blurRadius = 10f,          // Độ mờ của bóng
+                                        ),
+                                    ),
+                                    modifier = Modifier.padding(top =10.dp)
+                                )
+                            }
+
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+
+                                Button(
+                                    onClick = {
+                                        navController.popBackStack(
+                                            AppScreen.LoginScreen.route,
+                                            inclusive = true,
+                                            saveState = false
+                                        )
+                                        navController.navigate(AppScreen.LoginScreen.route) {
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.surface,
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier
-                                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        /*shadow = Shadow(
+                                        .graphicsLayer {
+                                            shadowElevation = 10.dp.toPx()
+                                            shape = RoundedCornerShape(10.dp)
+                                            clip = true
+                                            ambientShadowColor =
+                                                Color.White // Màu của bóng (phát sáng)
+                                            spotShadowColor = Color.White
+                                        }
+                                ) {
+                                    Text(
+                                        stringResource(R.string.get_started).uppercase(),
+                                        modifier = Modifier
+                                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            /*shadow = Shadow(
                                             color = Color.Black,
                                             offset = Offset(4f, 4f), // Độ lệch của bóng
                                             blurRadius = 51f,          // Độ mờ của bóng
                                         ),*/
+                                        )
                                     )
-                                )
-                                Icon(
-                                    Icons.AutoMirrored.Default.ArrowForward, null
-                                )
-                            }
+                                    Icon(
+                                        Icons.AutoMirrored.Default.ArrowForward, null
+                                    )
+                                }
 
-                            /*
+                                /*
                             Text(
                                 stringResource(R.string.login_divider)
                             )
@@ -175,10 +261,10 @@ fun AuthScreen(
                                     }
                                 }
                             ) { Text("SignUp") }*/
+                            }
                         }
+                        Spacer(modifier = Modifier.height(100.dp))
                     }
-                    Spacer(modifier = Modifier.height(100.dp))
-                }
             }
 
         }
