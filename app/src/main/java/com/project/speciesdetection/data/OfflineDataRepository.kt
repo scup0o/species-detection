@@ -40,10 +40,7 @@ class OfflineDataRepository @Inject constructor(
         private const val OFFLINE_IMAGES_DIR = "offline_species_images"
     }
 
-    /**
-     * Tải xuống tất cả dữ liệu (loài, lớp) cho một ngôn ngữ cụ thể và lưu vào cơ sở dữ liệu cục bộ.
-     * Hàm này dành cho chức năng tải hàng loạt của người dùng.
-     */
+
     suspend fun downloadAllDataForLanguage(languageCode: String): DataResult<Unit> = coroutineScope {
         Log.d(TAG, "Starting download for language: $languageCode")
         try {
@@ -59,7 +56,6 @@ class OfflineDataRepository @Inject constructor(
                 return@coroutineScope DataResult.Error(Exception(errorMsg))
             }
 
-            // Xóa dữ liệu cũ của ngôn ngữ này trước khi thêm.
             speciesDao.deleteByLanguage(languageCode)
             speciesClassDao.deleteByLanguage(languageCode)
 
@@ -90,7 +86,6 @@ class OfflineDataRepository @Inject constructor(
                 return@coroutineScope DataResult.Error(Exception(errorMessage))
             }
 
-            // Dùng insertAll (IGNORE) để tránh ghi đè nếu có logic phức tạp khác.
             speciesDao.insertAll(localSpeciesList)
             speciesClassDao.insertAll(localSpeciesClassList)
 
@@ -103,10 +98,7 @@ class OfflineDataRepository @Inject constructor(
         }
     }
 
-    /**
-     * Tải một danh sách các ảnh cho một loài nếu chúng chưa tồn tại.
-     * PUBLIC để có thể tái sử dụng bởi các repository khác.
-     */
+
     suspend fun downloadImagesForSpeciesIfNotExists(speciesId: String, remoteUrls: List<String>): List<String> = coroutineScope {
         remoteUrls.mapIndexed { index, url ->
             async {
@@ -115,10 +107,7 @@ class OfflineDataRepository @Inject constructor(
         }.awaitAll().filterNotNull()
     }
 
-    /**
-     * Tải và lưu một ảnh duy nhất nếu nó chưa tồn tại cục bộ.
-     * PUBLIC để có thể tái sử dụng bởi các repository khác.
-     */
+
     suspend fun downloadAndSaveImageIfNotExists(speciesId: String, remoteUrl: String, imageIndex: String): String? {
         if (remoteUrl.isBlank()) return null
 
@@ -165,9 +154,7 @@ class OfflineDataRepository @Inject constructor(
         }
     }
 
-    /**
-     * Xóa tất cả dữ liệu liên quan đến một ngôn ngữ.
-     */
+
     suspend fun removeAllDataForLanguage(languageCode: String) {
         Log.d(TAG, "Starting removal process for language: $languageCode")
 

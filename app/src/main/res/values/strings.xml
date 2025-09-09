@@ -3,7 +3,8 @@
     <string name="encyclopedia_title">"ENCYCLOPEDIA"</string>
     <string name="all">All</string>
     <string name="try_again">Try again</string>
-
+    <string name="resend_email_text">Not seeing any email? Try </string>
+    <string name="please_try">Please try</string>
     <string name="error_screen_headline">Error!</string>
     <string name="error_screen_title">Something went wrong</string>
     <string name="error_screen_description_1">We encountered an error</string>

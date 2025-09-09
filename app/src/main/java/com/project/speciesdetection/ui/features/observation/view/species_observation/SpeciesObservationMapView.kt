@@ -209,7 +209,7 @@ fun SpeciesObservationMapView(
                             validObservations.first().location!!.latitude,
                             validObservations.first().location!!.longitude
                         )
-                        mapView.controller.setZoom(15.0)
+                        mapView.controller.setZoom(17.0)
                         mapView.controller.setCenter(centerPoint)
 
                         // Thêm marker cho từng Observation
@@ -230,7 +230,7 @@ fun SpeciesObservationMapView(
                             mapView.overlays.add(marker)
                         }
                     } else {
-                        mapView.controller.setZoom(15.0)
+                        mapView.controller.setZoom(17.0)
                     }
                     mapView
 
@@ -255,7 +255,7 @@ fun SpeciesObservationMapView(
                                         val currentPoint = GeoPoint(it.latitude, it.longitude)
                                         //Log.i("c", currentPoint.toString())
                                         mapView.controller.setCenter(currentPoint)
-                                        mapView.controller.setZoom(15.0)
+                                        mapView.controller.setZoom(17.0)
                                     }
                                 }
                             } catch (e: SecurityException) {
@@ -286,17 +286,21 @@ fun SpeciesObservationMapView(
 
                 AppSearchBar(
                     query = searchQuery,
-                    onQueryChanged = { viewModel.onQueryChanged(it) },
-                    onClearQuery = { viewModel.onQueryChanged("") },
+                    onQueryChanged = {
+                        if (!expanded && searchQuery!="") expanded = true
+                        viewModel.onQueryChanged(it)
+                                     },
+                    onClearQuery = { viewModel.onQueryChanged("")
+                                   },
                     onSearchAction = {
                         viewModel.onQueryChanged(searchQuery)
                     },
                     hint = stringResource(R.string.enter_address),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onFocusChanged { focusState ->
+                        /*.onFocusChanged { focusState ->
                             if (focusState.isFocused) expanded = true
-                        },
+                        }*/,
                     backgroundColor = MaterialTheme.colorScheme.surface
                 )
 
@@ -337,7 +341,7 @@ fun SpeciesObservationMapView(
                                                     resultText.lon.toDouble()
                                                 )
                                                 mapView.controller.setCenter(geoPoint)  // Di chuyển bản đồ đến vị trí này
-                                                mapView.controller.setZoom(15.0)
+                                                mapView.controller.setZoom(17.0)
                                                 //onResultClick(resultText)
 
                                                 keyboardController?.hide()
