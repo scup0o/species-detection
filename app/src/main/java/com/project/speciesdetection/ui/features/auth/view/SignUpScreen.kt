@@ -2,9 +2,11 @@ package com.project.speciesdetection.ui.features.auth.view
 
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -174,30 +176,42 @@ fun SignupScreen(
 
                     if (resendEmailState != "none") {
                         if (resendEmailState == "success") {
-                            Text(
-                                stringResource(R.string.send_verification_email_success),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 10.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            TextButton(
-                                onClick = { authViewModel.resendVerificationEmail() },
-                                enabled = !authState.isLoading && authState.resendCooldownSeconds == 0
-                            ) {
                                 Text(
-                                    "Not seeing any email? Try ",
-                                    color = MaterialTheme.colorScheme.outline.copy(0.6f)
+                                    stringResource(R.string.send_verification_email_success),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 10.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
+                            Row(modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 10.dp)){
+                                Text(
+                                    stringResource(R.string.resend_email_text)+" ",
+                                    color = MaterialTheme.colorScheme.outline.copy(0.6f),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+
                                 Text(
                                     if (authState.resendCooldownSeconds > 0)
-                                        "Resend in ${authState.resendCooldownSeconds}s"
+                                        stringResource(R.string.is_resend_verification_email_state)+" ${authState.resendCooldownSeconds}s"
                                     else
-                                        "Resend verification email",
-                                    fontWeight = FontWeight.ExtraBold
+                                        stringResource(R.string.resend_verification_email),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    modifier = Modifier.clickable{
+                                        if (!authState.isLoading && authState.resendCooldownSeconds == 0) authViewModel.resendVerificationEmail()
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (!authState.isLoading && authState.resendCooldownSeconds == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(0.6f)
                                 )
                             }
+
+
+
+
+
+
                         } else {
                             Text(
                                 stringResource(R.string.error),

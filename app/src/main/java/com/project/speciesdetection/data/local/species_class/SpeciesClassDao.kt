@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.Flow
 interface SpeciesClassDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(speciesClasses: List<LocalSpeciesClass>)
+
+    @Query("SELECT DISTINCT languageCode FROM species_class_local")
+    suspend fun getExistingLanguages(): List<String>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(speciesClasses: List<LocalSpeciesClass>)
 
     @Query("DELETE FROM species_class_local WHERE languageCode = :languageCode")
@@ -23,4 +29,13 @@ interface SpeciesClassDao {
 
     @Query("SELECT DISTINCT id FROM species_class_local")
     fun getDistinctClassIds(): Flow<List<String>>
+
+    @Query("DELETE FROM species_class_local WHERE id IN (:classIds)")
+    suspend fun deleteByIds(classIds: List<String>)
+
+    @Query("SELECT DISTINCT id FROM species_class_local")
+    suspend fun getAllIds(): List<String>
+
+    @Query("SELECT localizedName FROM species_class_local WHERE id = :scientific AND languageCode = :languageCode")
+    suspend fun getByScientific(scientific : String, languageCode: String): String
 }

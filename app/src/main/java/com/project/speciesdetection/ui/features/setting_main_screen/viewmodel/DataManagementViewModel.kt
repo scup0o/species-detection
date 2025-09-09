@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.project.speciesdetection.core.services.remote_database.DataResult
 import com.project.speciesdetection.data.OfflineDataRepository
+import com.project.speciesdetection.data.local.species.SpeciesDao
 import com.project.speciesdetection.data.local.species_class.SpeciesClassDao
 import com.project.speciesdetection.domain.provider.network.ConnectivityObserver
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +34,7 @@ data class DataManagementUiState(
 class DataManagementViewModel @Inject constructor(
     private val offlineDataRepository: OfflineDataRepository,
     speciesClassDao: SpeciesClassDao,
+    speciesDao : SpeciesDao,
     connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
@@ -48,7 +50,7 @@ class DataManagementViewModel @Inject constructor(
     )
 
     val uiState: StateFlow<DataManagementUiState> = combine(
-        speciesClassDao.getDownloadedLanguageCodes(),
+        speciesDao.getDownloadedLanguageCodes(),
         _processingLanguageCode,
         connectivityObserver.observe()
     ) { downloadedCodes, processingCode, networkStatus ->

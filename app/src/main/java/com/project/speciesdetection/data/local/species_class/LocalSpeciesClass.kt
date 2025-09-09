@@ -8,5 +8,6 @@ import androidx.room.Entity
 data class LocalSpeciesClass(
     val id: String,
     val languageCode: String,
-    val localizedName: String
+    val localizedName: String,
+    val scientific: String,
 )

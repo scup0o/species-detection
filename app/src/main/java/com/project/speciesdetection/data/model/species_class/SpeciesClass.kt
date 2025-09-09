@@ -12,7 +12,7 @@ data class SpeciesClass(
     fun toDisplayable(languageCode: String) : DisplayableSpeciesClass{
         return DisplayableSpeciesClass(
             id = this.id,
-            localizedName = this.name[languageCode]!!,
+            localizedName = this.name[languageCode]?:this.name["scientific"]?:"",
         )
     }
 }

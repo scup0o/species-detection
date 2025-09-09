@@ -227,7 +227,7 @@ fun MapPickerScreen(
                 factory = {
                     mapView.setTileSource(TileSourceFactory.MAPNIK)
                     mapView.setMultiTouchControls(true)
-                    mapView.controller.setZoom(15.0)
+                    mapView.controller.setZoom(17.0)
                     mapView
 
                 },
@@ -294,7 +294,7 @@ fun MapPickerScreen(
                                         val currentPoint = GeoPoint(it.latitude, it.longitude)
                                         Log.i("c", currentPoint.toString())
                                         mapView.controller.setCenter(currentPoint)
-                                        mapView.controller.setZoom(15.0)
+                                        mapView.controller.setZoom(17.0)
                                     }
                                 }
                             } catch (e: SecurityException) {
@@ -330,7 +330,9 @@ fun MapPickerScreen(
             ) {
                 AppSearchBar(
                     query = searchQuery,
-                    onQueryChanged = { viewModel.onQueryChanged(it) },
+                    onQueryChanged = {
+                        if (!expanded && searchQuery!="") expanded = true
+                        viewModel.onQueryChanged(it) },
                     onClearQuery = { viewModel.onQueryChanged("") },
                     onSearchAction = {
                         viewModel.onQueryChanged(searchQuery)
@@ -338,9 +340,9 @@ fun MapPickerScreen(
                     hint = stringResource(R.string.enter_address),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onFocusChanged { focusState ->
+                        /*.onFocusChanged { focusState ->
                             if (focusState.isFocused) expanded = true
-                        },
+                        }*/,
                     backgroundColor = MaterialTheme.colorScheme.surface
                 )
                 AnimatedVisibility(
@@ -379,7 +381,7 @@ fun MapPickerScreen(
                                                     resultText.lon.toDouble()
                                                 )
                                                 mapView.controller.setCenter(geoPoint)  // Di chuyển bản đồ đến vị trí này
-                                                mapView.controller.setZoom(15.0)
+                                                mapView.controller.setZoom(17.0)
                                                 //onResultClick(resultText)
 
                                                 keyboardController?.hide()

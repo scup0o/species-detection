@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">SpeciesDetection</string>
+    <string name="resend_email_text">Không thấy email? Hãy thử</string>
+    <string name="please_try">Hãy thử</string>
+    <string name="app_name">IDmal</string>
     <string name="encyclopedia_title">"TỪ ĐIỂN SINH VẬT"</string>
     <string name="all">Tất cả</string>
     <string name="error_screen_headline">Lỗi!</string>
@@ -30,8 +32,8 @@
     <string name="no_network_connection">Không có kết nối mạng</string>
 
     <string name="get_started">Bắt đầu ngay</string>
-    <string name="get_started_title">Hãy cùng bắt đầu nào</string>
-    <string name="get_started_text">Chia sẻ hành trình của bạn với cộng đồng</string>
+    <string name="get_started_title">Chào mừng đến với </string>
+    <string name="get_started_text">Cùng nhận diện, tra cứu và chia sẻ hành trình khám phá sinh vật của bạn với cộng đồng</string>
 
     <string name="login_title">Đăng nhập</string>
     <string name="login_text">Chào mừng bạn quay trở lại</string>
@@ -61,7 +63,7 @@
     <string name="signup_with_email">Đăng ký bằng Email</string>
     <string name="have_account">"Đã có tài khoản? </string>
     <string name="name_label">Tên</string>
-    <string name="send_verification_email_success">Email xác thực tài khoản đã được gửi vào hộp thư của bạn!</string>
+    <string name="send_verification_email_success">Email xác thực đã được gửi vào hộp thư của bạn!</string>
     <string name="signup_success">Đăng ký thành công</string>
     <string name="signup_error">Đăng ký thất bại</string>
 

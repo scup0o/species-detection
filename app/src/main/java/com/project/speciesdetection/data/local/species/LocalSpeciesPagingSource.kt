@@ -1,5 +1,6 @@
 package com.project.speciesdetection.data.local.species
 
+import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,7 @@ class LocalSpeciesPagingSource(
 
                 // *** LƯU Ý: Đoạn code dưới đây giả định DAO của bạn đã được cập nhật
                 // để xử lý LIMIT và OFFSET. Hãy xem phần cập nhật DAO bên dưới. ***
+                Log.i("local",classId.toString())
                 speciesDao.getSpeciesForPaging(
                     sortByDesc = sortByDesc,
                     languageCode = languageCode,
